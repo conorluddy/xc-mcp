@@ -1,5 +1,4 @@
-import { executeCommand, buildSimctlCommand } from '../../utils/command.js';
-import type { ToolResult, SimulatorList, OutputFormat } from '../../types/xcode.js';
+import type { OutputFormat } from '../../types/xcode.js';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { simulatorCache, type CachedSimulatorList } from '../../state/simulator-cache.js';
 import {
@@ -8,7 +7,7 @@ import {
   createProgressiveSimulatorResponse,
 } from '../../utils/response-cache.js';
 
-interface SimctlListToolArgs {
+interface SimctlListArgs {
   deviceType?: string;
   runtime?: string;
   availability?: 'available' | 'unavailable' | 'all';
@@ -16,20 +15,20 @@ interface SimctlListToolArgs {
   concise?: boolean;
 }
 
-export async function simctlListTool(args: any) {
+export async function simctlListTool(args: SimctlListArgs) {
   const {
     deviceType,
     runtime,
     availability = 'available',
     outputFormat = 'json',
     concise = true,
-  } = args as SimctlListToolArgs;
+  } = args;
 
   try {
     // Use the new caching system
     const cachedList = await simulatorCache.getSimulatorList();
 
-    let responseData: any;
+    let responseData: Record<string, unknown> | string;
 
     // Use progressive disclosure by default (concise=true)
     if (concise && outputFormat === 'json') {
@@ -46,8 +45,7 @@ export async function simctlListTool(args: any) {
         metadata: {
           totalDevices: summary.totalDevices,
           availableDevices: summary.availableDevices,
-          filters: { deviceType, runtime, availability },
-          summary,
+          hasFilters: !!(deviceType || runtime || availability !== 'available'),
         },
       });
 
@@ -117,7 +115,7 @@ function filterCachedSimulatorList(
   // Filter device types if specified
   if (filters.deviceType) {
     filtered.devicetypes = list.devicetypes.filter(dt =>
-      dt.name.toLowerCase().includes(filters.deviceType!.toLowerCase())
+      dt.name.toLowerCase().includes(filters.deviceType.toLowerCase())
     );
   }
 
@@ -125,8 +123,8 @@ function filterCachedSimulatorList(
   if (filters.runtime) {
     filtered.runtimes = list.runtimes.filter(
       rt =>
-        rt.name.toLowerCase().includes(filters.runtime!.toLowerCase()) ||
-        rt.version.includes(filters.runtime!)
+        rt.name.toLowerCase().includes(filters.runtime.toLowerCase()) ||
+        rt.version.includes(filters.runtime)
     );
   }
 

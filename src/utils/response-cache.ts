@@ -163,17 +163,16 @@ export function extractTestSummary(output: string, stderr: string, exitCode: num
   };
 }
 
+interface SimulatorDeviceForSummary {
+  isAvailable: boolean;
+  state: string;
+  name: string;
+  udid: string;
+  lastUsed?: Date;
+}
+
 interface CachedSimulatorList {
-  devices: Record<
-    string,
-    Array<{
-      isAvailable: boolean;
-      state: string;
-      name: string;
-      udid: string;
-      lastUsed?: string;
-    }>
-  >;
+  devices: Record<string, SimulatorDeviceForSummary[]>;
   lastUpdated: Date;
 }
 
@@ -211,12 +210,17 @@ export function extractSimulatorSummary(cachedList: CachedSimulatorList) {
     })),
     recentlyUsed: availableDevices
       .filter(d => d.lastUsed)
-      .sort((a, b) => new Date(b.lastUsed!).getTime() - new Date(a.lastUsed!).getTime())
+      .sort((a, b) => {
+        // We already filtered for devices with lastUsed
+        const aTime = a.lastUsed?.getTime() ?? 0;
+        const bTime = b.lastUsed?.getTime() ?? 0;
+        return bTime - aTime;
+      })
       .slice(0, 3)
       .map(d => ({
         name: d.name,
         udid: d.udid,
-        lastUsed: formatTimeAgo(d.lastUsed!),
+        lastUsed: formatTimeAgo(d.lastUsed || new Date()),
       })),
   };
 }
@@ -288,6 +292,7 @@ interface SimulatorSummary {
 interface SimulatorFilters {
   deviceType?: string;
   runtime?: string;
+  availability?: string;
 }
 
 export function createProgressiveSimulatorResponse(

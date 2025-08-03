@@ -452,14 +452,14 @@ describe('extractSimulatorSummary', () => {
           udid: '123-456-789',
           state: 'Booted',
           isAvailable: true,
-          lastUsed: '2023-12-01T10:00:00Z',
+          lastUsed: new Date('2023-12-01T10:00:00Z'),
         },
         {
           name: 'iPhone 14',
           udid: '987-654-321',
           state: 'Shutdown',
           isAvailable: true,
-          lastUsed: '2023-12-01T09:00:00Z',
+          lastUsed: new Date('2023-12-01T09:00:00Z'),
         },
       ],
       'com.apple.CoreSimulator.SimRuntime.iOS-17-0': [
