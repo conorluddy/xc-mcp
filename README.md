@@ -386,7 +386,11 @@ npm run dev
 
 ### MCP Client Configuration
 
-For Claude Desktop, add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+Quick add: `claude mcp add xc-mcp -s user "npx xc-mcp"`
+
+For Claude Desktop, add to `~/Library/Application Support/Claude/claude_desktop_config.json`,
+
+or for Claude Code, add to `~/.claude.json` for global user, or `.mcp.json` for project level usage:
 
 #### Option 1: Using NPX (Recommended)
 ```json
