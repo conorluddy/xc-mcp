@@ -6,7 +6,6 @@ import {
   extractTestSummary,
   extractSimulatorSummary,
   createProgressiveSimulatorResponse,
-  CachedResponse,
 } from '../../../src/utils/response-cache.js';
 
 // Mock crypto
@@ -20,7 +19,7 @@ describe('ResponseCache', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     responseCache.clear();
-    
+
     // Mock UUID generation
     let counter = 0;
     mockRandomUUID.mockImplementation(() => {
@@ -43,7 +42,7 @@ describe('ResponseCache', () => {
       const id = responseCache.store(data);
 
       expect(id).toBe('mock-uuid-1');
-      
+
       const cached = responseCache.get(id);
       expect(cached).toMatchObject({
         ...data,
@@ -68,12 +67,13 @@ describe('ResponseCache', () => {
       };
 
       const id = responseCache.store(data);
-      
+
       // Mock the cache to have an old timestamp
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const cache = (responseCache as any).cache;
       const entry = cache.get(id);
       entry.timestamp = new Date(Date.now() - 31 * 60 * 1000); // 31 minutes ago
-      
+
       const cached = responseCache.get(id);
       expect(cached).toBeUndefined();
       expect(cache.has(id)).toBe(false); // Should be deleted
@@ -83,7 +83,7 @@ describe('ResponseCache', () => {
   describe('getRecentByTool', () => {
     it('should return recent entries for a specific tool', () => {
       const tool = 'xcodebuild-build';
-      
+
       // Store multiple entries with slight delays to ensure timestamp ordering
       const entries = [];
       for (let i = 1; i <= 3; i++) {
@@ -96,8 +96,9 @@ describe('ResponseCache', () => {
           metadata: {},
         });
         entries.push(id);
-        
+
         // Manually adjust timestamp to ensure proper ordering for test
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const cache = (responseCache as any).cache;
         const entry = cache.get(id);
         entry.timestamp = new Date(Date.now() + i * 1000); // Each entry 1 second later
@@ -114,7 +115,7 @@ describe('ResponseCache', () => {
       });
 
       const recent = responseCache.getRecentByTool(tool);
-      
+
       expect(recent).toHaveLength(3);
       expect(recent[0].fullOutput).toBe('Build 3'); // Most recent first
       expect(recent[1].fullOutput).toBe('Build 2');
@@ -124,7 +125,7 @@ describe('ResponseCache', () => {
 
     it('should respect the limit parameter', () => {
       const tool = 'simctl-boot';
-      
+
       for (let i = 1; i <= 10; i++) {
         const id = responseCache.store({
           tool,
@@ -134,8 +135,9 @@ describe('ResponseCache', () => {
           command: `simctl boot device-${i}`,
           metadata: {},
         });
-        
+
         // Manually adjust timestamp to ensure proper ordering for test
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const cache = (responseCache as any).cache;
         const entry = cache.get(id);
         entry.timestamp = new Date(Date.now() + i * 1000); // Each entry 1 second later
@@ -194,9 +196,9 @@ describe('ResponseCache', () => {
       });
 
       expect(responseCache.getStats().totalEntries).toBe(2);
-      
+
       responseCache.clear();
-      
+
       expect(responseCache.getStats().totalEntries).toBe(0);
     });
   });
@@ -231,7 +233,7 @@ describe('ResponseCache', () => {
       });
 
       const stats = responseCache.getStats();
-      
+
       expect(stats.totalEntries).toBe(3);
       expect(stats.byTool).toEqual({
         'xcodebuild-build': 2,
@@ -241,7 +243,7 @@ describe('ResponseCache', () => {
 
     it('should return empty stats for empty cache', () => {
       const stats = responseCache.getStats();
-      
+
       expect(stats.totalEntries).toBe(0);
       expect(stats.byTool).toEqual({});
     });
@@ -250,6 +252,7 @@ describe('ResponseCache', () => {
   describe('cleanup', () => {
     it('should remove entries exceeding maxEntries limit', () => {
       // Store more than maxEntries (100) - we'll store 105
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const maxEntries = (responseCache as any).maxEntries;
       expect(maxEntries).toBe(100);
 
@@ -271,7 +274,9 @@ describe('ResponseCache', () => {
 
     it('should remove oldest entries when over limit', () => {
       // Override maxEntries for testing
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const originalMaxEntries = (responseCache as any).maxEntries;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (responseCache as any).maxEntries = 3;
 
       try {
@@ -297,6 +302,7 @@ describe('ResponseCache', () => {
         expect(responseCache.get(ids[3])).toBeDefined();
         expect(responseCache.get(ids[4])).toBeDefined();
       } finally {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (responseCache as any).maxEntries = originalMaxEntries;
       }
     });
@@ -310,9 +316,9 @@ Building target MyApp with configuration Debug
 ** BUILD SUCCEEDED **
 Total time: 45.2 seconds
     `;
-    
+
     const summary = extractBuildSummary(output, '', 0);
-    
+
     expect(summary).toEqual({
       success: true,
       exitCode: 0,
@@ -333,9 +339,9 @@ Total time: 45.2 seconds
 error: Build failed
 ** BUILD FAILED **
     `;
-    
+
     const summary = extractBuildSummary(output, stderr, 1);
-    
+
     expect(summary).toEqual({
       success: false,
       exitCode: 1,
@@ -356,18 +362,18 @@ warning: Unused variable 'foo'
 warning: Deprecated API usage
 ** BUILD SUCCEEDED **
     `;
-    
+
     const summary = extractBuildSummary(output, '', 0);
-    
+
     expect(summary.warningCount).toBe(2);
     expect(summary.hasWarnings).toBe(true);
   });
 
   it('should handle output without timing info', () => {
     const output = '** BUILD SUCCEEDED **';
-    
+
     const summary = extractBuildSummary(output, '', 0);
-    
+
     expect(summary.duration).toBeUndefined();
   });
 
@@ -376,9 +382,9 @@ warning: Deprecated API usage
 ** BUILD SUCCEEDED **
 error: Some error that happened during success
     `;
-    
+
     const summary = extractBuildSummary(output, '', 0);
-    
+
     expect(summary.success).toBe(true); // Exit code 0 and has success indicator
     expect(summary.hasErrors).toBe(true); // But still has errors
     expect(summary.errorCount).toBe(1);
@@ -392,9 +398,9 @@ Test Suite MyAppTests.xctest started
 Test Suite MyAppTests.xctest passed
 15 tests executed
     `;
-    
+
     const summary = extractTestSummary(output, '', 0);
-    
+
     expect(summary).toEqual({
       success: true,
       exitCode: 0,
@@ -410,9 +416,9 @@ Test Suite MyAppTests.xctest started
 Test Suite MyAppTests.xctest failed
 8 tests executed
     `;
-    
+
     const summary = extractTestSummary(output, '', 1);
-    
+
     expect(summary).toEqual({
       success: false,
       exitCode: 1,
@@ -428,17 +434,17 @@ Test Suite MyAppTests.xctest failed
 3 tests failed
 8 tests total
     `;
-    
+
     const summary = extractTestSummary(output, '', 0);
-    
+
     expect(summary.testsRun).toBe(16); // 5 + 3 + 8
   });
 
   it('should handle no test count info', () => {
     const output = 'Test Suite passed';
-    
+
     const summary = extractTestSummary(output, '', 0);
-    
+
     expect(summary.testsRun).toBe(0);
   });
 });
@@ -476,7 +482,7 @@ describe('extractSimulatorSummary', () => {
 
   it('should extract simulator summary correctly', () => {
     const summary = extractSimulatorSummary(mockCachedList);
-    
+
     expect(summary).toMatchObject({
       totalDevices: 3,
       availableDevices: 3,
@@ -486,14 +492,14 @@ describe('extractSimulatorSummary', () => {
       lastUpdated: mockCachedList.lastUpdated,
       cacheAge: expect.any(String),
     });
-    
+
     expect(summary.bootedList).toHaveLength(1);
     expect(summary.bootedList[0]).toMatchObject({
       name: 'iPhone 15',
       udid: '123-456-789',
       state: 'Booted',
     });
-    
+
     expect(summary.recentlyUsed).toHaveLength(2);
     expect(summary.recentlyUsed[0].name).toBe('iPhone 15'); // Most recent first
   });
@@ -503,9 +509,9 @@ describe('extractSimulatorSummary', () => {
       devices: {},
       lastUpdated: new Date(),
     };
-    
+
     const summary = extractSimulatorSummary(emptyList);
-    
+
     expect(summary.totalDevices).toBe(0);
     expect(summary.availableDevices).toBe(0);
     expect(summary.bootedDevices).toBe(0);
@@ -533,9 +539,9 @@ describe('extractSimulatorSummary', () => {
       },
       lastUpdated: new Date(),
     };
-    
+
     const summary = extractSimulatorSummary(listWithUnavailable);
-    
+
     expect(summary.totalDevices).toBe(2);
     expect(summary.availableDevices).toBe(1);
     expect(summary.bootedDevices).toBe(1);
@@ -551,21 +557,16 @@ describe('createProgressiveSimulatorResponse', () => {
     commonRuntimes: ['iOS 18.0', 'iOS 17.0'],
     lastUpdated: new Date('2023-12-01T12:00:00Z'),
     cacheAge: '5 minutes ago',
-    bootedList: [
-      { name: 'iPhone 15', udid: '123', state: 'Booted', runtime: 'iOS 18.0' },
-    ],
-    recentlyUsed: [
-      { name: 'iPhone 15', udid: '123', lastUsed: '5 minutes ago' },
-    ],
+    bootedList: [{ name: 'iPhone 15', udid: '123', state: 'Booted', runtime: 'iOS 18.0' }],
+    recentlyUsed: [{ name: 'iPhone 15', udid: '123', lastUsed: '5 minutes ago' }],
   };
 
   it('should create progressive response structure', () => {
-    const response = createProgressiveSimulatorResponse(
-      mockSummary,
-      'cache-123',
-      { deviceType: 'iPhone', runtime: 'iOS 18.0' }
-    );
-    
+    const response = createProgressiveSimulatorResponse(mockSummary, 'cache-123', {
+      deviceType: 'iPhone',
+      runtime: 'iOS 18.0',
+    });
+
     expect(response).toMatchObject({
       cacheId: 'cache-123',
       summary: {
@@ -587,9 +588,7 @@ describe('createProgressiveSimulatorResponse', () => {
         expect.stringContaining('simctl-get-details'),
         expect.stringContaining('deviceType=iPhone'),
       ]),
-      availableDetails: [
-        'full-list', 'devices-only', 'runtimes-only', 'available-only'
-      ],
+      availableDetails: ['full-list', 'devices-only', 'runtimes-only', 'available-only'],
       smartFilters: expect.objectContaining({
         commonDeviceTypes: ['iPhone', 'iPad'],
         commonRuntimes: ['iOS 18.0', 'iOS 17.0'],
@@ -604,28 +603,20 @@ describe('createProgressiveSimulatorResponse', () => {
       bootedDevices: 0,
       bootedList: [],
     };
-    
-    const response = createProgressiveSimulatorResponse(
-      summaryWithoutBooted,
-      'cache-123',
-      {}
-    );
-    
+
+    const response = createProgressiveSimulatorResponse(summaryWithoutBooted, 'cache-123', {});
+
     expect(response.quickAccess.recommendedForBuild).toHaveLength(1);
-    expect(response.quickAccess.recommendedForBuild[0]).toEqual(
-      mockSummary.recentlyUsed[0]
-    );
+    expect(response.quickAccess.recommendedForBuild[0]).toEqual(mockSummary.recentlyUsed[0]);
   });
 
   it('should handle missing filters gracefully', () => {
-    const response = createProgressiveSimulatorResponse(
-      mockSummary,
-      'cache-123',
-      {}
-    );
-    
-    expect(response.nextSteps.some(step => 
-      step.includes('deviceType=iPhone') && step.includes('runtime=iOS 18.5')
-    )).toBe(true);
+    const response = createProgressiveSimulatorResponse(mockSummary, 'cache-123', {});
+
+    expect(
+      response.nextSteps.some(
+        step => step.includes('deviceType=iPhone') && step.includes('runtime=iOS 18.5')
+      )
+    ).toBe(true);
   });
 });
