@@ -1,6 +1,6 @@
 {
   "name": "xc-mcp",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP server that wraps Xcode command-line tools for iOS/macOS development workflows",
   "main": "dist/index.js",
   "type": "module",
@@ -48,17 +48,17 @@
   ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.1",
-    "@types/node": "^24.1.0"
+    "@types/node": "^22.0.0"
   },
   "devDependencies": {
-    "@types/jest": "^30.0.0",
+    "@types/jest": "^29.5.0",
     "@typescript-eslint/eslint-plugin": "^8.15.0",
     "@typescript-eslint/parser": "^8.15.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.3",
     "husky": "^9.1.7",
-    "jest": "^30.0.5",
+    "jest": "^29.5.0",
     "lint-staged": "^16.1.2",
     "prettier": "^3.6.2",
     "ts-jest": "^29.2.0",
