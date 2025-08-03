@@ -100,19 +100,37 @@ A Model Context Protocol (MCP) server that provides intelligent, stateful access
 xcode-select --install
 ```
 
-### Install Dependencies
+### Option 1: Install from NPM (Recommended)
 ```bash
-npm install
+# Install globally for CLI usage
+npm install -g xc-mcp
+
+# Or use with NPX (no installation required)
+npx xc-mcp
 ```
 
-### Build the Server
+### Option 2: Local Development Install
 ```bash
+git clone https://github.com/conorluddy/xc-mcp.git
+cd xc-mcp
+npm install
 npm run build
 ```
 
 ## Usage
 
 ### Running the Server
+
+#### From NPM/NPX Install
+```bash
+# If installed globally
+xc-mcp
+
+# Or with NPX
+npx xc-mcp
+```
+
+#### From Local Development
 ```bash
 npm start
 ```
@@ -370,6 +388,30 @@ npm run dev
 
 For Claude Desktop, add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
+#### Option 1: Using NPM Global Install
+```json
+{
+  "mcpServers": {
+    "xc-mcp": {
+      "command": "xc-mcp"
+    }
+  }
+}
+```
+
+#### Option 2: Using NPX (Recommended)
+```json
+{
+  "mcpServers": {
+    "xc-mcp": {
+      "command": "npx",
+      "args": ["xc-mcp"]
+    }
+  }
+}
+```
+
+#### Option 3: Local Development Setup
 ```json
 {
   "mcpServers": {

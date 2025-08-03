@@ -15,7 +15,9 @@
     "format:check": "prettier --check src/**/*.ts",
     "clean": "rm -rf dist",
     "precommit": "lint-staged",
-    "prepare": "husky"
+    "prepare": "husky",
+    "prepublishOnly": "npm run clean && npm run build && npm test && npm run lint",
+    "postbuild": "chmod +x dist/index.js"
   },
   "keywords": [
     "mcp",
@@ -46,21 +48,21 @@
   ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.1",
-    "@types/node": "^20.0.0"
+    "@types/node": "^22.0.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",
-    "@typescript-eslint/eslint-plugin": "^8.9.0",
-    "@typescript-eslint/parser": "^8.9.0",
-    "eslint": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.15.0",
+    "@typescript-eslint/parser": "^8.15.0",
+    "eslint": "^8.57.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.3",
     "husky": "^9.1.7",
     "jest": "^29.5.0",
     "lint-staged": "^16.1.2",
     "prettier": "^3.6.2",
-    "ts-jest": "^29.1.0",
-    "typescript": "^5.9.2"
+    "ts-jest": "^29.2.0",
+    "typescript": "^5.7.2"
   },
   "lint-staged": {
     "*.ts": [
