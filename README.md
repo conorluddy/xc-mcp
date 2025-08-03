@@ -388,24 +388,32 @@ npm run dev
 
 For Claude Desktop, add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
-#### Option 1: Using NPM Global Install
-```json
-{
-  "mcpServers": {
-    "xc-mcp": {
-      "command": "xc-mcp"
-    }
-  }
-}
-```
-
-#### Option 2: Using NPX (Recommended)
+#### Option 1: Using NPX (Recommended)
 ```json
 {
   "mcpServers": {
     "xc-mcp": {
       "command": "npx",
-      "args": ["xc-mcp"]
+      "args": ["xc-mcp"],
+      "cwd": "/path/to/your/ios/project",
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}
+```
+
+#### Option 2: Using NPM Global Install
+```json
+{
+  "mcpServers": {
+    "xc-mcp": {
+      "command": "xc-mcp",
+      "cwd": "/path/to/your/ios/project",
+      "env": {
+        "NODE_ENV": "production"
+      }
     }
   }
 }
@@ -417,11 +425,17 @@ For Claude Desktop, add to `~/Library/Application Support/Claude/claude_desktop_
   "mcpServers": {
     "xc-mcp": {
       "command": "node",
-      "args": ["/path/to/xc-mcp/dist/index.js"]
+      "args": ["/path/to/xc-mcp/dist/index.js"],
+      "cwd": "/path/to/your/ios/project",
+      "env": {
+        "NODE_ENV": "production"
+      }
     }
   }
 }
 ```
+
+Note: Set the `cwd` (current working directory) to your iOS project directory for proper Xcode project discovery.
 
 ## Intelligent Workflows
 
