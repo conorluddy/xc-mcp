@@ -2,7 +2,7 @@ import { validateProjectPath, validateScheme } from '../../utils/validation.js';
 import { executeCommand, buildXcodebuildCommand } from '../../utils/command.js';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { responseCache, extractBuildSummary } from '../../utils/response-cache.js';
-import { projectCache } from '../../state/project-cache.js';
+import { projectCache, type BuildConfig } from '../../state/project-cache.js';
 import { simulatorCache } from '../../state/simulator-cache.js';
 
 interface BuildToolArgs {
@@ -14,8 +14,15 @@ interface BuildToolArgs {
   derivedDataPath?: string;
 }
 
-export async function xcodebuildBuildTool(args: BuildToolArgs) {
-  const { projectPath, scheme, configuration = 'Debug', destination, sdk, derivedDataPath } = args;
+export async function xcodebuildBuildTool(args: any) {
+  const {
+    projectPath,
+    scheme,
+    configuration = 'Debug',
+    destination,
+    sdk,
+    derivedDataPath,
+  } = args as BuildToolArgs;
 
   try {
     // Validate inputs

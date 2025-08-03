@@ -15,14 +15,14 @@ interface SimctlListArgs {
   concise?: boolean;
 }
 
-export async function simctlListTool(args: SimctlListArgs) {
+export async function simctlListTool(args: any) {
   const {
     deviceType,
     runtime,
     availability = 'available',
     outputFormat = 'json',
     concise = true,
-  } = args;
+  } = args as SimctlListArgs;
 
   try {
     // Use the new caching system
@@ -65,7 +65,12 @@ export async function simctlListTool(args: SimctlListArgs) {
           availability,
         });
 
-        responseData = filteredList;
+        responseData = {
+          devices: filteredList.devices,
+          runtimes: filteredList.runtimes,
+          devicetypes: filteredList.devicetypes,
+          lastUpdated: filteredList.lastUpdated.toISOString(),
+        };
       } else {
         // For text format, we need to convert back to original format
         responseData =
@@ -115,7 +120,7 @@ function filterCachedSimulatorList(
   // Filter device types if specified
   if (filters.deviceType) {
     filtered.devicetypes = list.devicetypes.filter(dt =>
-      dt.name.toLowerCase().includes(filters.deviceType.toLowerCase())
+      dt.name.toLowerCase().includes(filters.deviceType!.toLowerCase())
     );
   }
 
@@ -123,8 +128,8 @@ function filterCachedSimulatorList(
   if (filters.runtime) {
     filtered.runtimes = list.runtimes.filter(
       rt =>
-        rt.name.toLowerCase().includes(filters.runtime.toLowerCase()) ||
-        rt.version.includes(filters.runtime)
+        rt.name.toLowerCase().includes(filters.runtime!.toLowerCase()) ||
+        rt.version.includes(filters.runtime!)
     );
   }
 
