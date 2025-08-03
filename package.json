@@ -54,7 +54,7 @@
     "lint-staged": "^16.1.2",
     "prettier": "^3.6.2",
     "ts-jest": "^29.1.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.9.2"
   },
   "lint-staged": {
     "*.ts": [
