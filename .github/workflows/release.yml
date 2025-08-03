@@ -1,76 +1,91 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types: [created]
 
 jobs:
-  release:
-    name: Create Release
+  publish:
     runs-on: macos-latest
-    
+    permissions:
+      contents: write
+      packages: write
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22.x'
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Run tests
-      run: npm test
-      
-    - name: Build project
-      run: npm run build
-      
-    - name: Create release package
-      run: |
-        # Create a release package with just the necessary files
-        mkdir -p release-package
-        cp -r dist/ release-package/
-        cp package.json release-package/
-        cp package-lock.json release-package/
-        cp README.md release-package/
-        cp CLAUDE.md release-package/
-        
-    - name: Create Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
-        body: |
-          ## XC-MCP Release ${{ github.ref }}
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Cache node modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-20.x-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-20.x-
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Run tests
+        run: npm test
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          # Remove 'v' prefix from tag if present
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Publishing version: $VERSION"
+
+      - name: Update package version
+        run: |
+          # Update package version to match the release tag
+          npm version ${{ steps.version.outputs.version }} --no-git-tag-version --allow-same-version
+
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          # Set npm token
+          npm config set //registry.npmjs.org/:_authToken=$NODE_AUTH_TOKEN
           
-          ### Features
-          - Intelligent Xcode command-line tools with progressive disclosure
-          - Smart caching system (1-hour default)
-          - Performance tracking and optimization
-          - Token overflow prevention for large outputs
-          
-          ### Installation
-          ```bash
-          npm install -g xc-mcp
-          ```
-          
-          ### Usage
-          Add to your MCP client configuration:
-          ```json
-          {
-            "mcpServers": {
-              "xc-mcp": {
-                "command": "node",
-                "args": ["/path/to/xc-mcp/dist/index.js"]
-              }
-            }
-          }
-          ```
-        draft: false
-        prerelease: false
+          # Publish package
+          echo "Publishing xc-mcp@${{ steps.version.outputs.version }}..."
+          npm publish --access public
+
+      - name: Update release notes
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const release = context.payload.release;
+            const version = '${{ steps.version.outputs.version }}';
+
+            // Append published package info to release notes
+            const publishedInfo = `\n\n## Published Package (v${version})\n\n` +
+              `- [\`xc-mcp@${version}\`](https://www.npmjs.com/package/xc-mcp/v/${version})\n\n` +
+              `### Installation\n\`\`\`bash\nnpm install -g xc-mcp@${version}\n\`\`\`\n\n` +
+              `### MCP Server Usage\n\`\`\`bash\nnode node_modules/xc-mcp/dist/index.js\n\`\`\``;
+
+            await github.rest.repos.updateRelease({
+              owner,
+              repo,
+              release_id: release.id,
+              body: release.body + publishedInfo
+            });

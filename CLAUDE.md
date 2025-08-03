@@ -14,16 +14,26 @@ XC-MCP is a Model Context Protocol (MCP) server that provides intelligent access
 - **npm start** - Start the MCP server from compiled JavaScript
 - **npm run clean** - Remove `dist/` build artifacts
 
-### Code Quality
+### Code Quality and Testing
 - **npm run lint** - Run ESLint on TypeScript source files
 - **npm run lint:fix** - Auto-fix ESLint issues where possible
 - **npm run format** - Format code with Prettier
 - **npm run format:check** - Check code formatting without making changes
-- **npm test** - Run Jest test suite
+- **npm test** - Run Jest test suite with ESM support
+- **npm run test -- --watch** - Run tests in watch mode during development
+- **npm run test -- --coverage** - Run tests with coverage report (80% threshold required)
+- **npm run test -- tests/__tests__/utils/** - Run specific test directory
+- **npm run test -- --testNamePattern="cache"** - Run tests matching pattern
+
+### Git Hooks and Pre-commit
+- **npm run precommit** - Run lint-staged (triggered automatically by Husky)
+- **npm run prepare** - Set up Husky git hooks
+- Lint-staged automatically runs prettier and eslint on staged TypeScript files
 
 ### MCP Server Testing
 - **node dist/index.js** - Run the MCP server directly after building
 - Use stdio transport for MCP client testing
+- Validate Xcode installation is available before server operations
 
 ## Architecture Overview
 
@@ -58,12 +68,21 @@ Tools return structured responses with:
 - **Smart recommendations** based on usage history
 - **Performance metrics** for optimization insights
 
+### Critical Tool Categories and Usage Patterns
+- **xcodebuild-build**: Returns `buildId` for progressive access to full logs via `xcodebuild-get-details`
+- **simctl-list**: Returns `cacheId` for progressive access to full device data via `simctl-get-details`
+- **Cache Management**: Four-tool ecosystem (`cache-get-stats`, `cache-set-config`, `cache-get-config`, `cache-clear`)
+- **Progressive Disclosure**: Large outputs (10k+ tokens) automatically cached to prevent MCP token overflow
+
 ## Development Guidelines
 
-### Code Style
-- Uses ESLint + Prettier with TypeScript configuration
-- 100-character line width, 2-space indentation, single quotes
-- ES2020+ features with Node.js environment targeting
+### Code Style and Quality Standards
+- **ESLint Configuration**: TypeScript-specific rules with Prettier integration
+- **Formatting**: 100-character line width, 2-space indentation, single quotes
+- **Language Target**: ES2020+ with Node.js ESM modules (`"type": "module"`)
+- **Coverage Requirements**: 80% minimum across branches, functions, lines, statements
+- **Pre-commit Validation**: Husky + lint-staged ensures code quality before commits
+- **Unused Variables**: Prefix with underscore (`_unused`) to satisfy linting
 
 ### Error Handling
 - All tools validate Xcode installation before execution
@@ -83,16 +102,32 @@ Tools return structured responses with:
 
 ## Testing and Quality Assurance
 
-### Pre-commit Requirements
-- All TypeScript must compile without errors
-- ESLint must pass with no errors (warnings acceptable)
-- Prettier formatting must be applied
-- Tests must pass before commits
+### Test Architecture
+- **Jest with ESM Support**: Uses `ts-jest` preset with ES module transformation
+- **Test Structure**: Tests in `tests/__tests__/` mirror `src/` structure
+- **Coverage Thresholds**: 80% minimum across all metrics (enforced in CI)
+- **Mock Integration**: Custom MCP SDK mocks for testing tool responses
+- **Test Categories**: State management, utility functions, command execution, and validation
 
-### Xcode Environment Dependencies
-- Requires macOS with Xcode command-line tools installed
-- Tools validate Xcode installation on startup
-- Compatible with Xcode 15+ and iOS simulators
+### Running Tests
+- **All Tests**: `npm test` (includes TypeScript compilation validation)
+- **Specific Tests**: `npm test tests/__tests__/state/` (test specific modules)
+- **Coverage Report**: `npm test -- --coverage` (generates HTML + LCOV reports)
+- **Watch Mode**: `npm test -- --watch` (re-run tests on file changes)
+- **Pattern Matching**: `npm test -- --testNamePattern="cache"` (test specific functionality)
+
+### Pre-commit Requirements (Automated via Husky)
+- **TypeScript Compilation**: Must compile without errors
+- **ESLint Validation**: No errors (warnings acceptable, max 50 on staged files)
+- **Prettier Formatting**: Automatically applied to staged files
+- **Test Suite**: All tests must pass before commits
+- **Git Hooks**: Husky enforces pre-commit validation automatically
+
+### Environment Dependencies
+- **macOS Required**: Xcode command-line tools must be installed
+- **Xcode Validation**: Tools validate installation before execution
+- **Compatibility**: Xcode 15+ and iOS simulators
+- **Node.js**: Version 18+ required for ESM support
 
 ## MCP Integration
 
@@ -113,8 +148,15 @@ Tools return structured responses with:
 }
 ```
 
+### MCP Tool Implementation Architecture
+- **Main Server**: `src/index.ts` - Tool registration, request routing, and MCP protocol handling
+- **Tool Modules**: Organized by command category in `src/tools/` with consistent return patterns
+- **Shared State**: Global caches in `src/state/` for cross-tool intelligence
+- **Validation Layer**: `src/utils/validation.ts` validates Xcode installation before tool execution
+- **Command Execution**: `src/utils/command.ts` handles secure subprocess execution with proper error handling
+
 ### Tool Categories
 - **Project Discovery**: `xcodebuild-list`, `xcodebuild-showsdks`, `xcodebuild-version`
 - **Build Operations**: `xcodebuild-build`, `xcodebuild-clean`, `xcodebuild-get-details`
 - **Simulator Management**: `simctl-list`, `simctl-get-details`, `simctl-boot`, `simctl-shutdown`
-- **Cache Management**: `cache-get-stats`, `cache-set-config`, `cache-clear`, `list-cached-responses`
+- **Cache Management**: `cache-get-stats`, `cache-set-config`, `cache-get-config`, `cache-clear`, `list-cached-responses`

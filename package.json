@@ -32,12 +32,18 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/xc-mcp.git"
+    "url": "https://github.com/conorluddy/xc-mcp.git"
   },
-  "homepage": "https://github.com/your-username/xc-mcp#readme",
+  "homepage": "https://github.com/conorluddy/xc-mcp#readme",
   "bugs": {
-    "url": "https://github.com/your-username/xc-mcp/issues"
+    "url": "https://github.com/conorluddy/xc-mcp/issues"
   },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "CLAUDE.md",
+    "package.json"
+  ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.6.0",
     "@types/node": "^20.0.0"
