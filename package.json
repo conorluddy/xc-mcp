@@ -39,7 +39,7 @@
     "url": "https://github.com/your-username/xc-mcp/issues"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.6.0",
+    "@modelcontextprotocol/sdk": "^1.17.1",
     "@types/node": "^20.0.0"
   },
   "devDependencies": {
