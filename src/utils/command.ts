@@ -33,9 +33,14 @@ export async function executeCommand(
       stderr: stderr.trim(),
       code: 0,
     };
-  } catch (error: any) {
+  } catch (error) {
     // Handle timeout and other execution errors
-    if (error.code === 'ETIMEDOUT') {
+    const execError = error as NodeJS.ErrnoException & {
+      stdout?: string;
+      stderr?: string;
+      code?: number;
+    };
+    if (execError.code === 'ETIMEDOUT') {
       throw new McpError(
         ErrorCode.InternalError,
         `Command timed out after ${defaultOptions.timeout}ms: ${command}`
@@ -43,9 +48,9 @@ export async function executeCommand(
     }
 
     return {
-      stdout: error.stdout?.trim() || '',
-      stderr: error.stderr?.trim() || error.message || '',
-      code: error.code || 1,
+      stdout: execError.stdout?.trim() || '',
+      stderr: execError.stderr?.trim() || execError.message || '',
+      code: execError.code || 1,
     };
   }
 }
@@ -61,11 +66,16 @@ export function executeCommandSync(command: string): CommandResult {
       stderr: '',
       code: 0,
     };
-  } catch (error: any) {
+  } catch (error) {
+    const execError = error as NodeJS.ErrnoException & {
+      stdout?: string;
+      stderr?: string;
+      status?: number;
+    };
     return {
-      stdout: error.stdout?.trim() || '',
-      stderr: error.stderr?.trim() || error.message || '',
-      code: error.status || 1,
+      stdout: execError.stdout?.trim() || '',
+      stderr: execError.stderr?.trim() || execError.message || '',
+      code: execError.status || 1,
     };
   }
 }
@@ -81,7 +91,7 @@ export function buildXcodebuildCommand(
     derivedDataPath?: string;
     workspace?: boolean;
     json?: boolean;
-    [key: string]: any;
+    [key: string]: string | boolean | undefined;
   } = {}
 ): string {
   const parts: string[] = ['xcodebuild'];
@@ -139,7 +149,7 @@ export function buildSimctlCommand(
     runtime?: string;
     name?: string;
     json?: boolean;
-    [key: string]: any;
+    [key: string]: string | boolean | undefined;
   } = {}
 ): string {
   const parts: string[] = ['xcrun', 'simctl'];

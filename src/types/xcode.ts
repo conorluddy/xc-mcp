@@ -1,7 +1,7 @@
 export interface XcodeProject {
   information: {
     LastUpgradeCheck: string;
-    [key: string]: any;
+    [key: string]: string | number | boolean;
   };
   project?: {
     configurations: string[];

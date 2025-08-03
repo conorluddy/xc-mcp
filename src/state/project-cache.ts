@@ -31,9 +31,9 @@ export interface ProjectInfo {
 
 export interface DependencyInfo {
   lastChecked: Date;
-  packageResolved?: any;
-  podfileLock?: any;
-  carthageResolved?: any;
+  packageResolved?: Record<string, unknown>;
+  podfileLock?: string;
+  carthageResolved?: string;
 }
 
 export class ProjectCache {
