@@ -1,6 +1,7 @@
 # XC-MCP: Intelligent Xcode MCP Server
 
 [![codecov](https://codecov.io/gh/conorluddy/xc-mcp/graph/badge.svg?token=4CKBMDTENZ)](https://codecov.io/gh/conorluddy/xc-mcp) 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/conorluddy/xc-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **Problem**: MCP clients can't use Xcode CLI tools because `simctl list` returns 57,000+ tokens, exceeding MCP limits.  
