@@ -7,13 +7,24 @@ import {
   extractSimulatorSummary,
   createProgressiveSimulatorResponse,
 } from '../../../src/utils/response-cache.js';
+import { persistenceManager } from '../../../src/utils/persistence.js';
 
 // Mock crypto
 jest.mock('crypto', () => ({
   randomUUID: jest.fn(),
 }));
 
+// Mock persistence manager
+jest.mock('../../../src/utils/persistence.js', () => ({
+  persistenceManager: {
+    isEnabled: jest.fn(),
+    loadState: jest.fn(),
+    saveState: jest.fn(),
+  },
+}));
+
 const mockRandomUUID = randomUUID as jest.MockedFunction<typeof randomUUID>;
+const mockPersistenceManager = persistenceManager as jest.Mocked<typeof persistenceManager>;
 
 describe('ResponseCache', () => {
   beforeEach(() => {
@@ -26,6 +37,11 @@ describe('ResponseCache', () => {
       counter++;
       return `mock-uuid-${counter}` as `${string}-${string}-${string}-${string}-${string}`;
     });
+
+    // Default persistence mocks
+    mockPersistenceManager.isEnabled.mockReturnValue(false);
+    mockPersistenceManager.loadState.mockResolvedValue(null);
+    mockPersistenceManager.saveState.mockResolvedValue(undefined);
   });
 
   describe('store and get', () => {
@@ -618,5 +634,110 @@ describe('createProgressiveSimulatorResponse', () => {
         step => step.includes('deviceType=iPhone') && step.includes('runtime=iOS 18.5')
       )
     ).toBe(true);
+  });
+});
+
+describe('edge cases and cleanup', () => {
+  it('should cleanup expired entries correctly', () => {
+    const now = Date.now();
+    const expiredData = {
+      tool: 'expired-tool',
+      fullOutput: 'expired output',
+      stderr: '',
+      exitCode: 0,
+      command: 'expired command',
+      metadata: {},
+    };
+
+    // Store an entry
+    const id = responseCache.store(expiredData);
+
+    // Mock the timestamp to be expired
+    const cached = responseCache.get(id);
+    if (cached) {
+      // Directly manipulate the cache to simulate expired entry
+      cached.timestamp = new Date(now - 35 * 60 * 1000); // 35 minutes ago (past 30min maxAge)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (responseCache as any).cache.set(id, cached);
+    }
+
+    // Force cleanup by calling store again (which triggers cleanup)
+    responseCache.store({
+      tool: 'new-tool',
+      fullOutput: 'new output',
+      stderr: '',
+      exitCode: 0,
+      command: 'new command',
+      metadata: {},
+    });
+
+    // The expired entry should be removed
+    expect(responseCache.get(id)).toBeUndefined();
+  });
+});
+
+describe('ExtractSimulatorSummary edge cases', () => {
+  it('should handle various device types in extractSimulatorSummary', () => {
+    const complexList = {
+      devices: {
+        'iOS-18-0': [
+          { name: 'iPhone 15 Pro', udid: '1', state: 'Booted', isAvailable: true },
+          { name: 'iPad Air', udid: '2', state: 'Shutdown', isAvailable: true },
+        ],
+        'watchOS-10-0': [
+          { name: 'Apple Watch Series 9', udid: '3', state: 'Shutdown', isAvailable: true },
+        ],
+        'tvOS-17-0': [{ name: 'Apple TV 4K', udid: '4', state: 'Shutdown', isAvailable: true }],
+        'visionOS-1-0': [
+          { name: 'Apple Vision Pro', udid: '5', state: 'Shutdown', isAvailable: true },
+        ],
+      },
+      lastUpdated: new Date(),
+    };
+
+    const summary = extractSimulatorSummary(complexList);
+
+    expect(summary.deviceTypes).toEqual([
+      'iPhone',
+      'iPad',
+      'Apple Watch',
+      'Apple TV',
+      'Apple Vision Pro',
+    ]);
+  });
+
+  it('should handle unrecognized device names', () => {
+    const listWithUnrecognized = {
+      devices: {
+        'iOS-18-0': [
+          { name: 'Unknown Device XYZ', udid: '1', state: 'Shutdown', isAvailable: true },
+        ],
+      },
+      lastUpdated: new Date(),
+    };
+
+    const summary = extractSimulatorSummary(listWithUnrecognized);
+
+    expect(summary.deviceTypes).toEqual(['Other']);
+  });
+
+  it('should handle various runtime formats', () => {
+    const listWithVariousRuntimes = {
+      devices: {
+        'com.apple.CoreSimulator.SimRuntime.iOS-18-0': [
+          { name: 'iPhone 15', udid: '1', state: 'Shutdown', isAvailable: true },
+        ],
+        'com.apple.CoreSimulator.SimRuntime.iOS-17-5': [
+          { name: 'iPhone 14', udid: '2', state: 'Shutdown', isAvailable: true },
+        ],
+        'watchOS-10-0': [{ name: 'Apple Watch', udid: '3', state: 'Shutdown', isAvailable: true }],
+      },
+      lastUpdated: new Date(),
+    };
+
+    const summary = extractSimulatorSummary(listWithVariousRuntimes);
+
+    expect(summary.commonRuntimes).toContain('iOS 18.0');
+    expect(summary.commonRuntimes).toContain('iOS 17.5');
   });
 });
