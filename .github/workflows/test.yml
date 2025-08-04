@@ -11,7 +11,7 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        node-version: [18, 20]
+        node-version: [22, 24]
     
     steps:
       - uses: actions/checkout@v4
@@ -38,8 +38,8 @@ jobs:
         run: npm run format:check
       
       - name: Upload coverage
-        if: matrix.node-version == 20
-        uses: codecov/codecov-action@v4
+        if: matrix.node-version == 24
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false
