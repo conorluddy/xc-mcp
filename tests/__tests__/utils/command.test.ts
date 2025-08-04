@@ -1,11 +1,21 @@
 import { jest } from '@jest/globals';
+import { exec, execSync } from 'child_process';
 import {
   buildXcodebuildCommand,
   buildSimctlCommand,
+  executeCommand,
+  executeCommandSync,
 } from '../../../src/utils/command.js';
+import { McpError } from '@modelcontextprotocol/sdk/types.js';
 
-// Test only the command building functions for now
-// executeCommand and executeCommandSync require complex mocking due to child_process
+// Mock child_process
+jest.mock('child_process', () => ({
+  exec: jest.fn(),
+  execSync: jest.fn(),
+}));
+
+const mockExec = exec as jest.MockedFunction<typeof exec>;
+const mockExecSync = execSync as jest.MockedFunction<typeof execSync>;
 
 describe('buildXcodebuildCommand', () => {
   it('should build basic project command', () => {
@@ -159,5 +169,198 @@ describe('buildSimctlCommand', () => {
     });
 
     expect(command).toContain('"My Test Device"');
+  });
+});
+
+describe('executeCommand', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should execute command successfully', async () => {
+    const mockCallback = jest.fn().mockImplementation((...args: any[]) => {
+      const callback = args[2];
+      callback(null, { stdout: 'success output', stderr: 'warning message' });
+    });
+    mockExec.mockImplementation(mockCallback as any);
+
+    const result = await executeCommand('echo "test"');
+
+    expect(result).toEqual({
+      stdout: 'success output',
+      stderr: 'warning message',
+      code: 0,
+    });
+    expect(mockExec).toHaveBeenCalledWith(
+      'echo "test"',
+      expect.objectContaining({
+        timeout: 300000,
+        maxBuffer: 10 * 1024 * 1024,
+      }),
+      expect.any(Function)
+    );
+  });
+
+  it('should handle command timeout', async () => {
+    const timeoutError = new Error('Command failed') as any;
+    timeoutError.code = 'ETIMEDOUT';
+
+    const mockCallback = jest.fn().mockImplementation((...args: any[]) => {
+      const callback = args[2];
+      callback(timeoutError);
+    });
+    mockExec.mockImplementation(mockCallback as any);
+
+    await expect(executeCommand('sleep 10')).rejects.toThrow(McpError);
+    await expect(executeCommand('sleep 10')).rejects.toThrow(
+      'Command timed out after 300000ms: sleep 10'
+    );
+  });
+
+  it('should handle command failure with stderr', async () => {
+    const execError = new Error('Command failed') as any;
+    execError.code = 1;
+    execError.stdout = 'partial output';
+    execError.stderr = 'error message';
+
+    const mockCallback = jest.fn().mockImplementation((...args: any[]) => {
+      const callback = args[2];
+      callback(execError);
+    });
+    mockExec.mockImplementation(mockCallback as any);
+
+    const result = await executeCommand('false');
+
+    expect(result).toEqual({
+      stdout: 'partial output',
+      stderr: 'error message',
+      code: 1,
+    });
+  });
+
+  it('should handle command failure without stdout/stderr', async () => {
+    const execError = new Error('Permission denied') as any;
+    execError.code = 126;
+
+    const mockCallback = jest.fn().mockImplementation((...args: any[]) => {
+      const callback = args[2];
+      callback(execError);
+    });
+    mockExec.mockImplementation(mockCallback as any);
+
+    const result = await executeCommand('invalid-command');
+
+    expect(result).toEqual({
+      stdout: '',
+      stderr: 'Permission denied',
+      code: 126,
+    });
+  });
+
+  it('should use custom options', async () => {
+    const mockCallback = jest.fn().mockImplementation((...args: any[]) => {
+      const callback = args[2];
+      callback(null, { stdout: 'output', stderr: '' });
+    });
+    mockExec.mockImplementation(mockCallback as any);
+
+    await executeCommand('echo "test"', { timeout: 60000, maxBuffer: 1024 });
+
+    expect(mockExec).toHaveBeenCalledWith(
+      'echo "test"',
+      expect.objectContaining({
+        timeout: 60000,
+        maxBuffer: 1024,
+      }),
+      expect.any(Function)
+    );
+  });
+
+  it('should trim stdout and stderr', async () => {
+    const mockCallback = jest.fn().mockImplementation((...args: any[]) => {
+      const callback = args[2];
+      callback(null, { stdout: '  output with spaces  ', stderr: '  warning  ' });
+    });
+    mockExec.mockImplementation(mockCallback as any);
+
+    const result = await executeCommand('echo "test"');
+
+    expect(result.stdout).toBe('output with spaces');
+    expect(result.stderr).toBe('warning');
+  });
+});
+
+describe('executeCommandSync', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('should execute command successfully', () => {
+    mockExecSync.mockReturnValue('success output  ');
+
+    const result = executeCommandSync('echo "test"');
+
+    expect(result).toEqual({
+      stdout: 'success output',
+      stderr: '',
+      code: 0,
+    });
+    expect(mockExecSync).toHaveBeenCalledWith('echo "test"', {
+      encoding: 'utf8',
+      maxBuffer: 10 * 1024 * 1024,
+    });
+  });
+
+  it('should handle command failure with stdout/stderr', () => {
+    const execError = new Error('Command failed') as any;
+    execError.status = 1;
+    execError.stdout = 'partial output  ';
+    execError.stderr = '  error message';
+
+    mockExecSync.mockImplementation(() => {
+      throw execError;
+    });
+
+    const result = executeCommandSync('false');
+
+    expect(result).toEqual({
+      stdout: 'partial output',
+      stderr: 'error message',
+      code: 1,
+    });
+  });
+
+  it('should handle command failure without stdout/stderr', () => {
+    const execError = new Error('Permission denied') as any;
+    execError.status = 126;
+
+    mockExecSync.mockImplementation(() => {
+      throw execError;
+    });
+
+    const result = executeCommandSync('invalid-command');
+
+    expect(result).toEqual({
+      stdout: '',
+      stderr: 'Permission denied',
+      code: 126,
+    });
+  });
+
+  it('should handle missing status code', () => {
+    const execError = new Error('Unknown error') as any;
+    // No status property
+
+    mockExecSync.mockImplementation(() => {
+      throw execError;
+    });
+
+    const result = executeCommandSync('unknown-command');
+
+    expect(result).toEqual({
+      stdout: '',
+      stderr: 'Unknown error',
+      code: 1,
+    });
   });
 });
