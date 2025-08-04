@@ -1,5 +1,9 @@
 # XC-MCP: Intelligent Xcode CLI MCP Server
 
+[![codecov](https://codecov.io/gh/conorluddy/xc-mcp/graph/badge.svg?token=4CKBMDTENZ)](https://codecov.io/gh/conorluddy/xc-mcp) 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/conorluddy/xc-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A Model Context Protocol (MCP) server that provides intelligent, stateful access to Xcode command-line tools with **revolutionary progressive disclosure** that solves token overflow issues while maintaining full functionality through smart caching and adaptive intelligence.
 
 ## 🚀 Performance Excellence
