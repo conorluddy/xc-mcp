@@ -1,13 +1,21 @@
-import {
-  SimulatorDevice,
-  SimulatorList,
-  SimulatorRuntime,
-  SimulatorDeviceType,
-} from '../types/xcode.js';
+import { SimulatorList, SimulatorRuntime, SimulatorDeviceType } from '../types/xcode.js';
 import { executeCommand, buildSimctlCommand } from '../utils/command.js';
 import { persistenceManager } from '../utils/persistence.js';
 
-export interface SimulatorInfo extends SimulatorDevice {
+// Optimized simulator info - only essential fields to reduce cache size
+export interface SimulatorInfo {
+  // Core identification
+  udid: string;
+  name: string;
+  deviceTypeIdentifier: string;
+
+  // Essential state
+  state: string;
+  isAvailable: boolean;
+  availability: string;
+  availabilityError?: string;
+
+  // XC-MCP enhancements for intelligence
   lastUsed?: Date;
   bootHistory: Date[];
   performanceMetrics?: {
@@ -78,16 +86,31 @@ export class SimulatorCache {
       preferredByProject: this.preferredByProject,
     };
 
-    // Enhance device info with historical data
+    // Transform devices to optimized format with historical data
     for (const [runtime, devices] of Object.entries(simulatorList.devices)) {
       cachedList.devices[runtime] = devices.map(device => {
         const existingInfo = this.findExistingDevice(device.udid);
-        return {
-          ...device,
+
+        // Only store essential fields to minimize cache size
+        const optimizedDevice: SimulatorInfo = {
+          // Core identification
+          udid: device.udid,
+          name: device.name,
+          deviceTypeIdentifier: device.deviceTypeIdentifier,
+
+          // Essential state
+          state: device.state,
+          isAvailable: device.isAvailable,
+          availability: device.availability,
+          availabilityError: device.availabilityError,
+
+          // XC-MCP enhancements
           lastUsed: existingInfo?.lastUsed || this.lastUsed.get(device.udid),
           bootHistory: existingInfo?.bootHistory || [],
           performanceMetrics: existingInfo?.performanceMetrics,
         };
+
+        return optimizedDevice;
       });
     }
 

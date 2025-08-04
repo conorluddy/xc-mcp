@@ -31,7 +31,7 @@ export async function xcodebuildBuildTool(args: any) {
 
     // Get smart defaults from cache
     const preferredConfig = await projectCache.getPreferredBuildConfig(projectPath);
-    const smartDestination = destination || (await getSmartDestination(preferredConfig));
+    const smartDestination = destination || (await getSmartDestination(preferredConfig, projectPath));
 
     // Build final configuration
     const finalConfig = {
@@ -145,16 +145,17 @@ export async function xcodebuildBuildTool(args: any) {
 }
 
 async function getSmartDestination(
-  preferredConfig: BuildConfig | null
+  preferredConfig: BuildConfig | null,
+  projectPath: string
 ): Promise<string | undefined> {
   // If preferred config has a destination, use it
   if (preferredConfig?.destination) {
     return preferredConfig.destination;
   }
 
-  // Try to get a smart simulator destination
+  // Try to get a smart simulator destination with project-specific preference
   try {
-    const preferredSim = await simulatorCache.getPreferredSimulator();
+    const preferredSim = await simulatorCache.getPreferredSimulator(projectPath);
     if (preferredSim) {
       return `platform=iOS Simulator,id=${preferredSim.udid}`;
     }

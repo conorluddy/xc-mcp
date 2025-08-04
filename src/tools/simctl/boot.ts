@@ -1,6 +1,6 @@
 import { validateDeviceId } from '../../utils/validation.js';
 import { executeCommand, buildSimctlCommand } from '../../utils/command.js';
-import type { ToolResult } from '../../types/xcode.js';
+// Removed unused import
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { simulatorCache } from '../../state/simulator-cache.js';
 
@@ -61,9 +61,11 @@ export async function simctlBootTool(args: any) {
       }
     }
 
-    // Record boot event in cache
+    // Record boot event and usage in cache
     if (bootStatus.success) {
       simulatorCache.recordBootEvent(deviceId, true, bootStatus.bootTime);
+      // Also record usage with current working directory as project path
+      simulatorCache.recordSimulatorUsage(deviceId, process.cwd());
     }
 
     // Format response
@@ -115,7 +117,7 @@ async function waitForDeviceBoot(deviceId: string, timeoutMs = 120000): Promise<
 
       // Wait before next poll
       await new Promise(resolve => setTimeout(resolve, pollInterval));
-    } catch (error) {
+    } catch {
       // Continue polling on errors
       await new Promise(resolve => setTimeout(resolve, pollInterval));
     }
