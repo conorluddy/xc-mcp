@@ -1,9 +1,9 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import { 
-  getCacheStatsTool, 
-  setCacheConfigTool, 
-  getCacheConfigTool, 
-  clearCacheTool 
+import {
+  getCacheStatsTool,
+  setCacheConfigTool,
+  getCacheConfigTool,
+  clearCacheTool,
 } from '../../../../src/tools/cache/cache-management.js';
 import { setupTest } from '../../../__helpers__/test-utils.js';
 import { setXcodeValidation } from '../../../__helpers__/test-utils.js';
@@ -33,21 +33,23 @@ describe('cache management tools', () => {
       // Mock simulator cache data
       (simCache as any).cache = {
         devices: {
-          'iOS-17-0': [{
-            udid: 'test-device',
-            name: 'iPhone 15',
-            state: 'Booted',
-            isAvailable: true,
-            deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15',
-            dataPath: '/path',
-            dataPathSize: 1000000,
-            logPath: '/logs'
-          }]
+          'iOS-17-0': [
+            {
+              udid: 'test-device',
+              name: 'iPhone 15',
+              state: 'Booted',
+              isAvailable: true,
+              deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15',
+              dataPath: '/path',
+              dataPathSize: 1000000,
+              logPath: '/logs',
+            },
+          ],
         },
         lastUpdated: new Date(),
         runtimes: [],
         devicetypes: [],
-        preferredByProject: new Map()
+        preferredByProject: new Map(),
       };
 
       // Mock project cache data
@@ -59,10 +61,10 @@ describe('cache management tools', () => {
             name: 'TestProject',
             schemes: ['TestScheme'],
             targets: ['TestTarget'],
-            configurations: ['Debug', 'Release']
-          }
+            configurations: ['Debug', 'Release'],
+          },
         },
-        preferredScheme: 'TestScheme'
+        preferredScheme: 'TestScheme',
       });
 
       respCache.store({
@@ -71,27 +73,27 @@ describe('cache management tools', () => {
         stderr: '',
         exitCode: 0,
         command: 'test',
-        metadata: {}
+        metadata: {},
       });
 
       const result = await getCacheStatsTool({});
 
       expect(result.content[0].type).toBe('text');
       const stats = JSON.parse(result.content[0].text);
-      
+
       expect(stats).toMatchObject({
         simulator: {
           deviceCount: 1,
-          isCached: true
+          isCached: true,
         },
         project: {
           projectCount: 1,
-          isCached: true
+          isCached: true,
         },
         response: {
           entryCount: 1,
-          totalSize: expect.any(Number)
-        }
+          totalSize: expect.any(Number),
+        },
       });
     });
 
@@ -100,20 +102,20 @@ describe('cache management tools', () => {
 
       expect(result.content[0].type).toBe('text');
       const stats = JSON.parse(result.content[0].text);
-      
+
       expect(stats).toMatchObject({
         simulator: {
           deviceCount: 0,
-          isCached: false
+          isCached: false,
         },
         project: {
           projectCount: 0,
-          isCached: false
+          isCached: false,
         },
         response: {
           entryCount: 0,
-          totalSize: 0
-        }
+          totalSize: 0,
+        },
       });
     });
   });
@@ -123,18 +125,18 @@ describe('cache management tools', () => {
       const result = await setCacheConfigTool({
         simulatorCacheMaxAge: 7200000, // 2 hours
         projectCacheMaxAge: 3600000, // 1 hour
-        responseCacheMaxAge: 1800000 // 30 minutes
+        responseCacheMaxAge: 1800000, // 30 minutes
       });
 
       expect(result.content[0].type).toBe('text');
       const config = JSON.parse(result.content[0].text);
-      
+
       expect(config).toMatchObject({
         updated: {
           simulatorCacheMaxAge: 7200000,
           projectCacheMaxAge: 3600000,
-          responseCacheMaxAge: 1800000
-        }
+          responseCacheMaxAge: 1800000,
+        },
       });
 
       // Verify settings were applied
@@ -144,26 +146,30 @@ describe('cache management tools', () => {
 
     it('should update partial configuration', async () => {
       const result = await setCacheConfigTool({
-        simulatorCacheMaxAge: 1800000
+        simulatorCacheMaxAge: 1800000,
       });
 
       expect(result.content[0].type).toBe('text');
       const config = JSON.parse(result.content[0].text);
-      
+
       expect(config.updated).toMatchObject({
-        simulatorCacheMaxAge: 1800000
+        simulatorCacheMaxAge: 1800000,
       });
       expect(config.updated.projectCacheMaxAge).toBeUndefined();
     });
 
     it('should validate cache max age values', async () => {
-      await expect(setCacheConfigTool({
-        simulatorCacheMaxAge: -1
-      })).rejects.toThrow('Cache max age must be positive');
+      await expect(
+        setCacheConfigTool({
+          simulatorCacheMaxAge: -1,
+        })
+      ).rejects.toThrow('Cache max age must be positive');
 
-      await expect(setCacheConfigTool({
-        projectCacheMaxAge: 0
-      })).rejects.toThrow('Cache max age must be positive');
+      await expect(
+        setCacheConfigTool({
+          projectCacheMaxAge: 0,
+        })
+      ).rejects.toThrow('Cache max age must be positive');
     });
   });
 
@@ -177,7 +183,7 @@ describe('cache management tools', () => {
 
       expect(result.content[0].type).toBe('text');
       const config = JSON.parse(result.content[0].text);
-      
+
       expect(config).toMatchObject({
         config: {
           simulatorCacheMaxAge: 7200000,
@@ -185,8 +191,8 @@ describe('cache management tools', () => {
           projectCacheMaxAge: 3600000,
           projectCacheMaxAgeHuman: '1 hour',
           responseCacheMaxAge: expect.any(Number),
-          responseCacheMaxAgeHuman: expect.any(String)
-        }
+          responseCacheMaxAgeHuman: expect.any(String),
+        },
       });
     });
   });
@@ -199,25 +205,25 @@ describe('cache management tools', () => {
         lastUpdated: new Date(),
         runtimes: [],
         devicetypes: [],
-        preferredByProject: new Map()
+        preferredByProject: new Map(),
       };
-      
+
       (projectCache as any).projectConfigs.set('/path/to/project', {});
-      
+
       responseCache.store({
         tool: 'test',
         fullOutput: 'output',
         stderr: '',
         exitCode: 0,
         command: 'test',
-        metadata: {}
+        metadata: {},
       });
 
       const result = await clearCacheTool({});
 
       expect(result.content[0].type).toBe('text');
       const cleared = JSON.parse(result.content[0].text);
-      
+
       expect(cleared.cleared).toContain('simulator');
       expect(cleared.cleared).toContain('project');
       expect(cleared.cleared).toContain('response');
@@ -235,27 +241,27 @@ describe('cache management tools', () => {
         lastUpdated: new Date(),
         runtimes: [],
         devicetypes: [],
-        preferredByProject: new Map()
+        preferredByProject: new Map(),
       };
-      
+
       (projectCache as any).projectConfigs.set('/path/to/project', {});
-      
+
       responseCache.store({
         tool: 'test',
         fullOutput: 'output',
         stderr: '',
         exitCode: 0,
         command: 'test',
-        metadata: {}
+        metadata: {},
       });
 
       const result = await clearCacheTool({
-        caches: ['simulator']
+        caches: ['simulator'],
       });
 
       expect(result.content[0].type).toBe('text');
       const cleared = JSON.parse(result.content[0].text);
-      
+
       expect(cleared.cleared).toContain('simulator');
       expect(cleared.cleared).not.toContain('project');
       expect(cleared.cleared).not.toContain('response');
@@ -267,9 +273,11 @@ describe('cache management tools', () => {
     });
 
     it('should handle invalid cache names', async () => {
-      await expect(clearCacheTool({
-        caches: ['invalid-cache']
-      })).rejects.toThrow('Invalid cache name');
+      await expect(
+        clearCacheTool({
+          caches: ['invalid-cache'],
+        })
+      ).rejects.toThrow('Invalid cache name');
     });
   });
 

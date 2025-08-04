@@ -20,13 +20,13 @@ describe('simctl-shutdown tool', () => {
     mockSimctlShutdown(deviceId);
 
     const result = await simctlShutdownTool({
-      device: deviceId
+      device: deviceId,
     });
 
     expect(result).toMatchObject({
       success: true,
       device: deviceId,
-      message: expect.stringContaining('Device shut down successfully')
+      message: expect.stringContaining('Device shut down successfully'),
     });
   });
 
@@ -35,18 +35,18 @@ describe('simctl-shutdown tool', () => {
       'xcrun simctl shutdown all': {
         stdout: '',
         stderr: '',
-        code: 0
-      }
+        code: 0,
+      },
     });
 
     const result = await simctlShutdownTool({
-      device: 'all'
+      device: 'all',
     });
 
     expect(result).toMatchObject({
       success: true,
       device: 'all',
-      message: 'All devices shut down successfully'
+      message: 'All devices shut down successfully',
     });
   });
 
@@ -55,18 +55,18 @@ describe('simctl-shutdown tool', () => {
       'xcrun simctl shutdown booted': {
         stdout: '',
         stderr: '',
-        code: 0
-      }
+        code: 0,
+      },
     });
 
     const result = await simctlShutdownTool({
-      device: 'booted'
+      device: 'booted',
     });
 
     expect(result).toMatchObject({
       success: true,
       device: 'booted',
-      message: 'All booted devices shut down successfully'
+      message: 'All booted devices shut down successfully',
     });
   });
 
@@ -76,18 +76,18 @@ describe('simctl-shutdown tool', () => {
       [`xcrun simctl shutdown ${deviceId}`]: {
         stdout: '',
         stderr: 'Unable to shutdown device in current state: Shutdown',
-        code: 164
-      }
+        code: 164,
+      },
     });
 
     const result = await simctlShutdownTool({
-      device: deviceId
+      device: deviceId,
     });
 
     expect(result).toMatchObject({
       success: true,
       device: deviceId,
-      message: 'Device is already shut down'
+      message: 'Device is already shut down',
     });
   });
 
@@ -97,17 +97,17 @@ describe('simctl-shutdown tool', () => {
       [`xcrun simctl shutdown ${deviceId}`]: {
         stdout: '',
         stderr: 'Invalid device: non-existent-device',
-        code: 161
-      }
+        code: 161,
+      },
     });
 
     const result = await simctlShutdownTool({
-      device: deviceId
+      device: deviceId,
     });
 
     expect(result).toMatchObject({
       success: false,
-      error: expect.stringContaining('Device not found')
+      error: expect.stringContaining('Device not found'),
     });
   });
 
@@ -117,36 +117,37 @@ describe('simctl-shutdown tool', () => {
       [`xcrun simctl shutdown ${deviceId}`]: {
         stdout: '',
         stderr: 'Shutdown failed: device busy',
-        code: 1
-      }
+        code: 1,
+      },
     });
 
     const result = await simctlShutdownTool({
-      device: deviceId
+      device: deviceId,
     });
 
     expect(result).toMatchObject({
       success: false,
-      error: expect.stringContaining('Failed to shut down device')
+      error: expect.stringContaining('Failed to shut down device'),
     });
   });
 
   it('should handle missing device parameter', async () => {
-    await expect(simctlShutdownTool({}))
-      .rejects.toThrow('Device ID is required');
+    await expect(simctlShutdownTool({})).rejects.toThrow('Device ID is required');
   });
 
   it('should handle Xcode not installed', async () => {
     setXcodeValidation(false);
 
-    await expect(simctlShutdownTool({
-      device: 'test-device-1'
-    })).rejects.toThrow('Xcode is not installed');
+    await expect(
+      simctlShutdownTool({
+        device: 'test-device-1',
+      })
+    ).rejects.toThrow('Xcode is not installed');
   });
 
   it('should clear cache when shutting down all devices', async () => {
     const cache = simulatorCache;
-    
+
     // Pre-populate cache
     cache.updateDevices([
       {
@@ -157,7 +158,7 @@ describe('simctl-shutdown tool', () => {
         deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15',
         dataPath: '/path/to/data',
         dataPathSize: 1000000,
-        logPath: '/path/to/logs'
+        logPath: '/path/to/logs',
       },
       {
         udid: 'device-2',
@@ -167,20 +168,20 @@ describe('simctl-shutdown tool', () => {
         deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-14',
         dataPath: '/path/to/data2',
         dataPathSize: 2000000,
-        logPath: '/path/to/logs2'
-      }
+        logPath: '/path/to/logs2',
+      },
     ]);
 
     setMockCommandConfig({
       'xcrun simctl shutdown all': {
         stdout: '',
         stderr: '',
-        code: 0
-      }
+        code: 0,
+      },
     });
 
     await simctlShutdownTool({
-      device: 'all'
+      device: 'all',
     });
 
     // Cache should be cleared after shutting down all
@@ -189,23 +190,23 @@ describe('simctl-shutdown tool', () => {
 
   it('should handle various error codes', async () => {
     const deviceId = 'test-device-1';
-    
+
     // Test permission denied
     setMockCommandConfig({
       [`xcrun simctl shutdown ${deviceId}`]: {
         stdout: '',
         stderr: 'Operation not permitted',
-        code: 159
-      }
+        code: 159,
+      },
     });
 
     const result = await simctlShutdownTool({
-      device: deviceId
+      device: deviceId,
     });
 
     expect(result).toMatchObject({
       success: false,
-      error: expect.stringContaining('Permission denied')
+      error: expect.stringContaining('Permission denied'),
     });
   });
 });

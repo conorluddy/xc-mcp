@@ -37,12 +37,8 @@ describe('validateXcodeInstallation', () => {
     });
 
     await expect(validateXcodeInstallation()).rejects.toThrow(McpError);
-    await expect(validateXcodeInstallation()).rejects.toThrow(
-      'Xcode command line tools not found'
-    );
-    await expect(validateXcodeInstallation()).rejects.toThrow(
-      'xcode-select --install'
-    );
+    await expect(validateXcodeInstallation()).rejects.toThrow('Xcode command line tools not found');
+    await expect(validateXcodeInstallation()).rejects.toThrow('xcode-select --install');
 
     // Check that it's specifically an InternalError
     try {
@@ -61,7 +57,7 @@ describe('validateProjectPath', () => {
 
   it('should pass for valid .xcodeproj directory', async () => {
     const projectPath = '/path/to/MyProject.xcodeproj';
-    
+
     mockAccess.mockResolvedValue(undefined);
     mockStat.mockResolvedValue({
       isDirectory: () => true,
@@ -73,7 +69,7 @@ describe('validateProjectPath', () => {
 
   it('should pass for valid .xcworkspace directory', async () => {
     const projectPath = '/path/to/MyWorkspace.xcworkspace';
-    
+
     mockAccess.mockResolvedValue(undefined);
     mockStat.mockResolvedValue({
       isDirectory: () => true,
@@ -84,7 +80,7 @@ describe('validateProjectPath', () => {
 
   it('should throw when project path does not exist', async () => {
     const projectPath = '/path/to/NonExistent.xcodeproj';
-    
+
     mockAccess.mockRejectedValue(new Error('ENOENT: no such file or directory'));
 
     await expect(validateProjectPath(projectPath)).rejects.toThrow(McpError);
@@ -101,7 +97,7 @@ describe('validateProjectPath', () => {
 
   it('should throw when project path is not a directory', async () => {
     const projectPath = '/path/to/file.xcodeproj';
-    
+
     mockAccess.mockResolvedValue(undefined);
     mockStat.mockResolvedValue({
       isDirectory: () => false,
@@ -121,19 +117,15 @@ describe('validateProjectPath', () => {
 
   it('should throw when project path does not have Xcode extension', async () => {
     const projectPath = '/path/to/regular-directory';
-    
+
     mockAccess.mockResolvedValue(undefined);
     mockStat.mockResolvedValue({
       isDirectory: () => true,
     } as any);
 
     await expect(validateProjectPath(projectPath)).rejects.toThrow(McpError);
-    await expect(validateProjectPath(projectPath)).rejects.toThrow(
-      'Invalid Xcode project path'
-    );
-    await expect(validateProjectPath(projectPath)).rejects.toThrow(
-      '.xcodeproj or .xcworkspace'
-    );
+    await expect(validateProjectPath(projectPath)).rejects.toThrow('Invalid Xcode project path');
+    await expect(validateProjectPath(projectPath)).rejects.toThrow('.xcodeproj or .xcworkspace');
 
     try {
       await validateProjectPath(projectPath);
@@ -145,7 +137,7 @@ describe('validateProjectPath', () => {
   it('should re-throw McpError as-is', async () => {
     const projectPath = '/path/to/project.xcodeproj';
     const originalError = new McpError(ErrorCode.InvalidParams, 'Custom error');
-    
+
     mockAccess.mockResolvedValue(undefined);
     mockStat.mockImplementation(() => {
       throw originalError;
@@ -156,7 +148,7 @@ describe('validateProjectPath', () => {
 
   it('should handle access permission errors', async () => {
     const projectPath = '/path/to/MyProject.xcodeproj';
-    
+
     mockAccess.mockRejectedValue(new Error('EACCES: permission denied'));
 
     await expect(validateProjectPath(projectPath)).rejects.toThrow(McpError);
@@ -281,7 +273,8 @@ describe('escapeShellArg', () => {
 
   it('should handle complex strings with multiple special characters', () => {
     const input = 'path with "quotes" and $vars and `commands` and \\\\backslashes';
-    const expected = '"path with \\"quotes\\" and \\$vars and \\`commands\\` and \\\\\\\\backslashes"';
+    const expected =
+      '"path with \\"quotes\\" and \\$vars and \\`commands\\` and \\\\\\\\backslashes"';
     expect(escapeShellArg(input)).toBe(expected);
   });
 

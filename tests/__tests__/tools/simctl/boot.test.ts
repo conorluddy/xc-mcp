@@ -20,7 +20,7 @@ describe('simctl-boot tool', () => {
     mockSimctlBoot(deviceId);
 
     const result = await simctlBootTool({
-      device: deviceId
+      device: deviceId,
     });
 
     expect(result.content[0].type).toBe('text');
@@ -28,7 +28,7 @@ describe('simctl-boot tool', () => {
     expect(data).toMatchObject({
       success: true,
       device: deviceId,
-      message: expect.stringContaining('Successfully booted')
+      message: expect.stringContaining('Successfully booted'),
     });
   });
 
@@ -38,7 +38,7 @@ describe('simctl-boot tool', () => {
 
     const result = await simctlBootTool({
       device: deviceId,
-      timeout: 120
+      timeout: 120,
     });
 
     expect(result.content[0].type).toBe('text');
@@ -47,14 +47,15 @@ describe('simctl-boot tool', () => {
   });
 
   it('should validate device ID is provided', async () => {
-    await expect(simctlBootTool({}))
-      .rejects.toThrow('Device ID is required');
+    await expect(simctlBootTool({})).rejects.toThrow('Device ID is required');
   });
 
   it('should handle empty device ID', async () => {
-    await expect(simctlBootTool({
-      device: ''
-    })).rejects.toThrow('Device ID is required');
+    await expect(
+      simctlBootTool({
+        device: '',
+      })
+    ).rejects.toThrow('Device ID is required');
   });
 
   it('should handle boot errors', async () => {
@@ -63,19 +64,19 @@ describe('simctl-boot tool', () => {
       [`xcrun simctl boot ${deviceId}`]: {
         stdout: '',
         stderr: 'Unable to boot device in current state: Booted',
-        code: 149
-      }
+        code: 149,
+      },
     });
 
     const result = await simctlBootTool({
-      device: deviceId
+      device: deviceId,
     });
 
     expect(result.content[0].type).toBe('text');
     const data = JSON.parse(result.content[0].text);
     expect(data).toMatchObject({
       success: false,
-      error: expect.stringContaining('Unable to boot device')
+      error: expect.stringContaining('Unable to boot device'),
     });
   });
 
@@ -85,19 +86,19 @@ describe('simctl-boot tool', () => {
       [`xcrun simctl boot ${deviceId}`]: {
         stdout: '',
         stderr: 'Invalid device: non-existent-device',
-        code: 3
-      }
+        code: 3,
+      },
     });
 
     const result = await simctlBootTool({
-      device: deviceId
+      device: deviceId,
     });
 
     expect(result.content[0].type).toBe('text');
     const data = JSON.parse(result.content[0].text);
     expect(data).toMatchObject({
       success: false,
-      error: expect.stringContaining('Invalid device')
+      error: expect.stringContaining('Invalid device'),
     });
   });
 
@@ -107,12 +108,12 @@ describe('simctl-boot tool', () => {
       [`xcrun simctl boot ${deviceId}`]: {
         stdout: '',
         stderr: 'Unable to boot device in current state: Booted',
-        code: 149
-      }
+        code: 149,
+      },
     });
 
     const result = await simctlBootTool({
-      device: deviceId
+      device: deviceId,
     });
 
     expect(result.content[0].type).toBe('text');
@@ -127,10 +128,10 @@ describe('simctl-boot tool', () => {
       [`xcrun simctl boot ${deviceId}`]: {
         stdout: '',
         stderr: '',
-        code: 0
-      }
+        code: 0,
+      },
     });
-    
+
     // Mock status check to always show Shutdown (never boots)
     let callCount = 0;
     setMockCommandConfig({
@@ -139,23 +140,25 @@ describe('simctl-boot tool', () => {
         return {
           stdout: JSON.stringify({
             devices: {
-              'iOS-17-0': [{
-                udid: deviceId,
-                name: 'iPhone 15',
-                state: 'Shutdown',
-                isAvailable: true
-              }]
-            }
+              'iOS-17-0': [
+                {
+                  udid: deviceId,
+                  name: 'iPhone 15',
+                  state: 'Shutdown',
+                  isAvailable: true,
+                },
+              ],
+            },
           }),
           stderr: '',
-          code: 0
+          code: 0,
         };
-      }
+      },
     });
 
     const result = await simctlBootTool({
       device: deviceId,
-      timeout: 1 // 1 second timeout
+      timeout: 1, // 1 second timeout
     });
 
     expect(result.content[0].type).toBe('text');
@@ -167,71 +170,75 @@ describe('simctl-boot tool', () => {
   it('should handle Xcode not installed', async () => {
     setXcodeValidation(false);
 
-    await expect(simctlBootTool({
-      device: 'test-device'
-    })).rejects.toThrow('Xcode is not installed');
+    await expect(
+      simctlBootTool({
+        device: 'test-device',
+      })
+    ).rejects.toThrow('Xcode is not installed');
   });
 
   it('should record boot event in cache', async () => {
     const deviceId = 'test-device-1';
-    
+
     // Mock the cache data
     (simulatorCache as any).cache = {
       devices: {
-        'iOS-17-0': [{
-          udid: deviceId,
-          name: 'iPhone 15',
-          state: 'Shutdown',
-          isAvailable: true,
-          deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15',
-          bootHistory: [],
-          performanceMetrics: undefined
-        }]
+        'iOS-17-0': [
+          {
+            udid: deviceId,
+            name: 'iPhone 15',
+            state: 'Shutdown',
+            isAvailable: true,
+            deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15',
+            bootHistory: [],
+            performanceMetrics: undefined,
+          },
+        ],
       },
       lastUpdated: new Date(),
       runtimes: [],
       devicetypes: [],
-      preferredByProject: new Map()
+      preferredByProject: new Map(),
     };
 
     mockSimctlBoot(deviceId);
 
     const result = await simctlBootTool({
-      device: deviceId
+      device: deviceId,
     });
 
     expect(result.content[0].type).toBe('text');
     const data = JSON.parse(result.content[0].text);
     expect(data.success).toBe(true);
-    
+
     // Verify boot state was recorded
     expect(simulatorCache.getBootState(deviceId)).toBe('booted');
   });
 
   it('should handle verification check errors gracefully', async () => {
     const deviceId = 'test-device-1';
-    
+
     // Mock successful boot command
     setMockCommandConfig({
       [`xcrun simctl boot ${deviceId}`]: {
         stdout: '',
         stderr: '',
-        code: 0
-      }
+        code: 0,
+      },
     });
-    
+
     // Mock error in status check
     setMockCommandConfig({
       'xcrun simctl list devices -j': {
         stdout: '',
         stderr: 'Failed to list devices',
-        code: 1
-      }
+        code: 1,
+      },
     });
 
     const result = await simctlBootTool({
       device: deviceId,
-      timeout: 5
+      timeout: 5,
     });
 
     // Should still report success if boot command succeeded

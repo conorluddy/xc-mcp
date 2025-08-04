@@ -22,16 +22,16 @@ describe('xcodebuild-showsdks tool', () => {
           displayName: 'iOS 17.0',
           platform: 'iphoneos',
           version: '17.0',
-          buildID: '21A5277g'
+          buildID: '21A5277g',
         },
         {
           canonicalName: 'iphonesimulator17.0',
           displayName: 'iOS 17.0 Simulator',
           platform: 'iphonesimulator',
           version: '17.0',
-          buildID: '21A5277g'
-        }
-      ]
+          buildID: '21A5277g',
+        },
+      ],
     });
   });
 
@@ -40,14 +40,14 @@ describe('xcodebuild-showsdks tool', () => {
       'xcodebuild -showsdks -json': {
         stdout: JSON.stringify([]),
         stderr: '',
-        code: 0
-      }
+        code: 0,
+      },
     });
 
     const result = await xcodebuildShowSDKsTool({});
 
     expect(result).toMatchObject({
-      sdks: []
+      sdks: [],
     });
   });
 
@@ -56,14 +56,14 @@ describe('xcodebuild-showsdks tool', () => {
       'xcodebuild -showsdks -json': {
         stdout: '',
         stderr: 'Failed to retrieve SDKs',
-        code: 1
-      }
+        code: 1,
+      },
     });
 
     const result = await xcodebuildShowSDKsTool({});
 
     expect(result).toMatchObject({
-      error: expect.stringContaining('Failed to retrieve SDK information')
+      error: expect.stringContaining('Failed to retrieve SDK information'),
     });
   });
 
@@ -78,14 +78,14 @@ describe('xcodebuild-showsdks tool', () => {
       'xcodebuild -showsdks -json': {
         stdout: 'invalid json',
         stderr: '',
-        code: 0
-      }
+        code: 0,
+      },
     });
 
     const result = await xcodebuildShowSDKsTool({});
 
     expect(result).toMatchObject({
-      error: expect.stringContaining('Failed to parse SDK information')
+      error: expect.stringContaining('Failed to parse SDK information'),
     });
   });
 
@@ -95,14 +95,14 @@ describe('xcodebuild-showsdks tool', () => {
       'xcodebuild -showsdks -json': {
         stdout: '',
         stderr: errorMessage,
-        code: 69
-      }
+        code: 69,
+      },
     });
 
     const result = await xcodebuildShowSDKsTool({});
 
     expect(result).toMatchObject({
-      error: expect.stringContaining(errorMessage)
+      error: expect.stringContaining(errorMessage),
     });
   });
 });

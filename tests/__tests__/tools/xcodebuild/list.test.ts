@@ -19,7 +19,7 @@ describe('xcodebuild-list tool', () => {
     mockXcodebuildList();
 
     const result = await xcodebuildListTool({
-      projectPath: 'Test.xcodeproj'
+      projectPath: 'Test.xcodeproj',
     });
 
     expect(result.content[0].type).toBe('text');
@@ -29,8 +29,8 @@ describe('xcodebuild-list tool', () => {
         name: 'TestProject',
         configurations: ['Debug', 'Release'],
         targets: ['TestApp', 'TestAppTests'],
-        schemes: ['TestApp', 'TestApp-Dev']
-      }
+        schemes: ['TestApp', 'TestApp-Dev'],
+      },
     });
   });
 
@@ -38,7 +38,7 @@ describe('xcodebuild-list tool', () => {
     mockXcodebuildList();
 
     const result = await xcodebuildListTool({
-      projectPath: 'Test.xcworkspace'
+      projectPath: 'Test.xcworkspace',
     });
 
     expect(result.content[0].type).toBe('text');
@@ -46,14 +46,13 @@ describe('xcodebuild-list tool', () => {
     expect(data).toMatchObject({
       workspace: {
         name: 'TestWorkspace',
-        schemes: ['WorkspaceScheme']
-      }
+        schemes: ['WorkspaceScheme'],
+      },
     });
   });
 
   it('should require projectPath parameter', async () => {
-    await expect(xcodebuildListTool({}))
-      .rejects.toThrow('Project path is required');
+    await expect(xcodebuildListTool({})).rejects.toThrow('Project path is required');
   });
 
   it('should handle list errors', async () => {
@@ -61,30 +60,33 @@ describe('xcodebuild-list tool', () => {
       'xcodebuild -list -json': {
         stdout: '',
         stderr: 'No project or workspace found',
-        code: 1
-      }
+        code: 1,
+      },
     });
 
     const result = await xcodebuildListTool({});
 
-    await expect(xcodebuildListTool({}))
-      .rejects.toThrow('Failed to list project information');
+    await expect(xcodebuildListTool({})).rejects.toThrow('Failed to list project information');
   });
 
   it('should validate project file exists', async () => {
     jest.mocked(fs.access).mockRejectedValueOnce(new Error('File not found'));
 
-    await expect(xcodebuildListTool({
-      projectPath: 'NonExistent.xcodeproj'
-    })).rejects.toThrow('Project file not found');
+    await expect(
+      xcodebuildListTool({
+        projectPath: 'NonExistent.xcodeproj',
+      })
+    ).rejects.toThrow('Project file not found');
   });
 
   it('should validate workspace file exists', async () => {
     jest.mocked(fs.access).mockRejectedValueOnce(new Error('File not found'));
 
-    await expect(xcodebuildListTool({
-      projectPath: 'NonExistent.xcworkspace'
-    })).rejects.toThrow('Workspace file not found');
+    await expect(
+      xcodebuildListTool({
+        projectPath: 'NonExistent.xcworkspace',
+      })
+    ).rejects.toThrow('Workspace file not found');
   });
 
   it('should handle Xcode not installed', async () => {
@@ -98,14 +100,13 @@ describe('xcodebuild-list tool', () => {
       'xcodebuild -list -json': {
         stdout: 'invalid json',
         stderr: '',
-        code: 0
-      }
+        code: 0,
+      },
     });
 
     const result = await xcodebuildListTool({});
 
-    await expect(xcodebuildListTool({}))
-      .rejects.toThrow('Failed to parse');
+    await expect(xcodebuildListTool({})).rejects.toThrow('Failed to parse');
   });
 
   it('should include raw output when JSON parsing fails', async () => {
@@ -114,13 +115,12 @@ describe('xcodebuild-list tool', () => {
       'xcodebuild -list -json': {
         stdout: rawOutput,
         stderr: '',
-        code: 0
-      }
+        code: 0,
+      },
     });
 
     const result = await xcodebuildListTool({});
 
-    await expect(xcodebuildListTool({}))
-      .rejects.toThrow('Failed to parse');
+    await expect(xcodebuildListTool({})).rejects.toThrow('Failed to parse');
   });
 });

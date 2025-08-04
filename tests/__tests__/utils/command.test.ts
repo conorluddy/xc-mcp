@@ -6,7 +6,7 @@ const mockExecSync = jest.fn() as any;
 
 jest.mock('child_process', () => ({
   exec: mockExec,
-  execSync: mockExecSync
+  execSync: mockExecSync,
 }));
 
 jest.mock('util', () => ({
@@ -22,11 +22,15 @@ jest.mock('util', () => ({
       });
     }
     return fn;
-  })
+  }),
 }));
 
 // Import after mocks are set up
-import { executeCommand, executeCommandSync, buildXcodebuildCommand } from '../../../src/utils/command.js';
+import {
+  executeCommand,
+  executeCommandSync,
+  buildXcodebuildCommand,
+} from '../../../src/utils/command.js';
 
 describe('command utils', () => {
   beforeEach(() => {
@@ -44,7 +48,7 @@ describe('command utils', () => {
       expect(result).toEqual({
         stdout: 'Command output',
         stderr: '',
-        code: 0
+        code: 0,
       });
       expect(mockExec).toHaveBeenCalledWith('echo hello', expect.any(Object), expect.any(Function));
     });
@@ -54,7 +58,7 @@ describe('command utils', () => {
       error.code = 1;
       error.stdout = 'Partial output';
       error.stderr = 'Error output';
-      
+
       mockExec.mockImplementation((cmd: any, opts: any, callback: any) => {
         callback(error);
       });
@@ -64,20 +68,21 @@ describe('command utils', () => {
       expect(result).toEqual({
         stdout: 'Partial output',
         stderr: 'Error output',
-        code: 1
+        code: 1,
       });
     });
 
     it('should handle timeout errors', async () => {
       const error: any = new Error('Timeout');
       error.code = 'ETIMEDOUT';
-      
+
       mockExec.mockImplementation((cmd: any, opts: any, callback: any) => {
         callback(error);
       });
 
-      await expect(executeCommand('slow-command'))
-        .rejects.toThrow('Command timed out after 300000ms');
+      await expect(executeCommand('slow-command')).rejects.toThrow(
+        'Command timed out after 300000ms'
+      );
     });
   });
 
@@ -90,7 +95,7 @@ describe('command utils', () => {
       expect(result).toEqual({
         stdout: 'Sync output',
         stderr: '',
-        code: 0
+        code: 0,
       });
     });
 
@@ -99,7 +104,7 @@ describe('command utils', () => {
       error.status = 1;
       error.stdout = Buffer.from('Partial output');
       error.stderr = Buffer.from('Error output');
-      
+
       mockExecSync.mockImplementation(() => {
         throw error;
       });
@@ -109,7 +114,7 @@ describe('command utils', () => {
       expect(result).toEqual({
         stdout: 'Partial output',
         stderr: 'Error output',
-        code: 1
+        code: 1,
       });
     });
   });
@@ -117,7 +122,7 @@ describe('command utils', () => {
   describe('buildXcodebuildCommand', () => {
     it('should build basic project command', () => {
       const cmd = buildXcodebuildCommand('build', 'Project.xcodeproj', {
-        scheme: 'MyScheme'
+        scheme: 'MyScheme',
       });
 
       expect(cmd).toBe('xcodebuild -project "Project.xcodeproj" -scheme "MyScheme" build');
@@ -125,7 +130,7 @@ describe('command utils', () => {
 
     it('should handle workspace', () => {
       const cmd = buildXcodebuildCommand('build', 'Workspace.xcworkspace', {
-        scheme: 'MyScheme'
+        scheme: 'MyScheme',
       });
 
       expect(cmd).toContain('-workspace "Workspace.xcworkspace"');
@@ -138,7 +143,7 @@ describe('command utils', () => {
         destination: 'platform=iOS Simulator,name=iPhone 15',
         sdk: 'iphonesimulator',
         derivedDataPath: '/tmp/DerivedData',
-        json: true
+        json: true,
       });
 
       expect(cmd).toContain('-project "Project.xcodeproj"');

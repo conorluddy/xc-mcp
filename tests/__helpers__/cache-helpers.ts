@@ -18,11 +18,11 @@ export const mockResponseCacheEntry = (
     exitCode,
     command: command || tool,
     metadata,
-    timestamp: new Date()
+    timestamp: new Date(),
   };
-  
+
   // Access the internal cache map
   (responseCache as any).cache.set(cacheId, entry);
-  
+
   return cacheId;
 };

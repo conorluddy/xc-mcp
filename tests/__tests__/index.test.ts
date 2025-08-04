@@ -8,12 +8,12 @@ import { setXcodeValidation } from '../__helpers__/test-utils.js';
 jest.mock('@modelcontextprotocol/sdk/server/index.js', () => ({
   Server: jest.fn().mockImplementation(() => ({
     setRequestHandler: jest.fn(),
-    connect: jest.fn()
-  }))
+    connect: jest.fn(),
+  })),
 }));
 
 jest.mock('@modelcontextprotocol/sdk/server/stdio.js', () => ({
-  StdioServerTransport: jest.fn()
+  StdioServerTransport: jest.fn(),
 }));
 
 jest.mock('../../src/utils/command.js');
@@ -36,11 +36,11 @@ describe('MCP Server (index.ts)', () => {
     // Create mock instances
     mockServer = {
       setRequestHandler: jest.fn(),
-      connect: jest.fn()
+      connect: jest.fn(),
     };
 
     mockTransport = {
-      _transport: 'mock'
+      _transport: 'mock',
     };
 
     // Set up mocks
@@ -58,14 +58,17 @@ describe('MCP Server (index.ts)', () => {
   });
 
   it('should create server with correct configuration', () => {
-    expect(Server).toHaveBeenCalledWith({
-      name: 'xc-mcp',
-      version: expect.any(String)
-    }, expect.objectContaining({
-      capabilities: {
-        tools: {}
-      }
-    }));
+    expect(Server).toHaveBeenCalledWith(
+      {
+        name: 'xc-mcp',
+        version: expect.any(String),
+      },
+      expect.objectContaining({
+        capabilities: {
+          tools: {},
+        },
+      })
+    );
   });
 
   it('should register tools/list handler', async () => {
@@ -80,18 +83,18 @@ describe('MCP Server (index.ts)', () => {
       tools: expect.arrayContaining([
         expect.objectContaining({
           name: 'xcodebuild-build',
-          description: expect.any(String)
+          description: expect.any(String),
         }),
         expect.objectContaining({
-          name: 'xcodebuild-clean'
+          name: 'xcodebuild-clean',
         }),
         expect.objectContaining({
-          name: 'simctl-list'
+          name: 'simctl-list',
         }),
         expect.objectContaining({
-          name: 'cache-get-stats'
-        })
-      ])
+          name: 'cache-get-stats',
+        }),
+      ]),
     });
   });
 
@@ -109,8 +112,8 @@ describe('MCP Server (index.ts)', () => {
       'xcodebuild -version': {
         stdout: 'Xcode 15.0\nBuild version 15A240d',
         stderr: '',
-        code: 0
-      }
+        code: 0,
+      },
     });
 
     const handler = mockServer.setRequestHandler.mock.calls.find(
@@ -119,16 +122,16 @@ describe('MCP Server (index.ts)', () => {
 
     const result = await handler({
       name: 'xcodebuild-version',
-      arguments: {}
+      arguments: {},
     });
 
     expect(result).toMatchObject({
       content: [
         {
           type: 'text',
-          text: expect.stringContaining('Xcode 15.0')
-        }
-      ]
+          text: expect.stringContaining('Xcode 15.0'),
+        },
+      ],
     });
   });
 
@@ -137,10 +140,12 @@ describe('MCP Server (index.ts)', () => {
       (call: any[]) => call[0] === 'tools/call'
     )?.[1];
 
-    await expect(handler({
-      name: 'invalid-tool',
-      arguments: {}
-    })).rejects.toThrow('Tool not found: invalid-tool');
+    await expect(
+      handler({
+        name: 'invalid-tool',
+        arguments: {},
+      })
+    ).rejects.toThrow('Tool not found: invalid-tool');
   });
 
   it('should handle tool execution errors', async () => {
@@ -150,10 +155,12 @@ describe('MCP Server (index.ts)', () => {
       (call: any[]) => call[0] === 'tools/call'
     )?.[1];
 
-    await expect(handler({
-      name: 'xcodebuild-version',
-      arguments: {}
-    })).rejects.toThrow('Xcode is not installed');
+    await expect(
+      handler({
+        name: 'xcodebuild-version',
+        arguments: {},
+      })
+    ).rejects.toThrow('Xcode is not installed');
   });
 
   it('should connect transport to server', () => {
@@ -164,7 +171,7 @@ describe('MCP Server (index.ts)', () => {
     // Create a new mock that throws on connect
     const errorServer = {
       setRequestHandler: jest.fn(),
-      connect: jest.fn().mockRejectedValue(new Error('Connection failed'))
+      connect: jest.fn().mockRejectedValue(new Error('Connection failed')),
     };
 
     (Server as unknown as jest.Mock).mockImplementation(() => errorServer);
@@ -172,10 +179,7 @@ describe('MCP Server (index.ts)', () => {
     // Re-import to trigger the error
     await import('../../src/index.js?error');
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      'Server error:',
-      expect.any(Error)
-    );
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Server error:', expect.any(Error));
   });
 
   it('should include all expected tools in tools/list', async () => {
@@ -214,13 +218,15 @@ describe('MCP Server (index.ts)', () => {
     )?.[1];
 
     // Test with missing required argument
-    await expect(handler({
-      name: 'xcodebuild-build',
-      arguments: {
-        // Missing required 'scheme' parameter
-        project: 'Test.xcodeproj'
-      }
-    })).rejects.toThrow('Scheme must be specified');
+    await expect(
+      handler({
+        name: 'xcodebuild-build',
+        arguments: {
+          // Missing required 'scheme' parameter
+          project: 'Test.xcodeproj',
+        },
+      })
+    ).rejects.toThrow('Scheme must be specified');
   });
 
   it('should handle cache management tools', async () => {
@@ -230,16 +236,16 @@ describe('MCP Server (index.ts)', () => {
 
     const result = await handler({
       name: 'cache-get-stats',
-      arguments: {}
+      arguments: {},
     });
 
     expect(result).toMatchObject({
       content: [
         {
           type: 'text',
-          text: expect.stringContaining('simulator')
-        }
-      ]
+          text: expect.stringContaining('simulator'),
+        },
+      ],
     });
   });
 
@@ -250,12 +256,12 @@ describe('MCP Server (index.ts)', () => {
         stdout: JSON.stringify({
           project: {
             name: 'TestProject',
-            schemes: ['TestScheme']
-          }
+            schemes: ['TestScheme'],
+          },
         }),
         stderr: '',
-        code: 0
-      }
+        code: 0,
+      },
     });
 
     const handler = mockServer.setRequestHandler.mock.calls.find(
@@ -264,7 +270,7 @@ describe('MCP Server (index.ts)', () => {
 
     const result = await handler({
       name: 'xcodebuild-list',
-      arguments: {}
+      arguments: {},
     });
 
     expect(result.content[0].type).toBe('text');
@@ -272,19 +278,20 @@ describe('MCP Server (index.ts)', () => {
     expect(text).toMatchObject({
       project: {
         name: 'TestProject',
-        schemes: ['TestScheme']
-      }
+        schemes: ['TestScheme'],
+      },
     });
   });
 
   it('should handle complex tool arguments', async () => {
     const { setMockCommandConfig } = await import('../__mocks__/command.js');
     setMockCommandConfig({
-      'xcodebuild clean build -project Test.xcodeproj -scheme TestScheme -configuration Release -destination platform=iOS Simulator,name=iPhone 15': {
-        stdout: 'Build succeeded',
-        stderr: '',
-        code: 0
-      }
+      'xcodebuild clean build -project Test.xcodeproj -scheme TestScheme -configuration Release -destination platform=iOS Simulator,name=iPhone 15':
+        {
+          stdout: 'Build succeeded',
+          stderr: '',
+          code: 0,
+        },
     });
 
     const handler = mockServer.setRequestHandler.mock.calls.find(
@@ -298,17 +305,17 @@ describe('MCP Server (index.ts)', () => {
         scheme: 'TestScheme',
         configuration: 'Release',
         destination: 'platform=iOS Simulator,name=iPhone 15',
-        clean: true
-      }
+        clean: true,
+      },
     });
 
     expect(result).toMatchObject({
       content: [
         {
           type: 'text',
-          text: expect.stringContaining('success')
-        }
-      ]
+          text: expect.stringContaining('success'),
+        },
+      ],
     });
   });
 });

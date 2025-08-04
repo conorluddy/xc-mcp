@@ -19,12 +19,12 @@ describe('simctl-shutdown tool', () => {
       'xcrun simctl shutdown device-123': {
         stdout: '',
         stderr: '',
-        code: 0
-      }
+        code: 0,
+      },
     });
 
     const result = await simctlShutdownTool({
-      deviceId: 'device-123'
+      deviceId: 'device-123',
     });
 
     expect(result.content[0].type).toBe('text');
@@ -32,7 +32,7 @@ describe('simctl-shutdown tool', () => {
     expect(data).toMatchObject({
       success: true,
       deviceId: 'device-123',
-      message: expect.stringContaining('Successfully shut down')
+      message: expect.stringContaining('Successfully shut down'),
     });
   });
 
@@ -41,12 +41,12 @@ describe('simctl-shutdown tool', () => {
       'xcrun simctl shutdown all': {
         stdout: '',
         stderr: '',
-        code: 0
-      }
+        code: 0,
+      },
     });
 
     const result = await simctlShutdownTool({
-      deviceId: 'all'
+      deviceId: 'all',
     });
 
     expect(result.content[0].type).toBe('text');
@@ -54,13 +54,12 @@ describe('simctl-shutdown tool', () => {
     expect(data).toMatchObject({
       success: true,
       deviceId: 'all',
-      message: expect.stringContaining('all simulators')
+      message: expect.stringContaining('all simulators'),
     });
   });
 
   it('should require device parameter', async () => {
-    await expect(simctlShutdownTool({}))
-      .rejects.toThrow('Device ID is required');
+    await expect(simctlShutdownTool({})).rejects.toThrow('Device ID is required');
   });
 
   it('should handle shutdown errors', async () => {
@@ -68,13 +67,15 @@ describe('simctl-shutdown tool', () => {
       'xcrun simctl shutdown device-123': {
         stdout: '',
         stderr: 'Unable to shutdown device',
-        code: 1
-      }
+        code: 1,
+      },
     });
 
-    await expect(simctlShutdownTool({
-      deviceId: 'device-123'
-    })).rejects.toThrow('Failed to shutdown');
+    await expect(
+      simctlShutdownTool({
+        deviceId: 'device-123',
+      })
+    ).rejects.toThrow('Failed to shutdown');
   });
 
   it('should handle device not found', async () => {
@@ -82,20 +83,24 @@ describe('simctl-shutdown tool', () => {
       'xcrun simctl shutdown invalid-device': {
         stdout: '',
         stderr: 'Invalid device: invalid-device',
-        code: 1
-      }
+        code: 1,
+      },
     });
 
-    await expect(simctlShutdownTool({
-      deviceId: 'invalid-device'
-    })).rejects.toThrow('Failed to shutdown');
+    await expect(
+      simctlShutdownTool({
+        deviceId: 'invalid-device',
+      })
+    ).rejects.toThrow('Failed to shutdown');
   });
 
   it('should handle Xcode not installed', async () => {
     setXcodeValidation(false);
 
-    await expect(simctlShutdownTool({
-      deviceId: 'device-123'
-    })).rejects.toThrow('Xcode is not installed');
+    await expect(
+      simctlShutdownTool({
+        deviceId: 'device-123',
+      })
+    ).rejects.toThrow('Xcode is not installed');
   });
 });

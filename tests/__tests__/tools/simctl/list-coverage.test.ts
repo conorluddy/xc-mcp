@@ -16,29 +16,29 @@ describe('simctl-list tool', () => {
           udid: 'device-1',
           name: 'iPhone 15',
           state: 'Booted',
-          isAvailable: true
+          isAvailable: true,
         },
         {
-          udid: 'device-2', 
+          udid: 'device-2',
           name: 'iPhone 14',
           state: 'Shutdown',
-          isAvailable: true
-        }
-      ]
+          isAvailable: true,
+        },
+      ],
     },
     runtimes: [
       {
         identifier: 'com.apple.CoreSimulator.SimRuntime.iOS-17-0',
         version: '17.0',
-        isAvailable: true
-      }
+        isAvailable: true,
+      },
     ],
     devicetypes: [
       {
         identifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15',
-        name: 'iPhone 15'
-      }
-    ]
+        name: 'iPhone 15',
+      },
+    ],
   };
 
   beforeEach(() => {
@@ -46,8 +46,8 @@ describe('simctl-list tool', () => {
       'xcrun simctl list -j': {
         stdout: JSON.stringify(mockDeviceList),
         stderr: '',
-        code: 0
-      }
+        code: 0,
+      },
     });
   });
 
@@ -62,8 +62,8 @@ describe('simctl-list tool', () => {
         totalDevices: 2,
         bootedDevices: 1,
         availableDevices: 2,
-        runtimeCount: 1
-      }
+        runtimeCount: 1,
+      },
     });
   });
 
@@ -72,19 +72,17 @@ describe('simctl-list tool', () => {
       'xcrun simctl list -j': {
         stdout: '',
         stderr: 'simctl: error: Unable to locate DeviceSupport',
-        code: 1
-      }
+        code: 1,
+      },
     });
 
-    await expect(simctlListTool({}))
-      .rejects.toThrow('Failed to list simulators');
+    await expect(simctlListTool({})).rejects.toThrow('Failed to list simulators');
   });
 
   it('should handle Xcode not installed', async () => {
     setXcodeValidation(false);
 
-    await expect(simctlListTool({}))
-      .rejects.toThrow('Xcode is not installed');
+    await expect(simctlListTool({})).rejects.toThrow('Xcode is not installed');
   });
 
   it('should handle malformed JSON', async () => {
@@ -92,21 +90,18 @@ describe('simctl-list tool', () => {
       'xcrun simctl list -j': {
         stdout: 'invalid json',
         stderr: '',
-        code: 0
-      }
+        code: 0,
+      },
     });
 
-    await expect(simctlListTool({}))
-      .rejects.toThrow('Failed to parse');
+    await expect(simctlListTool({})).rejects.toThrow('Failed to parse');
   });
 
   it('should cache simulator data', async () => {
     const result = await simctlListTool({});
     const data = JSON.parse(result.content[0].text);
-    
+
     expect(data.cacheId).toBeDefined();
-    expect(data.nextSteps).toContain(
-      expect.stringContaining('simctl-get-details')
-    );
+    expect(data.nextSteps).toContain(expect.stringContaining('simctl-get-details'));
   });
 });

@@ -28,7 +28,7 @@ describe('simctl-get-details tool', () => {
           deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15',
           dataPath: '/path/to/data',
           dataPathSize: 1000000,
-          logPath: '/path/to/logs'
+          logPath: '/path/to/logs',
         },
         {
           udid: 'device-2',
@@ -38,8 +38,8 @@ describe('simctl-get-details tool', () => {
           deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-14',
           dataPath: '/path/to/data2',
           dataPathSize: 2000000,
-          logPath: '/path/to/logs2'
-        }
+          logPath: '/path/to/logs2',
+        },
       ],
       'com.apple.CoreSimulator.SimRuntime.watchOS-10-0': [
         {
@@ -47,10 +47,10 @@ describe('simctl-get-details tool', () => {
           name: 'Apple Watch Series 9',
           state: 'Shutdown',
           isAvailable: true,
-          deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.Apple-Watch-Series-9'
-        }
-      ]
-    }
+          deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.Apple-Watch-Series-9',
+        },
+      ],
+    },
   };
 
   it('should retrieve cached simulator details', async () => {
@@ -58,7 +58,7 @@ describe('simctl-get-details tool', () => {
     mockResponseCacheEntry(cacheId, 'simctl-list', JSON.stringify(mockFullDeviceList));
 
     const result = await simctlGetDetailsTool({
-      cacheId
+      cacheId,
     });
 
     expect(result.content[0].type).toBe('text');
@@ -74,7 +74,7 @@ describe('simctl-get-details tool', () => {
     const result = await simctlGetDetailsTool({
       cacheId,
       deviceId: 'device-1',
-      detailType: 'devices-only'
+      detailType: 'devices-only',
     });
 
     expect(result.content[0].type).toBe('text');
@@ -83,7 +83,7 @@ describe('simctl-get-details tool', () => {
       expect.objectContaining({
         udid: 'device-1',
         name: 'iPhone 15',
-        state: 'Booted'
+        state: 'Booted',
       })
     );
   });
@@ -95,7 +95,7 @@ describe('simctl-get-details tool', () => {
     const result = await simctlGetDetailsTool({
       cacheId,
       runtime: 'iOS-17-0',
-      detailType: 'devices-only'
+      detailType: 'devices-only',
     });
 
     expect(result.content[0].type).toBe('text');
@@ -104,7 +104,7 @@ describe('simctl-get-details tool', () => {
     expect(data.devices).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ name: 'iPhone 15' }),
-        expect.objectContaining({ name: 'iPhone 14' })
+        expect.objectContaining({ name: 'iPhone 14' }),
       ])
     );
   });
@@ -116,7 +116,7 @@ describe('simctl-get-details tool', () => {
     const result = await simctlGetDetailsTool({
       cacheId,
       state: 'Booted',
-      detailType: 'devices-only'
+      detailType: 'devices-only',
     });
 
     expect(result.content[0].type).toBe('text');
@@ -132,7 +132,7 @@ describe('simctl-get-details tool', () => {
     const result = await simctlGetDetailsTool({
       cacheId,
       deviceId: 'device-1',
-      detailType: 'full-list'
+      detailType: 'full-list',
     });
 
     expect(result.content[0].type).toBe('text');
@@ -147,13 +147,13 @@ describe('simctl-get-details tool', () => {
       deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15',
       dataPath: '/path/to/data',
       dataPathSize: 1000000,
-      logPath: '/path/to/logs'
+      logPath: '/path/to/logs',
     });
   });
 
   it('should get details from simulator cache when no cacheId provided', async () => {
     const cache = simulatorCache;
-    
+
     // Mock cache data directly
     (cache as any).cache = {
       devices: {
@@ -166,30 +166,33 @@ describe('simctl-get-details tool', () => {
             deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro',
             dataPath: '/path/to/data',
             dataPathSize: 3000000,
-            logPath: '/path/to/logs'
-          }
-        ]
+            logPath: '/path/to/logs',
+          },
+        ],
       },
       lastUpdated: new Date(),
       runtimes: [],
       devicetypes: [],
-      preferredByProject: new Map()
+      preferredByProject: new Map(),
     };
 
-    await expect(simctlGetDetailsTool({
-      deviceId: 'cached-device'
-    })).rejects.toThrow('Cache ID'); // Tool requires cacheId parameter
+    await expect(
+      simctlGetDetailsTool({
+        deviceId: 'cached-device',
+      })
+    ).rejects.toThrow('Cache ID'); // Tool requires cacheId parameter
   });
 
   it('should handle missing cacheId', async () => {
-    await expect(simctlGetDetailsTool({}))
-      .rejects.toThrow('required');
+    await expect(simctlGetDetailsTool({})).rejects.toThrow('required');
   });
 
   it('should handle non-existent cacheId', async () => {
-    await expect(simctlGetDetailsTool({
-      cacheId: 'non_existent_cache'
-    })).rejects.toThrow('not found or expired');
+    await expect(
+      simctlGetDetailsTool({
+        cacheId: 'non_existent_cache',
+      })
+    ).rejects.toThrow('not found or expired');
   });
 
   it('should handle device not found in cache', async () => {
@@ -199,7 +202,7 @@ describe('simctl-get-details tool', () => {
     const result = await simctlGetDetailsTool({
       cacheId,
       deviceId: 'non-existent-device',
-      detailType: 'devices-only'
+      detailType: 'devices-only',
     });
 
     expect(result.content[0].type).toBe('text');
@@ -211,17 +214,21 @@ describe('simctl-get-details tool', () => {
     const cacheId = 'simctl_list_12345';
     mockResponseCacheEntry(cacheId, 'simctl-list', 'invalid json data');
 
-    await expect(simctlGetDetailsTool({
-      cacheId
-    })).rejects.toThrow();
+    await expect(
+      simctlGetDetailsTool({
+        cacheId,
+      })
+    ).rejects.toThrow();
   });
 
   it('should handle Xcode not installed', async () => {
     setXcodeValidation(false);
 
-    await expect(simctlGetDetailsTool({
-      cacheId: 'simctl_list_12345'
-    })).rejects.toThrow('Xcode is not installed');
+    await expect(
+      simctlGetDetailsTool({
+        cacheId: 'simctl_list_12345',
+      })
+    ).rejects.toThrow('Xcode is not installed');
   });
 
   it('should return runtimes only', async () => {
@@ -230,14 +237,14 @@ describe('simctl-get-details tool', () => {
       ...mockFullDeviceList,
       runtimes: [
         { identifier: 'com.apple.CoreSimulator.SimRuntime.iOS-17-0', version: '17.0' },
-        { identifier: 'com.apple.CoreSimulator.SimRuntime.watchOS-10-0', version: '10.0' }
-      ]
+        { identifier: 'com.apple.CoreSimulator.SimRuntime.watchOS-10-0', version: '10.0' },
+      ],
     };
     mockResponseCacheEntry(cacheId, 'simctl-list', JSON.stringify(fullList));
 
     const result = await simctlGetDetailsTool({
       cacheId,
-      detailType: 'runtimes-only'
+      detailType: 'runtimes-only',
     });
 
     expect(result.content[0].type).toBe('text');
@@ -251,15 +258,20 @@ describe('simctl-get-details tool', () => {
       devices: {
         'iOS-17-0': [
           { udid: 'available-1', name: 'Available Device', isAvailable: true, state: 'Shutdown' },
-          { udid: 'unavailable-1', name: 'Unavailable Device', isAvailable: false, state: 'Shutdown' }
-        ]
-      }
+          {
+            udid: 'unavailable-1',
+            name: 'Unavailable Device',
+            isAvailable: false,
+            state: 'Shutdown',
+          },
+        ],
+      },
     };
     mockResponseCacheEntry(cacheId, 'simctl-list', JSON.stringify(fullList));
 
     const result = await simctlGetDetailsTool({
       cacheId,
-      detailType: 'available-only'
+      detailType: 'available-only',
     });
 
     expect(result.content[0].type).toBe('text');
@@ -275,7 +287,7 @@ describe('simctl-get-details tool', () => {
     const result = await simctlGetDetailsTool({
       cacheId,
       detailType: 'devices-only',
-      maxDevices: 1
+      maxDevices: 1,
     });
 
     expect(result.content[0].type).toBe('text');
@@ -287,8 +299,10 @@ describe('simctl-get-details tool', () => {
     const cacheId = 'wrong_tool_12345';
     mockResponseCacheEntry(cacheId, 'xcodebuild-build', 'Some build output');
 
-    await expect(simctlGetDetailsTool({
-      cacheId
-    })).rejects.toThrow('not from simctl-list tool');
+    await expect(
+      simctlGetDetailsTool({
+        cacheId,
+      })
+    ).rejects.toThrow('not from simctl-list tool');
   });
 });

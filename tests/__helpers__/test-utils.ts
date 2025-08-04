@@ -41,34 +41,34 @@ export const mockXcodebuildList = () => {
       name: 'TestProject',
       configurations: ['Debug', 'Release'],
       targets: ['TestApp', 'TestAppTests'],
-      schemes: ['TestApp', 'TestApp-Dev']
-    }
+      schemes: ['TestApp', 'TestApp-Dev'],
+    },
   });
-  
+
   setMockCommandConfig({
     // Without project path
     'xcodebuild -list -json': {
       stdout: listOutput,
       stderr: '',
-      code: 0
+      code: 0,
     },
     // With project path
     'xcodebuild -project "Test.xcodeproj" -list -json': {
       stdout: listOutput,
       stderr: '',
-      code: 0
+      code: 0,
     },
     // With workspace path
     'xcodebuild -workspace "Test.xcworkspace" -list -json': {
       stdout: JSON.stringify({
         workspace: {
           name: 'TestWorkspace',
-          schemes: ['WorkspaceScheme']
-        }
+          schemes: ['WorkspaceScheme'],
+        },
       }),
       stderr: '',
-      code: 0
-    }
+      code: 0,
+    },
   });
 };
 
@@ -77,8 +77,8 @@ export const mockXcodebuildVersion = () => {
     'xcodebuild -version': {
       stdout: 'Xcode 15.0\nBuild version 15A240d',
       stderr: '',
-      code: 0
-    }
+      code: 0,
+    },
   });
 };
 
@@ -91,19 +91,19 @@ export const mockXcodebuildShowSDKs = () => {
           displayName: 'iOS 17.0',
           platform: 'iphoneos',
           version: '17.0',
-          buildID: '21A5277g'
+          buildID: '21A5277g',
         },
         {
           canonicalName: 'iphonesimulator17.0',
           displayName: 'iOS 17.0 Simulator',
           platform: 'iphonesimulator',
           version: '17.0',
-          buildID: '21A5277g'
-        }
+          buildID: '21A5277g',
+        },
       ]),
       stderr: '',
-      code: 0
-    }
+      code: 0,
+    },
   });
 };
 
@@ -121,7 +121,7 @@ export const mockSimctlList = () => {
               isAvailable: true,
               deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15',
               state: 'Shutdown',
-              name: 'iPhone 15'
+              name: 'iPhone 15',
             },
             {
               dataPath: '/path/to/device/data2',
@@ -131,14 +131,14 @@ export const mockSimctlList = () => {
               isAvailable: true,
               deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-14',
               state: 'Booted',
-              name: 'iPhone 14'
-            }
-          ]
-        }
+              name: 'iPhone 14',
+            },
+          ],
+        },
       }),
       stderr: '',
-      code: 0
-    }
+      code: 0,
+    },
   });
 };
 
@@ -147,8 +147,8 @@ export const mockSimctlBoot = (deviceId: string) => {
     [`xcrun simctl boot ${deviceId}`]: {
       stdout: '',
       stderr: '',
-      code: 0
-    }
+      code: 0,
+    },
   });
 };
 
@@ -157,29 +157,39 @@ export const mockSimctlShutdown = (deviceId: string) => {
     [`xcrun simctl shutdown ${deviceId}`]: {
       stdout: '',
       stderr: '',
-      code: 0
-    }
+      code: 0,
+    },
   });
 };
 
 export const mockXcodebuildBuild = (args: string[] = []) => {
-  const fullCommand = `xcodebuild ${args.join(' ')}`;
+  // Build the full command with 'build' action at the end unless it's already included
+  const hasAction = args.some(arg => ['build', 'clean', 'analyze'].includes(arg));
+  const fullCommand = hasAction 
+    ? `xcodebuild ${args.join(' ')}` 
+    : `xcodebuild ${args.join(' ')} build`;
+  
   setMockCommandConfig({
     [fullCommand]: {
       stdout: `Building target...\nBuild succeeded\n`,
       stderr: '',
-      code: 0
-    }
+      code: 0,
+    },
   });
 };
 
 export const mockBuildError = (args: string[] = []) => {
-  const fullCommand = `xcodebuild ${args.join(' ')}`;
+  // Build the full command with 'build' action at the end unless it's already included
+  const hasAction = args.some(arg => ['build', 'clean', 'analyze'].includes(arg));
+  const fullCommand = hasAction 
+    ? `xcodebuild ${args.join(' ')}` 
+    : `xcodebuild ${args.join(' ')} build`;
+  
   setMockCommandConfig({
     [fullCommand]: {
       stdout: '',
-      stderr: 'Build failed: error: no such module \'Foundation\'',
-      code: 65
-    }
+      stderr: "Build failed: error: no such module 'Foundation'",
+      code: 65,
+    },
   });
 };

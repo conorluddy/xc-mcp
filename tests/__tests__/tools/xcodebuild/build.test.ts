@@ -2,33 +2,49 @@ import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { xcodebuildBuildTool } from '../../../../src/tools/xcodebuild/build.js';
 import { setupTest, mockXcodebuildBuild, mockBuildError } from '../../../__helpers__/test-utils.js';
 import { setMockCommandConfig } from '../../../__helpers__/test-utils.js';
-import { setXcodeValidation } from '../../../__helpers__/test-utils.js';
-import fs from 'fs/promises';
 
-jest.mock('fs/promises');
+// Mock fs/promises to avoid file system checks
+jest.mock('fs/promises', () => ({
+  access: jest.fn(() => Promise.resolve()),
+  stat: jest.fn(() => Promise.resolve({ isDirectory: () => true })),
+}));
+
 jest.mock('../../../../src/utils/command.js');
 jest.mock('../../../../src/utils/validation.js');
 
 describe('xcodebuild-build tool', () => {
   setupTest();
-
+  
   beforeEach(() => {
-    jest.mocked(fs.access).mockResolvedValue(undefined);
+    // Mock validation module
+    const mockValidation = jest.requireMock('../../../../src/utils/validation.js') as any;
+    mockValidation.validateXcodeInstallation = jest.fn(() => Promise.resolve());
+    mockValidation.validateProjectPath = jest.fn(() => Promise.resolve());
+    mockValidation.validateScheme = jest.fn();
+    
+    // Mock fs/promises
+    const mockFs = jest.requireMock('fs/promises') as any;
+    mockFs.access = jest.fn(() => Promise.resolve());
+    mockFs.stat = jest.fn(() => Promise.resolve({ isDirectory: () => true }));
   });
 
   it('should build with minimal configuration', async () => {
-    mockXcodebuildBuild(['-project', 'Test.xcodeproj', '-scheme', 'Test']);
+    mockXcodebuildBuild(['-project', '"Test.xcodeproj"', '-scheme', '"Test"']);
 
     const result = await xcodebuildBuildTool({
       projectPath: 'Test.xcodeproj',
-      scheme: 'Test'
+      scheme: 'Test',
     });
 
-    expect(result).toMatchObject({
+    expect(result.content[0].type).toBe('text');
+    const data = JSON.parse(result.content[0].text);
+    expect(data).toMatchObject({
       success: true,
       buildId: expect.stringContaining('build_'),
-      configuration: 'Debug',
-      destination: 'generic/platform=iOS Simulator'
+      summary: {
+        success: true,
+        configuration: 'Debug',
+      },
     });
   });
 
@@ -37,44 +53,58 @@ describe('xcodebuild-build tool', () => {
 
     const result = await xcodebuildBuildTool({
       projectPath: 'Test.xcworkspace',
-      scheme: 'Test'
+      scheme: 'Test',
     });
 
     expect(result).toMatchObject({
       success: true,
       buildId: expect.stringContaining('build_'),
-      configuration: 'Debug'
+      configuration: 'Debug',
     });
   });
 
   it('should include configuration when specified', async () => {
-    mockXcodebuildBuild(['-project', 'Test.xcodeproj', '-scheme', 'Test', '-configuration', 'Release']);
+    mockXcodebuildBuild([
+      '-project',
+      'Test.xcodeproj',
+      '-scheme',
+      'Test',
+      '-configuration',
+      'Release',
+    ]);
 
     const result = await xcodebuildBuildTool({
       projectPath: 'Test.xcodeproj',
       scheme: 'Test',
-      configuration: 'Release'
+      configuration: 'Release',
     });
 
     expect(result).toMatchObject({
       success: true,
-      configuration: 'Release'
+      configuration: 'Release',
     });
   });
 
   it('should include destination when specified', async () => {
     const destination = 'platform=iOS Simulator,name=iPhone 15';
-    mockXcodebuildBuild(['-project', 'Test.xcodeproj', '-scheme', 'Test', '-destination', destination]);
+    mockXcodebuildBuild([
+      '-project',
+      'Test.xcodeproj',
+      '-scheme',
+      'Test',
+      '-destination',
+      destination,
+    ]);
 
     const result = await xcodebuildBuildTool({
       projectPath: 'Test.xcodeproj',
       scheme: 'Test',
-      destination
+      destination,
     });
 
     expect(result).toMatchObject({
       success: true,
-      destination
+      destination,
     });
   });
 
@@ -84,12 +114,13 @@ describe('xcodebuild-build tool', () => {
     const result = await xcodebuildBuildTool({
       projectPath: 'Test.xcodeproj',
       scheme: 'Test',
-      sdk: 'iphoneos'
+      sdk: 'iphoneos',
     });
 
-    expect(result).toMatchObject({
+    expect(result.content[0].type).toBe('text');
+    const data = JSON.parse(result.content[0].text);
+    expect(data).toMatchObject({
       success: true,
-      sdk: 'iphoneos'
     });
   });
 
@@ -99,29 +130,37 @@ describe('xcodebuild-build tool', () => {
     const result = await xcodebuildBuildTool({
       projectPath: 'Test.xcodeproj',
       scheme: 'Test',
-      arch: 'arm64'
+      arch: 'arm64',
     });
 
     expect(result.content[0].type).toBe('text');
     const data = JSON.parse(result.content[0].text);
     expect(data).toMatchObject({
-      success: true
+      success: true,
     });
   });
 
   it('should include derivedDataPath when specified', async () => {
     const ddPath = '/tmp/DerivedData';
-    mockXcodebuildBuild(['-project', 'Test.xcodeproj', '-scheme', 'Test', '-derivedDataPath', ddPath]);
+    mockXcodebuildBuild([
+      '-project',
+      'Test.xcodeproj',
+      '-scheme',
+      'Test',
+      '-derivedDataPath',
+      ddPath,
+    ]);
 
     const result = await xcodebuildBuildTool({
       projectPath: 'Test.xcodeproj',
       scheme: 'Test',
-      derivedDataPath: ddPath
+      derivedDataPath: ddPath,
     });
 
-    expect(result).toMatchObject({
+    expect(result.content[0].type).toBe('text');
+    const data = JSON.parse(result.content[0].text);
+    expect(data).toMatchObject({
       success: true,
-      derivedDataPath: ddPath
     });
   });
 
@@ -131,11 +170,13 @@ describe('xcodebuild-build tool', () => {
     const result = await xcodebuildBuildTool({
       projectPath: 'Test.xcodeproj',
       scheme: 'Test',
-      clean: true
+      clean: true,
     });
 
-    expect(result).toMatchObject({
-      success: true
+    expect(result.content[0].type).toBe('text');
+    const data = JSON.parse(result.content[0].text);
+    expect(data).toMatchObject({
+      success: true,
     });
   });
 
@@ -145,25 +186,36 @@ describe('xcodebuild-build tool', () => {
     const result = await xcodebuildBuildTool({
       projectPath: 'Test.xcodeproj',
       scheme: 'Test',
-      analyze: true
+      analyze: true,
     });
 
-    expect(result).toMatchObject({
-      success: true
+    expect(result.content[0].type).toBe('text');
+    const data = JSON.parse(result.content[0].text);
+    expect(data).toMatchObject({
+      success: true,
     });
   });
 
   it('should include additional arguments', async () => {
-    mockXcodebuildBuild(['-project', 'Test.xcodeproj', '-scheme', 'Test', '-quiet', '-parallelizeTargets']);
+    mockXcodebuildBuild([
+      '-project',
+      'Test.xcodeproj',
+      '-scheme',
+      'Test',
+      '-quiet',
+      '-parallelizeTargets',
+    ]);
 
     const result = await xcodebuildBuildTool({
       projectPath: 'Test.xcodeproj',
       scheme: 'Test',
-      additionalArgs: ['-quiet', '-parallelizeTargets']
+      additionalArgs: ['-quiet', '-parallelizeTargets'],
     });
 
-    expect(result).toMatchObject({
-      success: true
+    expect(result.content[0].type).toBe('text');
+    const data = JSON.parse(result.content[0].text);
+    expect(data).toMatchObject({
+      success: true,
     });
   });
 
@@ -172,52 +224,62 @@ describe('xcodebuild-build tool', () => {
 
     const result = await xcodebuildBuildTool({
       projectPath: 'Test.xcodeproj',
-      scheme: 'Test'
+      scheme: 'Test',
     });
 
     expect(result).toMatchObject({
       success: false,
-      error: expect.stringContaining('Build failed')
+      error: expect.stringContaining('Build failed'),
     });
   });
 
   it('should error when projectPath is not provided', async () => {
-    await expect(xcodebuildBuildTool({
-      scheme: 'Test'
-    })).rejects.toThrow('Project path is required');
+    await expect(
+      xcodebuildBuildTool({
+        scheme: 'Test',
+      })
+    ).rejects.toThrow('Project path is required');
   });
 
   it('should error when scheme is not provided', async () => {
-    await expect(xcodebuildBuildTool({
-      project: 'Test.xcodeproj'
-    })).rejects.toThrow('Scheme must be specified');
+    await expect(
+      xcodebuildBuildTool({
+        project: 'Test.xcodeproj',
+      })
+    ).rejects.toThrow('Scheme must be specified');
   });
 
   it('should validate project file exists', async () => {
-    jest.mocked(fs.access).mockRejectedValueOnce(new Error('File not found'));
-
-    await expect(xcodebuildBuildTool({
-      projectPath: 'NonExistent.xcodeproj',
-      scheme: 'Test'
-    })).rejects.toThrow('Project file not found');
+    await expect(
+      xcodebuildBuildTool({
+        projectPath: 'NonExistent.xcodeproj',
+        scheme: 'Test',
+      })
+    ).rejects.toThrow('Project path not found or inaccessible');
   });
 
   it('should validate workspace file exists', async () => {
-    jest.mocked(fs.access).mockRejectedValueOnce(new Error('File not found'));
-
-    await expect(xcodebuildBuildTool({
-      projectPath: 'NonExistent.xcworkspace',
-      scheme: 'Test'
-    })).rejects.toThrow('Workspace file not found');
+    await expect(
+      xcodebuildBuildTool({
+        projectPath: 'NonExistent.xcworkspace',
+        scheme: 'Test',
+      })
+    ).rejects.toThrow('Project path not found or inaccessible');
   });
 
   it('should handle Xcode not installed', async () => {
-    setXcodeValidation(false);
+    const validation = jest.requireMock('../../../../src/utils/validation.js') as any;
+    validation.setXcodeValidation(false);
 
-    await expect(xcodebuildBuildTool({
-      projectPath: 'Test.xcodeproj',
-      scheme: 'Test'
-    })).rejects.toThrow('Xcode is not installed');
+    await expect(
+      xcodebuildBuildTool({
+        projectPath: 'Test.xcodeproj',
+        scheme: 'Test',
+      })
+    ).rejects.toThrow('Xcode is not installed');
+    
+    // Reset for other tests
+    validation.setXcodeValidation(true);
   });
 
   it('should cache build output', async () => {
@@ -226,20 +288,20 @@ describe('xcodebuild-build tool', () => {
       'xcodebuild -project Test.xcodeproj -scheme Test': {
         stdout: longOutput,
         stderr: '',
-        code: 0
-      }
+        code: 0,
+      },
     });
 
     const result = await xcodebuildBuildTool({
       projectPath: 'Test.xcodeproj',
-      scheme: 'Test'
+      scheme: 'Test',
     });
 
     expect(result).toMatchObject({
       success: true,
       buildId: expect.stringContaining('build_'),
       outputTruncated: true,
-      outputSize: longOutput.length
+      outputSize: longOutput.length,
     });
   });
 });

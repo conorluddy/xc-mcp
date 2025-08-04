@@ -18,7 +18,7 @@ describe('xcodebuild-version tool', () => {
     expect(result).toMatchObject({
       version: 'Xcode 15.0',
       build: 'Build version 15A240d',
-      fullOutput: 'Xcode 15.0\nBuild version 15A240d'
+      fullOutput: 'Xcode 15.0\nBuild version 15A240d',
     });
   });
 
@@ -27,8 +27,8 @@ describe('xcodebuild-version tool', () => {
       'xcodebuild -version': {
         stdout: 'Xcode 15.1\nBuild version 15B87a\nAdditional tools:\n- Swift 5.9\n- iOS SDK 17.1',
         stderr: '',
-        code: 0
-      }
+        code: 0,
+      },
     });
 
     const result = await xcodebuildVersionTool({});
@@ -36,7 +36,7 @@ describe('xcodebuild-version tool', () => {
     expect(result).toMatchObject({
       version: 'Xcode 15.1',
       build: 'Build version 15B87a',
-      fullOutput: expect.stringContaining('Additional tools')
+      fullOutput: expect.stringContaining('Additional tools'),
     });
   });
 
@@ -45,14 +45,14 @@ describe('xcodebuild-version tool', () => {
       'xcodebuild -version': {
         stdout: '',
         stderr: 'xcodebuild: error: invalid command',
-        code: 1
-      }
+        code: 1,
+      },
     });
 
     const result = await xcodebuildVersionTool({});
 
     expect(result).toMatchObject({
-      error: expect.stringContaining('Failed to get Xcode version')
+      error: expect.stringContaining('Failed to get Xcode version'),
     });
   });
 
@@ -67,8 +67,8 @@ describe('xcodebuild-version tool', () => {
       'xcodebuild -version': {
         stdout: 'Unexpected format',
         stderr: '',
-        code: 0
-      }
+        code: 0,
+      },
     });
 
     const result = await xcodebuildVersionTool({});
@@ -76,7 +76,7 @@ describe('xcodebuild-version tool', () => {
     expect(result).toMatchObject({
       version: 'Unknown',
       build: 'Unknown',
-      fullOutput: 'Unexpected format'
+      fullOutput: 'Unexpected format',
     });
   });
 
@@ -85,15 +85,15 @@ describe('xcodebuild-version tool', () => {
       'xcodebuild -version': {
         stdout: 'Xcode 14.3.1\nBuild version 14E300c',
         stderr: '',
-        code: 0
-      }
+        code: 0,
+      },
     });
 
     const result = await xcodebuildVersionTool({});
 
     expect(result).toMatchObject({
       version: 'Xcode 14.3.1',
-      build: 'Build version 14E300c'
+      build: 'Build version 14E300c',
     });
   });
 
@@ -103,8 +103,8 @@ describe('xcodebuild-version tool', () => {
       'xcodebuild -version': {
         stdout: output,
         stderr: '',
-        code: 0
-      }
+        code: 0,
+      },
     });
 
     const result = await xcodebuildVersionTool({});
@@ -112,7 +112,7 @@ describe('xcodebuild-version tool', () => {
     expect(result).toMatchObject({
       version: 'Xcode 15.0',
       build: 'Build version 15A240d',
-      fullOutput: output
+      fullOutput: output,
     });
   });
 });

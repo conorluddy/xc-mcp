@@ -16,7 +16,7 @@ describe('list-cached-responses tool', () => {
 
   it('should list all cached responses', async () => {
     const cache = responseCache;
-    
+
     // Add some cached responses
     cache.store({
       tool: 'xcodebuild-build',
@@ -24,45 +24,45 @@ describe('list-cached-responses tool', () => {
       stderr: '',
       exitCode: 0,
       command: 'xcodebuild',
-      metadata: {}
+      metadata: {},
     });
-    
+
     cache.store({
       tool: 'simctl-list',
       fullOutput: JSON.stringify({ devices: {} }),
       stderr: '',
       exitCode: 0,
       command: 'simctl list',
-      metadata: {}
+      metadata: {},
     });
-    
+
     cache.store({
       tool: 'test',
       fullOutput: 'Some test data',
       stderr: '',
       exitCode: 0,
       command: 'test',
-      metadata: {}
+      metadata: {},
     });
 
     const result = await listCachedResponsesTool({});
 
     expect(result.content[0].type).toBe('text');
     const data = JSON.parse(result.content[0].text);
-    
+
     expect(data).toMatchObject({
       responses: expect.arrayContaining([
         expect.objectContaining({
-          tool: 'xcodebuild-build'
+          tool: 'xcodebuild-build',
         }),
         expect.objectContaining({
-          tool: 'simctl-list'
+          tool: 'simctl-list',
         }),
         expect.objectContaining({
-          tool: 'test'
-        })
+          tool: 'test',
+        }),
       ]),
-      total: 3
+      total: 3,
     });
   });
 
@@ -71,16 +71,16 @@ describe('list-cached-responses tool', () => {
 
     expect(result.content[0].type).toBe('text');
     const data = JSON.parse(result.content[0].text);
-    
+
     expect(data).toMatchObject({
       responses: [],
-      total: 0
+      total: 0,
     });
   });
 
   it('should sort responses by timestamp', async () => {
     const cache = responseCache;
-    
+
     // Add responses with slight delays to ensure different timestamps
     const ids = [];
     for (let i = 0; i < 3; i++) {
@@ -90,7 +90,7 @@ describe('list-cached-responses tool', () => {
         stderr: '',
         exitCode: 0,
         command: `command${i}`,
-        metadata: {}
+        metadata: {},
       });
       ids.push(id);
       // Small delay between stores
@@ -108,26 +108,26 @@ describe('list-cached-responses tool', () => {
 
   it('should include response metadata', async () => {
     const cache = responseCache;
-    
+
     const smallData = 'Small';
     const largeData = 'A'.repeat(1000);
-    
+
     cache.store({
       tool: 'small-tool',
       fullOutput: smallData,
       stderr: '',
       exitCode: 0,
       command: 'small',
-      metadata: { scheme: 'Debug' }
+      metadata: { scheme: 'Debug' },
     });
-    
+
     cache.store({
       tool: 'large-tool',
       fullOutput: largeData,
       stderr: '',
       exitCode: 0,
       command: 'large',
-      metadata: { project: 'MyApp' }
+      metadata: { project: 'MyApp' },
     });
 
     const result = await listCachedResponsesTool({});
@@ -145,7 +145,6 @@ describe('list-cached-responses tool', () => {
       throw new Error('Cache error');
     });
 
-    await expect(listCachedResponsesTool({}))
-      .rejects.toThrow();
+    await expect(listCachedResponsesTool({})).rejects.toThrow();
   });
 });

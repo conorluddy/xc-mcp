@@ -5,7 +5,10 @@ export enum ErrorCode {
 }
 
 export class McpError extends Error {
-  constructor(public code: ErrorCode, message: string) {
+  constructor(
+    public code: ErrorCode,
+    message: string
+  ) {
     super(message);
     this.name = 'McpError';
   }

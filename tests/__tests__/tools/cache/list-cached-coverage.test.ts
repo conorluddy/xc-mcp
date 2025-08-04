@@ -18,13 +18,13 @@ describe('list-cached-responses tool', () => {
     const id1 = responseCache.store({
       tool: 'xcodebuild-build',
       fullOutput: 'Build output',
-      metadata: { projectPath: 'Test.xcodeproj' }
+      metadata: { projectPath: 'Test.xcodeproj' },
     });
 
     const id2 = responseCache.store({
       tool: 'simctl-list',
       fullOutput: JSON.stringify({ devices: {} }),
-      metadata: {}
+      metadata: {},
     });
 
     const result = await listCachedResponsesTool({});
@@ -32,33 +32,35 @@ describe('list-cached-responses tool', () => {
     expect(result.content[0].type).toBe('text');
     const data = JSON.parse(result.content[0].text);
     expect(data.entries).toHaveLength(2);
-    expect(data.entries).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        id: id1,
-        tool: 'xcodebuild-build'
-      }),
-      expect.objectContaining({
-        id: id2,
-        tool: 'simctl-list'
-      })
-    ]));
+    expect(data.entries).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: id1,
+          tool: 'xcodebuild-build',
+        }),
+        expect.objectContaining({
+          id: id2,
+          tool: 'simctl-list',
+        }),
+      ])
+    );
   });
 
   it('should filter by tool', async () => {
     responseCache.store({
       tool: 'xcodebuild-build',
       fullOutput: 'Build output',
-      metadata: {}
+      metadata: {},
     });
 
     const simctlId = responseCache.store({
       tool: 'simctl-list',
       fullOutput: 'List output',
-      metadata: {}
+      metadata: {},
     });
 
     const result = await listCachedResponsesTool({
-      tool: 'simctl-list'
+      tool: 'simctl-list',
     });
 
     expect(result.content[0].type).toBe('text');
@@ -73,12 +75,12 @@ describe('list-cached-responses tool', () => {
       responseCache.store({
         tool: 'xcodebuild-build',
         fullOutput: `Build ${i}`,
-        metadata: {}
+        metadata: {},
       });
     }
 
     const result = await listCachedResponsesTool({
-      limit: 3
+      limit: 3,
     });
 
     expect(result.content[0].type).toBe('text');
@@ -99,7 +101,7 @@ describe('list-cached-responses tool', () => {
     responseCache.store({
       tool: 'xcodebuild-build',
       fullOutput: 'Output',
-      metadata: {}
+      metadata: {},
     });
 
     const result = await listCachedResponsesTool({});
@@ -108,7 +110,7 @@ describe('list-cached-responses tool', () => {
     const data = JSON.parse(result.content[0].text);
     expect(data.stats).toMatchObject({
       totalEntries: 1,
-      totalSizeBytes: expect.any(Number)
+      totalSizeBytes: expect.any(Number),
     });
   });
 
@@ -116,7 +118,7 @@ describe('list-cached-responses tool', () => {
     const id1 = responseCache.store({
       tool: 'tool1',
       fullOutput: 'First',
-      metadata: {}
+      metadata: {},
     });
 
     // Small delay to ensure different timestamps
@@ -125,7 +127,7 @@ describe('list-cached-responses tool', () => {
     const id2 = responseCache.store({
       tool: 'tool2',
       fullOutput: 'Second',
-      metadata: {}
+      metadata: {},
     });
 
     const result = await listCachedResponsesTool({});
