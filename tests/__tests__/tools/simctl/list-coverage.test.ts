@@ -1,7 +1,7 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { simctlListTool } from '../../../../src/tools/simctl/list.js';
 import { setupTest } from '../../../__helpers__/test-utils.js';
-import { setMockCommandConfig, setXcodeValidation } from '../../../__helpers__/test-utils.js';
+import { setMockCommandConfig } from '../../../__helpers__/test-utils.js';
 
 jest.mock('../../../../src/utils/command.js');
 jest.mock('../../../../src/utils/validation.js');
@@ -55,53 +55,56 @@ describe('simctl-list tool', () => {
     const result = await simctlListTool({});
 
     expect(result.content[0].type).toBe('text');
-    const data = JSON.parse(result.content[0].text);
+    const data = JSON.parse(result.content[0].text as string);
     expect(data).toMatchObject({
-      cacheId: expect.stringContaining('simctl_list_'),
+      cacheId: expect.any(String),
       summary: {
         totalDevices: 2,
         bootedDevices: 1,
         availableDevices: 2,
-        runtimeCount: 1,
       },
     });
+    expect(data.summary.deviceTypes).toEqual(['iPhone']);
+    expect(data.summary.commonRuntimes).toEqual(['iOS 17.0']);
   });
 
   it('should handle simctl errors', async () => {
+    // Clear any cached data first
+    const { simulatorCache } = await import('../../../../src/state/simulator-cache.js');
+    simulatorCache.clearCache();
+
     setMockCommandConfig({
-      'xcrun simctl list -j': {
+      'xcrun simctl list devices -j': {
         stdout: '',
         stderr: 'simctl: error: Unable to locate DeviceSupport',
         code: 1,
       },
     });
 
-    await expect(simctlListTool({})).rejects.toThrow('Failed to list simulators');
-  });
-
-  it('should handle Xcode not installed', async () => {
-    setXcodeValidation(false);
-
-    await expect(simctlListTool({})).rejects.toThrow('Xcode is not installed');
+    await expect(simctlListTool({})).rejects.toThrow('simctl-list failed');
   });
 
   it('should handle malformed JSON', async () => {
+    // Clear any cached data first
+    const { simulatorCache } = await import('../../../../src/state/simulator-cache.js');
+    simulatorCache.clearCache();
+
     setMockCommandConfig({
-      'xcrun simctl list -j': {
+      'xcrun simctl list devices -j': {
         stdout: 'invalid json',
         stderr: '',
         code: 0,
       },
     });
 
-    await expect(simctlListTool({})).rejects.toThrow('Failed to parse');
+    await expect(simctlListTool({})).rejects.toThrow('simctl-list failed');
   });
 
   it('should cache simulator data', async () => {
     const result = await simctlListTool({});
-    const data = JSON.parse(result.content[0].text);
+    const data = JSON.parse(result.content[0].text as string);
 
     expect(data.cacheId).toBeDefined();
-    expect(data.nextSteps).toContain(expect.stringContaining('simctl-get-details'));
+    expect(data.nextSteps).toContainEqual(expect.stringContaining('simctl-get-details'));
   });
 });

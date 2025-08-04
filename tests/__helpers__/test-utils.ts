@@ -74,6 +74,15 @@ export const mockXcodebuildList = () => {
 
 export const mockXcodebuildVersion = () => {
   setMockCommandConfig({
+    'xcodebuild -version -json': {
+      stdout: JSON.stringify({
+        version: '15.0',
+        buildVersion: '15A240d',
+      }),
+      stderr: '',
+      code: 0,
+    },
+    // Fallback for text format
     'xcodebuild -version': {
       stdout: 'Xcode 15.0\nBuild version 15A240d',
       stderr: '',
@@ -165,10 +174,10 @@ export const mockSimctlShutdown = (deviceId: string) => {
 export const mockXcodebuildBuild = (args: string[] = []) => {
   // Build the full command with 'build' action at the end unless it's already included
   const hasAction = args.some(arg => ['build', 'clean', 'analyze'].includes(arg));
-  const fullCommand = hasAction 
-    ? `xcodebuild ${args.join(' ')}` 
+  const fullCommand = hasAction
+    ? `xcodebuild ${args.join(' ')}`
     : `xcodebuild ${args.join(' ')} build`;
-  
+
   setMockCommandConfig({
     [fullCommand]: {
       stdout: `Building target...\nBuild succeeded\n`,
@@ -181,10 +190,10 @@ export const mockXcodebuildBuild = (args: string[] = []) => {
 export const mockBuildError = (args: string[] = []) => {
   // Build the full command with 'build' action at the end unless it's already included
   const hasAction = args.some(arg => ['build', 'clean', 'analyze'].includes(arg));
-  const fullCommand = hasAction 
-    ? `xcodebuild ${args.join(' ')}` 
+  const fullCommand = hasAction
+    ? `xcodebuild ${args.join(' ')}`
     : `xcodebuild ${args.join(' ')} build`;
-  
+
   setMockCommandConfig({
     [fullCommand]: {
       stdout: '',

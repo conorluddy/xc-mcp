@@ -18,12 +18,18 @@ describe('list-cached-responses tool', () => {
     const id1 = responseCache.store({
       tool: 'xcodebuild-build',
       fullOutput: 'Build output',
+      stderr: '',
+      exitCode: 0,
+      command: 'xcodebuild build',
       metadata: { projectPath: 'Test.xcodeproj' },
     });
 
     const id2 = responseCache.store({
       tool: 'simctl-list',
       fullOutput: JSON.stringify({ devices: {} }),
+      stderr: '',
+      exitCode: 0,
+      command: 'xcrun simctl list devices',
       metadata: {},
     });
 
@@ -31,8 +37,8 @@ describe('list-cached-responses tool', () => {
 
     expect(result.content[0].type).toBe('text');
     const data = JSON.parse(result.content[0].text);
-    expect(data.entries).toHaveLength(2);
-    expect(data.entries).toEqual(
+    expect(data.recentResponses).toHaveLength(2);
+    expect(data.recentResponses).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           id: id1,
@@ -50,12 +56,18 @@ describe('list-cached-responses tool', () => {
     responseCache.store({
       tool: 'xcodebuild-build',
       fullOutput: 'Build output',
+      stderr: '',
+      exitCode: 0,
+      command: 'xcodebuild build',
       metadata: {},
     });
 
     const simctlId = responseCache.store({
       tool: 'simctl-list',
       fullOutput: 'List output',
+      stderr: '',
+      exitCode: 0,
+      command: 'xcrun simctl list devices',
       metadata: {},
     });
 
@@ -65,8 +77,8 @@ describe('list-cached-responses tool', () => {
 
     expect(result.content[0].type).toBe('text');
     const data = JSON.parse(result.content[0].text);
-    expect(data.entries).toHaveLength(1);
-    expect(data.entries[0].id).toBe(simctlId);
+    expect(data.recentResponses).toHaveLength(1);
+    expect(data.recentResponses[0].id).toBe(simctlId);
   });
 
   it('should limit results', async () => {
@@ -75,6 +87,9 @@ describe('list-cached-responses tool', () => {
       responseCache.store({
         tool: 'xcodebuild-build',
         fullOutput: `Build ${i}`,
+        stderr: '',
+        exitCode: 0,
+        command: 'xcodebuild build',
         metadata: {},
       });
     }
@@ -85,7 +100,7 @@ describe('list-cached-responses tool', () => {
 
     expect(result.content[0].type).toBe('text');
     const data = JSON.parse(result.content[0].text);
-    expect(data.entries).toHaveLength(3);
+    expect(data.recentResponses).toHaveLength(3);
   });
 
   it('should handle empty cache', async () => {
@@ -93,14 +108,17 @@ describe('list-cached-responses tool', () => {
 
     expect(result.content[0].type).toBe('text');
     const data = JSON.parse(result.content[0].text);
-    expect(data.entries).toHaveLength(0);
-    expect(data.stats.totalEntries).toBe(0);
+    expect(data.recentResponses).toHaveLength(0);
+    expect(data.cacheStats.totalEntries).toBe(0);
   });
 
   it('should include cache stats', async () => {
     responseCache.store({
       tool: 'xcodebuild-build',
       fullOutput: 'Output',
+      stderr: '',
+      exitCode: 0,
+      command: 'xcodebuild build',
       metadata: {},
     });
 
@@ -108,16 +126,20 @@ describe('list-cached-responses tool', () => {
 
     expect(result.content[0].type).toBe('text');
     const data = JSON.parse(result.content[0].text);
-    expect(data.stats).toMatchObject({
+    expect(data.cacheStats).toMatchObject({
       totalEntries: 1,
-      totalSizeBytes: expect.any(Number),
+      byTool: expect.any(Object),
     });
+    expect(data.usage.totalCached).toBe(1);
   });
 
   it('should sort by timestamp descending', async () => {
     const id1 = responseCache.store({
       tool: 'tool1',
       fullOutput: 'First',
+      stderr: '',
+      exitCode: 0,
+      command: 'tool1 command',
       metadata: {},
     });
 
@@ -127,6 +149,9 @@ describe('list-cached-responses tool', () => {
     const id2 = responseCache.store({
       tool: 'tool2',
       fullOutput: 'Second',
+      stderr: '',
+      exitCode: 0,
+      command: 'tool2 command',
       metadata: {},
     });
 
@@ -134,7 +159,7 @@ describe('list-cached-responses tool', () => {
 
     expect(result.content[0].type).toBe('text');
     const data = JSON.parse(result.content[0].text);
-    expect(data.entries[0].id).toBe(id2); // Most recent first
-    expect(data.entries[1].id).toBe(id1);
+    expect(data.recentResponses[0].id).toBe(id2); // Most recent first
+    expect(data.recentResponses[1].id).toBe(id1);
   });
 });

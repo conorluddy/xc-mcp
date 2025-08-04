@@ -68,13 +68,24 @@ export function executeCommandSync(command: string): CommandResult {
     };
   } catch (error) {
     const execError = error as NodeJS.ErrnoException & {
-      stdout?: string;
-      stderr?: string;
+      stdout?: Buffer | string;
+      stderr?: Buffer | string;
       status?: number;
     };
+
+    const getStringValue = (value: Buffer | string | undefined): string => {
+      if (value instanceof Buffer) {
+        return value.toString().trim();
+      }
+      if (typeof value === 'string') {
+        return value.trim();
+      }
+      return '';
+    };
+
     return {
-      stdout: execError.stdout?.trim() || '',
-      stderr: execError.stderr?.trim() || execError.message || '',
+      stdout: getStringValue(execError.stdout),
+      stderr: getStringValue(execError.stderr) || execError.message || '',
       code: execError.status || 1,
     };
   }

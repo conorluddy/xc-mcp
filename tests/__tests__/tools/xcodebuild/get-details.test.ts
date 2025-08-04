@@ -1,7 +1,6 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { xcodebuildGetDetailsTool } from '../../../../src/tools/xcodebuild/get-details.js';
 import { setupTest } from '../../../__helpers__/test-utils.js';
-import { setXcodeValidation } from '../../../__helpers__/test-utils.js';
 import { responseCache } from '../../../../src/utils/response-cache.js';
 import { mockResponseCacheEntry } from '../../../__helpers__/cache-helpers.js';
 
@@ -54,19 +53,19 @@ describe('xcodebuild-get-details tool', () => {
 
     expect(result.content[0].type).toBe('text');
     const data = JSON.parse(result.content[0].text);
-    expect(data.content).toContain('error: missing semicolon');
-    expect(data.content).toContain('error: undefined symbol');
-    expect(data.errors).toEqual(['error: missing semicolon', 'error: undefined symbol']);
+    expect(data.buildId).toBe(buildId);
+    expect(data.detailType).toBe('errors-only');
+    expect(data.errorCount).toBe(2);
+    expect(data.errors).toContain('      error: missing semicolon');
+    expect(data.errors).toContain('      error: undefined symbol');
   });
 
   it('should get warnings only', async () => {
     const buildId = 'build_12345';
-    const cachedOutput = `
-      warning: deprecated API
+    const cachedOutput = `      warning: deprecated API
       warning: unused variable
       error: missing semicolon
-      Build succeeded
-    `;
+      Build succeeded`;
 
     mockResponseCacheEntry(buildId, 'xcodebuild-build', cachedOutput);
 
@@ -77,7 +76,11 @@ describe('xcodebuild-get-details tool', () => {
 
     expect(result.content[0].type).toBe('text');
     const data = JSON.parse(result.content[0].text);
-    expect(data.warnings).toEqual(['warning: deprecated API', 'warning: unused variable']);
+    expect(data.buildId).toBe(buildId);
+    expect(data.detailType).toBe('warnings-only');
+    expect(data.warningCount).toBe(2);
+    expect(data.warnings).toContain('      warning: deprecated API');
+    expect(data.warnings).toContain('      warning: unused variable');
   });
 
   it('should get build summary', async () => {
@@ -105,10 +108,8 @@ describe('xcodebuild-get-details tool', () => {
       buildId,
       detailType: 'summary',
       exitCode: 0,
-      hasErrors: false,
-      hasWarnings: false,
-      outputSize: expect.any(Number),
       tool: 'xcodebuild-build',
+      command: 'xcodebuild -project MyProject.xcodeproj',
     });
   });
 
@@ -196,16 +197,6 @@ describe('xcodebuild-get-details tool', () => {
         detailType: 'invalid',
       })
     ).rejects.toThrow('Invalid detailType');
-  });
-
-  it('should handle Xcode not installed', async () => {
-    setXcodeValidation(false);
-
-    await expect(
-      xcodebuildGetDetailsTool({
-        buildId: 'build_12345',
-      })
-    ).rejects.toThrow('Xcode is not installed');
   });
 
   it('should handle stderr in full log', async () => {

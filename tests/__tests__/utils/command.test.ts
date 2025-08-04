@@ -88,7 +88,8 @@ describe('command utils', () => {
 
   describe('executeCommandSync', () => {
     it('should execute command synchronously', () => {
-      mockExecSync.mockReturnValue(Buffer.from('Sync output\n'));
+      // execSync with encoding: 'utf8' returns a string, not Buffer
+      mockExecSync.mockReturnValue('Sync output\n');
 
       const result = executeCommandSync('echo hello');
 

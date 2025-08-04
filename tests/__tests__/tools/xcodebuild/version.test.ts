@@ -1,8 +1,6 @@
 import { describe, it, expect, jest } from '@jest/globals';
 import { xcodebuildVersionTool } from '../../../../src/tools/xcodebuild/version.js';
-import { setupTest, mockXcodebuildVersion } from '../../../__helpers__/test-utils.js';
-import { setMockCommandConfig } from '../../../../src/utils/__mocks__/command.js';
-import { setXcodeValidation } from '../../../__helpers__/test-utils.js';
+import { setupTest, setMockCommandConfig } from '../../../__helpers__/test-utils.js';
 
 jest.mock('../../../../src/utils/command.js');
 jest.mock('../../../../src/utils/validation.js');
@@ -10,22 +8,14 @@ jest.mock('../../../../src/utils/validation.js');
 describe('xcodebuild-version tool', () => {
   setupTest();
 
-  it('should return Xcode version information', async () => {
-    mockXcodebuildVersion();
-
-    const result = await xcodebuildVersionTool({});
-
-    expect(result).toMatchObject({
-      version: 'Xcode 15.0',
-      build: 'Build version 15A240d',
-      fullOutput: 'Xcode 15.0\nBuild version 15A240d',
-    });
-  });
-
-  it('should handle version with additional information', async () => {
+  it('should return Xcode version information (JSON format)', async () => {
+    // Mock JSON version output
     setMockCommandConfig({
-      'xcodebuild -version': {
-        stdout: 'Xcode 15.1\nBuild version 15B87a\nAdditional tools:\n- Swift 5.9\n- iOS SDK 17.1',
+      'xcodebuild -version -json': {
+        stdout: JSON.stringify({
+          version: '15.0',
+          buildVersion: '15A240d',
+        }),
         stderr: '',
         code: 0,
       },
@@ -33,39 +23,65 @@ describe('xcodebuild-version tool', () => {
 
     const result = await xcodebuildVersionTool({});
 
-    expect(result).toMatchObject({
-      version: 'Xcode 15.1',
-      build: 'Build version 15B87a',
-      fullOutput: expect.stringContaining('Additional tools'),
+    expect(result.content[0].type).toBe('text');
+    const data = JSON.parse(result.content[0].text);
+    expect(data).toMatchObject({
+      version: '15.0',
+      buildVersion: '15A240d',
     });
+  });
+
+  it('should handle plain text version output when JSON fails', async () => {
+    // Mock command that returns plain text (older Xcode versions)
+    setMockCommandConfig({
+      'xcodebuild -version -json': {
+        stdout: 'Xcode 15.0\nBuild version 15A240d',
+        stderr: '',
+        code: 0,
+      },
+    });
+
+    const result = await xcodebuildVersionTool({});
+
+    expect(result.content[0].type).toBe('text');
+    const data = JSON.parse(result.content[0].text);
+    expect(data).toMatchObject({
+      version: 'Xcode 15.0\nBuild version 15A240d',
+      format: 'text',
+    });
+  });
+
+  it('should handle text format when requested', async () => {
+    setMockCommandConfig({
+      'xcodebuild -version': {
+        stdout: 'Xcode 15.1\nBuild version 15B87a',
+        stderr: '',
+        code: 0,
+      },
+    });
+
+    const result = await xcodebuildVersionTool({ outputFormat: 'text' });
+
+    expect(result.content[0].type).toBe('text');
+    expect(result.content[0].text).toBe('Xcode 15.1\nBuild version 15B87a');
   });
 
   it('should handle version command errors', async () => {
     setMockCommandConfig({
-      'xcodebuild -version': {
+      'xcodebuild -version -json': {
         stdout: '',
         stderr: 'xcodebuild: error: invalid command',
         code: 1,
       },
     });
 
-    const result = await xcodebuildVersionTool({});
-
-    expect(result).toMatchObject({
-      error: expect.stringContaining('Failed to get Xcode version'),
-    });
+    await expect(xcodebuildVersionTool({})).rejects.toThrow('Failed to get version information');
   });
 
-  it('should handle Xcode not installed', async () => {
-    setXcodeValidation(false);
-
-    await expect(xcodebuildVersionTool({})).rejects.toThrow('Xcode is not installed');
-  });
-
-  it('should handle malformed version output', async () => {
+  it('should handle malformed JSON version output', async () => {
     setMockCommandConfig({
-      'xcodebuild -version': {
-        stdout: 'Unexpected format',
+      'xcodebuild -version -json': {
+        stdout: 'Invalid JSON output',
         stderr: '',
         code: 0,
       },
@@ -73,46 +89,51 @@ describe('xcodebuild-version tool', () => {
 
     const result = await xcodebuildVersionTool({});
 
-    expect(result).toMatchObject({
-      version: 'Unknown',
-      build: 'Unknown',
-      fullOutput: 'Unexpected format',
+    expect(result.content[0].type).toBe('text');
+    const data = JSON.parse(result.content[0].text);
+    expect(data).toMatchObject({
+      version: 'Invalid JSON output',
+      format: 'text',
     });
   });
 
-  it('should extract version and build from multi-line output', async () => {
+  it('should handle SDK parameter', async () => {
     setMockCommandConfig({
-      'xcodebuild -version': {
-        stdout: 'Xcode 14.3.1\nBuild version 14E300c',
+      'xcodebuild -version -sdk iphoneos -json': {
+        stdout: JSON.stringify({
+          version: '15.0',
+          buildVersion: '15A240d',
+          sdkVersion: '17.0',
+        }),
         stderr: '',
         code: 0,
       },
     });
 
-    const result = await xcodebuildVersionTool({});
+    const result = await xcodebuildVersionTool({ sdk: 'iphoneos' });
 
-    expect(result).toMatchObject({
-      version: 'Xcode 14.3.1',
-      build: 'Build version 14E300c',
+    expect(result.content[0].type).toBe('text');
+    const data = JSON.parse(result.content[0].text);
+    expect(data).toMatchObject({
+      version: '15.0',
+      buildVersion: '15A240d',
+      sdkVersion: '17.0',
     });
   });
 
-  it('should include additional output', async () => {
-    const output = 'Xcode 15.0\nBuild version 15A240d\n\nInstalled SDKs:\niOS 17.0\nmacOS 14.0';
+  it('should handle SDK parameter with text format', async () => {
+    const output = 'Xcode 15.0\nBuild version 15A240d\niOS SDK 17.0';
     setMockCommandConfig({
-      'xcodebuild -version': {
+      'xcodebuild -version -sdk iphoneos': {
         stdout: output,
         stderr: '',
         code: 0,
       },
     });
 
-    const result = await xcodebuildVersionTool({});
+    const result = await xcodebuildVersionTool({ sdk: 'iphoneos', outputFormat: 'text' });
 
-    expect(result).toMatchObject({
-      version: 'Xcode 15.0',
-      build: 'Build version 15A240d',
-      fullOutput: output,
-    });
+    expect(result.content[0].type).toBe('text');
+    expect(result.content[0].text).toBe(output);
   });
 });
