@@ -2,6 +2,7 @@ import { XcodeProject } from '../types/xcode.js';
 import { executeCommand, buildXcodebuildCommand } from '../utils/command.js';
 import { promises as fs } from 'fs';
 import { join, dirname } from 'path';
+import { persistenceManager } from '../utils/persistence.js';
 
 export interface BuildConfig {
   scheme: string;
@@ -41,6 +42,13 @@ export class ProjectCache {
   private buildHistory: Map<string, BuildMetrics[]> = new Map();
   private dependencyCache: Map<string, DependencyInfo> = new Map();
   private cacheMaxAge = 60 * 60 * 1000; // 1 hour default
+
+  constructor() {
+    // Load persisted state asynchronously without blocking initialization
+    this.loadPersistedState().catch(error => {
+      console.warn('Failed to load project cache state:', error);
+    });
+  }
 
   // Cache management methods
   setCacheMaxAge(milliseconds: number): void {
@@ -153,6 +161,9 @@ export class ProjectCache {
         projectInfo.preferredScheme = config.scheme;
       }
     }
+
+    // Persist state changes
+    this.persistStateDebounced();
   }
 
   getBuildHistory(projectPath: string, limit = 10): BuildMetrics[] {
@@ -301,6 +312,58 @@ export class ProjectCache {
     if (hours > 0) return `${hours}h ${minutes % 60}m`;
     if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
     return `${seconds}s`;
+  }
+
+  /**
+   * Load persisted state from disk
+   */
+  private async loadPersistedState(): Promise<void> {
+    if (!persistenceManager.isEnabled()) return;
+
+    try {
+      const data = await persistenceManager.loadState<{
+        projectConfigs: Array<[string, ProjectInfo]>;
+        buildHistory: Array<[string, BuildMetrics[]]>;
+        dependencyCache: Array<[string, DependencyInfo]>;
+      }>('projects');
+
+      if (data) {
+        // Merge with existing state, preserving in-memory updates
+        this.projectConfigs = new Map(data.projectConfigs || []);
+        this.buildHistory = new Map(data.buildHistory || []);
+        this.dependencyCache = new Map(data.dependencyCache || []);
+      }
+    } catch (error) {
+      console.warn('Failed to load project cache state:', error);
+      // Continue with empty state - graceful degradation
+    }
+  }
+
+  /**
+   * Persist state to disk with debouncing
+   */
+  private saveStateTimeout: NodeJS.Timeout | null = null;
+  private persistStateDebounced(): void {
+    if (!persistenceManager.isEnabled()) return;
+
+    // Clear existing timeout
+    if (this.saveStateTimeout) {
+      clearTimeout(this.saveStateTimeout);
+    }
+
+    // Debounce saves to avoid excessive disk I/O
+    this.saveStateTimeout = setTimeout(async () => {
+      try {
+        await persistenceManager.saveState('projects', {
+          projectConfigs: Array.from(this.projectConfigs.entries()),
+          buildHistory: Array.from(this.buildHistory.entries()),
+          dependencyCache: Array.from(this.dependencyCache.entries()),
+        });
+        this.saveStateTimeout = null;
+      } catch (error) {
+        console.warn('Failed to persist project cache state:', error);
+      }
+    }, 1000);
   }
 }
 

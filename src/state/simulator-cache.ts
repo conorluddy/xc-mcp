@@ -5,6 +5,7 @@ import {
   SimulatorDeviceType,
 } from '../types/xcode.js';
 import { executeCommand, buildSimctlCommand } from '../utils/command.js';
+import { persistenceManager } from '../utils/persistence.js';
 
 export interface SimulatorInfo extends SimulatorDevice {
   lastUsed?: Date;
@@ -29,6 +30,13 @@ export class SimulatorCache {
   private bootStates: Map<string, 'booted' | 'shutdown' | 'booting'> = new Map();
   private preferredByProject: Map<string, string> = new Map();
   private lastUsed: Map<string, Date> = new Map();
+
+  constructor() {
+    // Load persisted state asynchronously without blocking initialization
+    this.loadPersistedState().catch(error => {
+      console.warn('Failed to load simulator cache state:', error);
+    });
+  }
 
   // Cache management methods
   setCacheMaxAge(milliseconds: number): void {
@@ -169,6 +177,9 @@ export class SimulatorCache {
         }
       }
     }
+
+    // Persist state changes
+    this.persistStateDebounced();
   }
 
   recordBootEvent(udid: string, success: boolean, duration?: number): void {
@@ -193,6 +204,9 @@ export class SimulatorCache {
         }
       }
     }
+
+    // Persist state changes
+    this.persistStateDebounced();
   }
 
   getBootState(udid: string): 'booted' | 'shutdown' | 'booting' | 'unknown' {
@@ -273,6 +287,58 @@ export class SimulatorCache {
     if (hours > 0) return `${hours}h ${minutes % 60}m`;
     if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
     return `${seconds}s`;
+  }
+
+  /**
+   * Load persisted state from disk
+   */
+  private async loadPersistedState(): Promise<void> {
+    if (!persistenceManager.isEnabled()) return;
+
+    try {
+      const data = await persistenceManager.loadState<{
+        cache: CachedSimulatorList | null;
+        preferredByProject: Array<[string, string]>;
+        lastUsed: Array<[string, Date]>;
+      }>('simulators');
+
+      if (data) {
+        // Merge with existing state, preserving in-memory updates
+        this.cache = data.cache || this.cache;
+        this.preferredByProject = new Map(data.preferredByProject || []);
+        this.lastUsed = new Map(data.lastUsed || []);
+      }
+    } catch (error) {
+      console.warn('Failed to load simulator cache state:', error);
+      // Continue with empty state - graceful degradation
+    }
+  }
+
+  /**
+   * Persist state to disk with debouncing
+   */
+  private saveStateTimeout: NodeJS.Timeout | null = null;
+  private persistStateDebounced(): void {
+    if (!persistenceManager.isEnabled()) return;
+
+    // Clear existing timeout
+    if (this.saveStateTimeout) {
+      clearTimeout(this.saveStateTimeout);
+    }
+
+    // Debounce saves to avoid excessive disk I/O
+    this.saveStateTimeout = setTimeout(async () => {
+      try {
+        await persistenceManager.saveState('simulators', {
+          cache: this.cache,
+          preferredByProject: Array.from(this.preferredByProject.entries()),
+          lastUsed: Array.from(this.lastUsed.entries()),
+        });
+        this.saveStateTimeout = null;
+      } catch (error) {
+        console.warn('Failed to persist simulator cache state:', error);
+      }
+    }, 1000);
   }
 }
 

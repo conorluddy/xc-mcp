@@ -27,6 +27,11 @@ import {
   clearCacheTool,
   getCacheConfigTool,
 } from './tools/cache/cache-management.js';
+import {
+  persistenceEnableTool,
+  persistenceDisableTool,
+  persistenceStatusTool,
+} from './tools/persistence/persistence-tools.js';
 import { validateXcodeInstallation } from './utils/validation.js';
 
 class XcodeCLIMCPServer {
@@ -531,6 +536,91 @@ Common Workflow:
               required: ['cacheType'],
             },
           },
+
+          // Persistence Management Tools
+          {
+            name: 'persistence-enable',
+            description: `🔒 **Enable Opt-in Persistent State Management** - File-based persistence for cache data across server restarts.
+
+**Privacy First**: Disabled by default. Only usage patterns, build preferences, and performance metrics are stored. No source code, credentials, or personal information is persisted.
+
+Key Benefits:
+• 📈 **Learns Over Time** - Remembers successful build configurations and simulator preferences
+• 🚀 **Faster Workflows** - Cached project information and usage patterns persist across restarts
+• 🤝 **Team Sharing** - Project-local caching allows teams to benefit from shared optimizations
+• 💾 **CI/CD Friendly** - Maintains performance insights across build environments
+
+Storage Location Priority:
+1. User-specified directory (cacheDir parameter)
+2. Environment variable: XC_MCP_CACHE_DIR
+3. XDG cache directory (Linux/macOS standard)
+4. Project-local: .xc-mcp/cache/
+5. User home: ~/.xc-mcp/cache/
+6. System temp (fallback)
+
+The system automatically selects the first writable location and creates proper .gitignore entries to prevent accidental commits.`,
+            inputSchema: {
+              type: 'object',
+              properties: {
+                cacheDir: {
+                  type: 'string',
+                  description:
+                    'Optional custom directory for cache storage. If not provided, uses intelligent location selection.',
+                },
+              },
+            },
+          },
+          {
+            name: 'persistence-disable',
+            description: `🔒 **Disable Persistent State Management** - Return to in-memory caching only.
+
+Safely disables file-based persistence and optionally clears existing cache data. After disabling, XC-MCP will operate with in-memory caching only, losing state on server restart.
+
+Use this when:
+• Privacy requirements change
+• Disk space is limited
+• Switching to CI/CD mode where persistence isn't needed
+• Troubleshooting cache-related issues`,
+            inputSchema: {
+              type: 'object',
+              properties: {
+                clearData: {
+                  type: 'boolean',
+                  default: false,
+                  description:
+                    'Whether to delete existing cached data files when disabling persistence',
+                },
+              },
+            },
+          },
+          {
+            name: 'persistence-status',
+            description: `🔒 **Get Persistence System Status** - Detailed information about persistent state management.
+
+Provides comprehensive status including:
+• Current enable/disable state
+• Cache directory location and permissions
+• Disk usage and file counts
+• Last save timestamps
+• Storage recommendations and health checks
+• Privacy and security information
+
+Essential for:
+• Monitoring cache effectiveness
+• Troubleshooting persistence issues
+• Understanding storage usage
+• Verifying privacy compliance`,
+            inputSchema: {
+              type: 'object',
+              properties: {
+                includeStorageInfo: {
+                  type: 'boolean',
+                  default: true,
+                  description: 'Include detailed disk usage and file information in the response',
+                },
+              },
+            },
+          },
         ],
       };
     });
@@ -574,6 +664,12 @@ Common Workflow:
             return await setCacheConfigTool(args);
           case 'cache-clear':
             return await clearCacheTool(args);
+          case 'persistence-enable':
+            return await persistenceEnableTool(args);
+          case 'persistence-disable':
+            return await persistenceDisableTool(args);
+          case 'persistence-status':
+            return await persistenceStatusTool(args);
           default:
             throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
         }

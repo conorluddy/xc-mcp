@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { persistenceManager } from './persistence.js';
 
 export interface CachedResponse {
   id: string;
@@ -16,6 +17,13 @@ class ResponseCache {
   private readonly maxAge = 1000 * 60 * 30; // 30 minutes
   private readonly maxEntries = 100;
 
+  constructor() {
+    // Load persisted state asynchronously without blocking initialization
+    this.loadPersistedState().catch(error => {
+      console.warn('Failed to load response cache state:', error);
+    });
+  }
+
   store(data: Omit<CachedResponse, 'id' | 'timestamp'>): string {
     const id = randomUUID();
     const cached: CachedResponse = {
@@ -26,6 +34,10 @@ class ResponseCache {
 
     this.cache.set(id, cached);
     this.cleanup();
+
+    // Persist state changes
+    this.persistStateDebounced();
+
     return id;
   }
 
@@ -55,6 +67,9 @@ class ResponseCache {
 
   clear(): void {
     this.cache.clear();
+
+    // Persist state changes
+    this.persistStateDebounced();
   }
 
   private cleanup(): void {
@@ -89,6 +104,55 @@ class ResponseCache {
       totalEntries: this.cache.size,
       byTool,
     };
+  }
+
+  /**
+   * Load persisted state from disk
+   */
+  private async loadPersistedState(): Promise<void> {
+    if (!persistenceManager.isEnabled()) return;
+
+    try {
+      const data = await persistenceManager.loadState<{
+        cache: Array<[string, CachedResponse]>;
+      }>('responses');
+
+      if (data) {
+        // Restore cache from persisted data
+        this.cache = new Map(data.cache || []);
+
+        // Clean up expired entries after loading
+        this.cleanup();
+      }
+    } catch (error) {
+      console.warn('Failed to load response cache state:', error);
+      // Continue with empty state - graceful degradation
+    }
+  }
+
+  /**
+   * Persist state to disk with debouncing
+   */
+  private saveStateTimeout: NodeJS.Timeout | null = null;
+  private persistStateDebounced(): void {
+    if (!persistenceManager.isEnabled()) return;
+
+    // Clear existing timeout
+    if (this.saveStateTimeout) {
+      clearTimeout(this.saveStateTimeout);
+    }
+
+    // Debounce saves to avoid excessive disk I/O
+    this.saveStateTimeout = setTimeout(async () => {
+      try {
+        await persistenceManager.saveState('responses', {
+          cache: Array.from(this.cache.entries()),
+        });
+        this.saveStateTimeout = null;
+      } catch (error) {
+        console.warn('Failed to persist response cache state:', error);
+      }
+    }, 1000);
   }
 }
 
