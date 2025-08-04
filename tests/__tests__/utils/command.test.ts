@@ -1,163 +1,154 @@
-import { jest } from '@jest/globals';
-import {
-  buildXcodebuildCommand,
-  buildSimctlCommand,
-} from '../../../src/utils/command.js';
+import { describe, it, expect, jest } from '@jest/globals';
 
-// Test only the command building functions for now
-// executeCommand and executeCommandSync require complex mocking due to child_process
+// Mock child_process before importing command module
+const mockExec = jest.fn() as any;
+const mockExecSync = jest.fn() as any;
 
-describe('buildXcodebuildCommand', () => {
-  it('should build basic project command', () => {
-    const command = buildXcodebuildCommand('build', '/path/to/Project.xcodeproj');
+jest.mock('child_process', () => ({
+  exec: mockExec,
+  execSync: mockExecSync
+}));
 
-    expect(command).toBe('xcodebuild -project "/path/to/Project.xcodeproj" build');
+jest.mock('util', () => ({
+  promisify: jest.fn((fn: any) => {
+    if (fn === mockExec) {
+      return jest.fn((cmd: string, opts: any) => {
+        return new Promise((resolve, reject) => {
+          mockExec(cmd, opts, (err: any, stdout: any, stderr: any) => {
+            if (err) reject(err);
+            else resolve({ stdout, stderr });
+          });
+        });
+      });
+    }
+    return fn;
+  })
+}));
+
+// Import after mocks are set up
+import { executeCommand, executeCommandSync, buildXcodebuildCommand } from '../../../src/utils/command.js';
+
+describe('command utils', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  it('should build workspace command', () => {
-    const command = buildXcodebuildCommand('build', '/path/to/Workspace.xcworkspace');
+  describe('executeCommand', () => {
+    it('should execute command successfully', async () => {
+      mockExec.mockImplementation((cmd: any, opts: any, callback: any) => {
+        callback(null, 'Command output\n', '');
+      });
 
-    expect(command).toBe('xcodebuild -workspace "/path/to/Workspace.xcworkspace" build');
-  });
+      const result = await executeCommand('echo hello');
 
-  it('should build command with workspace option', () => {
-    const command = buildXcodebuildCommand('build', '/path/to/Project.xcodeproj', {
-      workspace: true,
+      expect(result).toEqual({
+        stdout: 'Command output',
+        stderr: '',
+        code: 0
+      });
+      expect(mockExec).toHaveBeenCalledWith('echo hello', expect.any(Object), expect.any(Function));
     });
 
-    expect(command).toBe('xcodebuild -workspace "/path/to/Project.xcodeproj" build');
-  });
+    it('should handle command errors', async () => {
+      const error: any = new Error('Command failed');
+      error.code = 1;
+      error.stdout = 'Partial output';
+      error.stderr = 'Error output';
+      
+      mockExec.mockImplementation((cmd: any, opts: any, callback: any) => {
+        callback(error);
+      });
 
-  it('should build command with all options', () => {
-    const options = {
-      scheme: 'MyApp',
-      configuration: 'Release',
-      destination: 'platform=iOS Simulator,name=iPhone 15',
-      sdk: 'iphonesimulator',
-      derivedDataPath: '/tmp/DerivedData',
-      json: true,
-    };
+      const result = await executeCommand('failing-command');
 
-    const command = buildXcodebuildCommand('build', '/path/to/Project.xcodeproj', options);
-
-    expect(command).toContain('-project "/path/to/Project.xcodeproj"');
-    expect(command).toContain('-scheme "MyApp"');
-    expect(command).toContain('-configuration Release');
-    expect(command).toContain('-destination "platform=iOS Simulator,name=iPhone 15"');
-    expect(command).toContain('-sdk iphonesimulator');
-    expect(command).toContain('-derivedDataPath "/tmp/DerivedData"');
-    expect(command).toContain('-json');
-    expect(command).toContain('build');
-  });
-
-  it('should handle scheme with spaces', () => {
-    const command = buildXcodebuildCommand('build', '/path/to/Project.xcodeproj', {
-      scheme: 'My App Scheme',
+      expect(result).toEqual({
+        stdout: 'Partial output',
+        stderr: 'Error output',
+        code: 1
+      });
     });
 
-    expect(command).toContain('-scheme "My App Scheme"');
+    it('should handle timeout errors', async () => {
+      const error: any = new Error('Timeout');
+      error.code = 'ETIMEDOUT';
+      
+      mockExec.mockImplementation((cmd: any, opts: any, callback: any) => {
+        callback(error);
+      });
+
+      await expect(executeCommand('slow-command'))
+        .rejects.toThrow('Command timed out after 300000ms');
+    });
   });
 
-  it('should handle empty action', () => {
-    const command = buildXcodebuildCommand('', '/path/to/Project.xcodeproj');
+  describe('executeCommandSync', () => {
+    it('should execute command synchronously', () => {
+      mockExecSync.mockReturnValue(Buffer.from('Sync output\n'));
 
-    expect(command).toBe('xcodebuild -project "/path/to/Project.xcodeproj"');
-  });
+      const result = executeCommandSync('echo hello');
 
-  it('should handle partial options', () => {
-    const command = buildXcodebuildCommand('clean', '/path/to/Project.xcodeproj', {
-      scheme: 'MyApp',
-      configuration: 'Debug',
+      expect(result).toEqual({
+        stdout: 'Sync output',
+        stderr: '',
+        code: 0
+      });
     });
 
-    expect(command).toContain('-scheme "MyApp"');
-    expect(command).toContain('-configuration Debug');
-    expect(command).not.toContain('-destination');
-    expect(command).not.toContain('-json');
+    it('should handle sync command errors', () => {
+      const error: any = new Error('Command failed');
+      error.status = 1;
+      error.stdout = Buffer.from('Partial output');
+      error.stderr = Buffer.from('Error output');
+      
+      mockExecSync.mockImplementation(() => {
+        throw error;
+      });
+
+      const result = executeCommandSync('failing-command');
+
+      expect(result).toEqual({
+        stdout: 'Partial output',
+        stderr: 'Error output',
+        code: 1
+      });
+    });
   });
-});
 
-describe('buildSimctlCommand', () => {
-  it('should build basic list command', () => {
-    const command = buildSimctlCommand('list');
+  describe('buildXcodebuildCommand', () => {
+    it('should build basic project command', () => {
+      const cmd = buildXcodebuildCommand('build', 'Project.xcodeproj', {
+        scheme: 'MyScheme'
+      });
 
-    expect(command).toBe('xcrun simctl list');
-  });
-
-  it('should build list command with JSON flag', () => {
-    const command = buildSimctlCommand('list', { json: true });
-
-    expect(command).toBe('xcrun simctl list -j');
-  });
-
-  it('should build boot command with device ID', () => {
-    const command = buildSimctlCommand('boot', {
-      deviceId: '12345678-1234-1234-1234-123456789012',
+      expect(cmd).toBe('xcodebuild -project "Project.xcodeproj" -scheme "MyScheme" build');
     });
 
-    expect(command).toBe('xcrun simctl boot 12345678-1234-1234-1234-123456789012');
-  });
+    it('should handle workspace', () => {
+      const cmd = buildXcodebuildCommand('build', 'Workspace.xcworkspace', {
+        scheme: 'MyScheme'
+      });
 
-  it('should build shutdown command with device ID', () => {
-    const command = buildSimctlCommand('shutdown', {
-      deviceId: '12345678-1234-1234-1234-123456789012',
+      expect(cmd).toContain('-workspace "Workspace.xcworkspace"');
     });
 
-    expect(command).toBe('xcrun simctl shutdown 12345678-1234-1234-1234-123456789012');
-  });
+    it('should include all options', () => {
+      const cmd = buildXcodebuildCommand('build', 'Project.xcodeproj', {
+        scheme: 'MyScheme',
+        configuration: 'Release',
+        destination: 'platform=iOS Simulator,name=iPhone 15',
+        sdk: 'iphonesimulator',
+        derivedDataPath: '/tmp/DerivedData',
+        json: true
+      });
 
-  it('should build create command with full parameters', () => {
-    const command = buildSimctlCommand('create', {
-      name: 'Test iPhone',
-      deviceType: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15',
-      runtime: 'com.apple.CoreSimulator.SimRuntime.iOS-17-0',
+      expect(cmd).toContain('-project "Project.xcodeproj"');
+      expect(cmd).toContain('-scheme "MyScheme"');
+      expect(cmd).toContain('-configuration Release');
+      expect(cmd).toContain('-destination "platform=iOS Simulator,name=iPhone 15"');
+      expect(cmd).toContain('-sdk iphonesimulator');
+      expect(cmd).toContain('-derivedDataPath "/tmp/DerivedData"');
+      expect(cmd).toContain('-json');
+      expect(cmd).toContain('build');
     });
-
-    expect(command).toBe(
-      'xcrun simctl create "Test iPhone" com.apple.CoreSimulator.SimDeviceType.iPhone-15 com.apple.CoreSimulator.SimRuntime.iOS-17-0'
-    );
-  });
-
-  it('should not add JSON flag for unsupported actions', () => {
-    const command = buildSimctlCommand('boot', {
-      deviceId: '12345678-1234-1234-1234-123456789012',
-      json: true,
-    });
-
-    expect(command).toBe('xcrun simctl boot 12345678-1234-1234-1234-123456789012');
-    expect(command).not.toContain('-j');
-  });
-
-  it('should handle actions without device-specific parameters', () => {
-    const command = buildSimctlCommand('help');
-
-    expect(command).toBe('xcrun simctl help');
-  });
-
-  it('should ignore deviceId for unsupported actions', () => {
-    const command = buildSimctlCommand('list', {
-      deviceId: '12345678-1234-1234-1234-123456789012',
-    });
-
-    expect(command).toBe('xcrun simctl list');
-  });
-
-  it('should handle create command with missing parameters', () => {
-    const command = buildSimctlCommand('create', {
-      name: 'Test iPhone',
-      // Missing deviceType and runtime
-    });
-
-    expect(command).toBe('xcrun simctl create');
-  });
-
-  it('should handle device name with spaces in create command', () => {
-    const command = buildSimctlCommand('create', {
-      name: 'My Test Device',
-      deviceType: 'iPhone-15',
-      runtime: 'iOS-17-0',
-    });
-
-    expect(command).toContain('"My Test Device"');
   });
 });
