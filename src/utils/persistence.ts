@@ -12,7 +12,7 @@ export interface PersistenceConfig {
 export interface SerializedData {
   version: string;
   timestamp: Date;
-  data: any;
+  data: unknown;
 }
 
 /**
@@ -138,7 +138,7 @@ export class PersistenceManager {
   /**
    * Save state for a specific cache type with debouncing
    */
-  async saveState(cacheType: string, data: any): Promise<void> {
+  async saveState(cacheType: string, data: unknown): Promise<void> {
     if (!this.enabled || !this.cacheDir) {
       return; // Silently no-op when disabled
     }
@@ -190,10 +190,10 @@ export class PersistenceManager {
         return null;
       }
 
-      return serializedData.data;
+      return serializedData.data as T;
     } catch (error) {
       // File doesn't exist or is corrupted - return null for graceful degradation
-      if ((error as any).code === 'ENOENT') {
+      if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
         return null; // File doesn't exist yet
       }
       console.warn(`Failed to load ${cacheType} cache state:`, error);
@@ -308,7 +308,7 @@ export class PersistenceManager {
   /**
    * Perform the actual state save with atomic writes
    */
-  private async doSaveState(cacheType: string, data: any): Promise<void> {
+  private async doSaveState(cacheType: string, data: unknown): Promise<void> {
     if (!this.cacheDir) return;
 
     const filePath = this.getCacheFilePath(cacheType);
@@ -388,25 +388,27 @@ export class PersistenceManager {
   /**
    * Validate cache data structure
    */
-  private validateCacheData(type: string, data: any): boolean {
+  private validateCacheData(type: string, data: unknown): boolean {
     if (!data || typeof data !== 'object') {
       return false;
     }
+
+    const dataObj = data as Record<string, unknown>;
 
     switch (type) {
       case 'simulators':
         return (
           typeof data === 'object' &&
-          (data.cache === null || typeof data.cache === 'object') &&
-          Array.isArray(data.preferredByProject) &&
-          Array.isArray(data.lastUsed)
+          (dataObj.cache === null || typeof dataObj.cache === 'object') &&
+          Array.isArray(dataObj.preferredByProject) &&
+          Array.isArray(dataObj.lastUsed)
         );
       case 'projects':
         return (
           typeof data === 'object' &&
-          Array.isArray(data.projectConfigs) &&
-          Array.isArray(data.buildHistory) &&
-          Array.isArray(data.dependencyCache)
+          Array.isArray(dataObj.projectConfigs) &&
+          Array.isArray(dataObj.buildHistory) &&
+          Array.isArray(dataObj.dependencyCache)
         );
       case 'responses':
         return typeof data === 'object';
@@ -430,8 +432,8 @@ export class PersistenceManager {
         } finally {
           await fs.unlink(lockFile).catch(() => {}); // Cleanup lock
         }
-      } catch (error: any) {
-        if (error.code === 'EEXIST') {
+      } catch (error: unknown) {
+        if ((error as NodeJS.ErrnoException)?.code === 'EEXIST') {
           // Lock exists, wait and retry
           await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200));
           continue;
