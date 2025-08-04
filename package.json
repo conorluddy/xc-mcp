@@ -1,6 +1,6 @@
 {
   "name": "xc-mcp",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "MCP server that wraps Xcode command-line tools for iOS/macOS development workflows",
   "main": "dist/index.js",
   "type": "module",
