@@ -80,7 +80,11 @@ export async function simctlListTool(args: any) {
     }
 
     const responseText =
-      outputFormat === 'json' ? JSON.stringify(responseData, null, 2) : responseData;
+      outputFormat === 'json'
+        ? JSON.stringify(responseData, null, 2)
+        : typeof responseData === 'string'
+          ? responseData
+          : JSON.stringify(responseData, null, 2);
 
     return {
       content: [
