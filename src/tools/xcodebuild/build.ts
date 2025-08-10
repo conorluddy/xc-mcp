@@ -31,11 +31,12 @@ export async function xcodebuildBuildTool(args: any) {
 
     // Get smart defaults from cache
     const preferredConfig = await projectCache.getPreferredBuildConfig(projectPath);
-    const smartDestination = destination || (await getSmartDestination(preferredConfig, projectPath));
+    const smartDestination =
+      destination || (await getSmartDestination(preferredConfig, projectPath));
 
     // Build final configuration
-    const finalConfig = {
-      scheme: scheme || preferredConfig?.scheme || scheme,
+    const finalConfig: BuildConfig = {
+      scheme,
       configuration: configuration || preferredConfig?.configuration || 'Debug',
       destination: smartDestination,
       sdk: sdk || preferredConfig?.sdk,
@@ -43,7 +44,7 @@ export async function xcodebuildBuildTool(args: any) {
     };
 
     // Build command
-    const command = buildXcodebuildCommand('build', projectPath, finalConfig);
+    const command = buildXcodebuildCommand('build', projectPath, finalConfig as any);
 
     console.error(`[xcodebuild-build] Executing: ${command}`);
 
@@ -117,13 +118,17 @@ export async function xcodebuildBuildTool(args: any) {
         usedSmartDestination,
         usedSmartConfiguration,
         hasPreferredConfig,
-        simulatorUsageRecorded: !!(finalConfig.destination && finalConfig.destination.includes('Simulator')),
+        simulatorUsageRecorded: !!(
+          finalConfig.destination && finalConfig.destination.includes('Simulator')
+        ),
         configurationLearned: summary.success, // Successful builds get remembered
       },
       nextSteps: summary.success
         ? [
             `✅ Build completed successfully in ${duration}ms`,
-            ...(usedSmartDestination ? [`🧠 Used smart simulator: ${finalConfig.destination}`] : []),
+            ...(usedSmartDestination
+              ? [`🧠 Used smart simulator: ${finalConfig.destination}`]
+              : []),
             ...(hasPreferredConfig ? [`📊 Applied cached project preferences`] : []),
             `Use 'xcodebuild-get-details' with buildId '${cacheId}' for full logs`,
             `Tip: This successful configuration is now cached for future builds`,
@@ -132,7 +137,9 @@ export async function xcodebuildBuildTool(args: any) {
             `❌ Build failed with ${summary.errorCount} errors, ${summary.warningCount} warnings`,
             `First error: ${summary.firstError || 'Unknown error'}`,
             `Use 'xcodebuild-get-details' with buildId '${cacheId}' for full logs and errors`,
-            ...(usedSmartDestination ? [`💡 Try 'simctl-list' to see other available simulators`] : []),
+            ...(usedSmartDestination
+              ? [`💡 Try 'simctl-list' to see other available simulators`]
+              : []),
           ],
       availableDetails: ['full-log', 'errors-only', 'warnings-only', 'summary', 'command'],
     };
