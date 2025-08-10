@@ -5,6 +5,8 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import {
   CallToolRequestSchema,
   ErrorCode,
+  ListPromptsRequestSchema,
+  GetPromptRequestSchema,
   ListToolsRequestSchema,
   McpError,
 } from '@modelcontextprotocol/sdk/types.js';
@@ -32,6 +34,10 @@ import {
   persistenceDisableTool,
   persistenceStatusTool,
 } from './tools/persistence/persistence-tools.js';
+import {
+  debugWorkflowPrompt,
+  debugWorkflowPromptDefinition,
+} from './tools/prompts/debug-workflow.js';
 import { validateXcodeInstallation } from './utils/validation.js';
 
 class XcodeCLIMCPServer {
@@ -41,16 +47,18 @@ class XcodeCLIMCPServer {
     this.server = new Server(
       {
         name: 'xc-mcp',
-        version: '1.0.0',
+        version: '1.0.5',
       },
       {
         capabilities: {
           tools: {},
+          prompts: {},
         },
       }
     );
 
     this.setupToolHandlers();
+    this.setupPromptHandlers();
     this.setupErrorHandling();
   }
 
@@ -682,6 +690,24 @@ Essential for:
           `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
         );
       }
+    });
+  }
+
+  private setupPromptHandlers() {
+    // List available prompts
+    this.server.setRequestHandler(ListPromptsRequestSchema, async () => {
+      return {
+        prompts: [debugWorkflowPromptDefinition],
+      };
+    });
+
+    // Get specific prompt
+    this.server.setRequestHandler(GetPromptRequestSchema, async request => {
+      if (request.params.name !== 'debug-workflow') {
+        throw new McpError(ErrorCode.InvalidRequest, `Unknown prompt: ${request.params.name}`);
+      }
+
+      return await debugWorkflowPrompt(request.params.arguments || {});
     });
   }
 
