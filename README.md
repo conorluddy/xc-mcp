@@ -11,6 +11,9 @@
 **Solution**: Progressive disclosure with intelligent caching returns 2,000 tokens instead, achieving 96% reduction.  
 **Result**: Full Xcode tooling functionality without token overflow, 90% faster workflows.
 
+![gh-social](https://github.com/user-attachments/assets/dd23b1e5-ed8c-40c0-b44d-7c92f3b5d5aa)
+
+
 ## Quick Start
 
 ```bash
