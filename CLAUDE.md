@@ -40,7 +40,7 @@ XC-MCP is a Model Context Protocol (MCP) server that provides intelligent access
 ### Core Components
 - **src/index.ts** - Main MCP server with tool registration and request routing
 - **src/tools/** - Tool implementations organized by command category:
-  - `xcodebuild/` - Build, clean, list, version tools with intelligent defaults
+  - `xcodebuild/` - Build, test, clean, list, version tools with intelligent defaults
   - `simctl/` - Simulator management with progressive disclosure
   - `cache/` - Cache management and statistics tools
 - **src/state/** - Intelligent caching system:
@@ -70,6 +70,7 @@ Tools return structured responses with:
 
 ### Critical Tool Categories and Usage Patterns
 - **xcodebuild-build**: Returns `buildId` for progressive access to full logs via `xcodebuild-get-details`
+- **xcodebuild-test**: Returns `testId` for progressive access to full test logs via `xcodebuild-get-details`
 - **simctl-list**: Returns `cacheId` for progressive access to full device data via `simctl-get-details`
 - **Cache Management**: Four-tool ecosystem (`cache-get-stats`, `cache-set-config`, `cache-get-config`, `cache-clear`)
 - **Progressive Disclosure**: Large outputs (10k+ tokens) automatically cached to prevent MCP token overflow
@@ -158,5 +159,6 @@ Tools return structured responses with:
 ### Tool Categories
 - **Project Discovery**: `xcodebuild-list`, `xcodebuild-showsdks`, `xcodebuild-version`
 - **Build Operations**: `xcodebuild-build`, `xcodebuild-clean`, `xcodebuild-get-details`
+- **Test Operations**: `xcodebuild-test` (with support for test plans, filtering, and test-without-building)
 - **Simulator Management**: `simctl-list`, `simctl-get-details`, `simctl-boot`, `simctl-shutdown`
 - **Cache Management**: `cache-get-stats`, `cache-set-config`, `cache-get-config`, `cache-clear`, `list-cached-responses`
