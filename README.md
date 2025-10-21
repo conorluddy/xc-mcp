@@ -187,7 +187,8 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 | | `xcodebuild-version` | Xcode version info | - |
 | **Build Operations** | `xcodebuild-build` | Build with smart defaults | ✓ (via buildId) |
 | | `xcodebuild-clean` | Clean build artifacts | - |
-| | `xcodebuild-get-details` | Access cached build logs | - |
+| | `xcodebuild-get-details` | Access cached build/test logs | - |
+| **Test Operations** | `xcodebuild-test` | Run tests with smart defaults and filtering | ✓ (via testId) |
 | **Simulator Management** | `simctl-list` | Simulator list with 96% token reduction | ✓ (via cacheId) |
 | | `simctl-get-details` | Progressive access to full simulator data | - |
 | | `simctl-boot` | Boot with performance tracking | - |

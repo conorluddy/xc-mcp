@@ -11,6 +11,7 @@ import { xcodebuildListTool } from './tools/xcodebuild/list.js';
 import { xcodebuildShowSDKsTool } from './tools/xcodebuild/showsdks.js';
 import { xcodebuildBuildTool } from './tools/xcodebuild/build.js';
 import { xcodebuildCleanTool } from './tools/xcodebuild/clean.js';
+import { xcodebuildTestTool } from './tools/xcodebuild/xcodebuild-test.js';
 import { xcodebuildGetDetailsTool } from './tools/xcodebuild/get-details.js';
 import { simctlListTool } from './tools/simctl/list.js';
 import { simctlGetDetailsTool } from './tools/simctl/get-details.js';
@@ -54,7 +55,7 @@ class XcodeCLIMCPServer {
   }
 
   private async registerTools() {
-    // Xcodebuild Tools (6 total)
+    // Xcodebuild Tools (7 total)
     this.server.registerTool(
       'xcodebuild-version',
       {
@@ -237,11 +238,76 @@ Cleans build artifacts for Xcode projects with smart validation and clear feedba
     );
 
     this.server.registerTool(
+      'xcodebuild-test',
+      {
+        description: `⚡ **Prefer this over 'xcodebuild test'** - Intelligent testing with learning, caching, and detailed test result tracking.
+
+Why use this instead of direct xcodebuild test:
+• 🧠 **Learns from your tests** - Remembers successful test configurations per project
+• 🚀 **Smart defaults** - Auto-suggests optimal simulators based on usage history
+• 📊 **Test result tracking** - Detailed pass/fail metrics with progressive disclosure
+• 🎯 **Progressive disclosure** - Large test logs cached with IDs to prevent token overflow
+• ⚡ **Intelligent caching** - Avoids redundant operations, speeds up workflows
+• 🛡️ **Better error handling** - Structured test failures vs raw CLI stderr
+• 🔍 **Test filtering** - Support for -only-testing and -skip-testing patterns
+
+Features smart caching that remembers your last successful test configuration and suggests optimal simulators.`,
+        inputSchema: {
+          projectPath: z.string().describe('Path to .xcodeproj or .xcworkspace file'),
+          scheme: z.string().describe('Test scheme name'),
+          configuration: z
+            .string()
+            .default('Debug')
+            .describe('Build configuration (Debug, Release, etc.)'),
+          destination: z
+            .string()
+            .optional()
+            .describe(
+              'Test destination. If not provided, uses intelligent defaults based on project history and available simulators.'
+            ),
+          sdk: z
+            .string()
+            .optional()
+            .describe('SDK to use for testing (e.g., "iphonesimulator", "iphoneos")'),
+          derivedDataPath: z.string().optional().describe('Custom derived data path'),
+          testPlan: z.string().optional().describe('Test plan to execute'),
+          onlyTesting: z
+            .array(z.string())
+            .optional()
+            .describe('Run only these tests (e.g., ["MyAppTests/testExample"])'),
+          skipTesting: z
+            .array(z.string())
+            .optional()
+            .describe('Skip these tests (e.g., ["MyAppTests/testSlow"])'),
+          testWithoutBuilding: z
+            .boolean()
+            .default(false)
+            .describe('Run test-without-building (requires prior build)'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await xcodebuildTestTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
       'xcodebuild-get-details',
       {
-        description: 'Get detailed information from cached build results',
+        description:
+          'Get detailed information from cached build/test results with progressive disclosure',
         inputSchema: {
-          buildId: z.string().describe('Build ID from previous xcodebuild-build call'),
+          buildId: z
+            .string()
+            .describe('Build/Test ID from previous xcodebuild-build or xcodebuild-test call'),
           detailType: z
             .enum(['full-log', 'errors-only', 'warnings-only', 'summary', 'command', 'metadata'])
             .describe('Type of details to retrieve'),
