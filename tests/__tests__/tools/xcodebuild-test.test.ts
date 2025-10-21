@@ -270,7 +270,7 @@ Test Case '-[MyAppTests testAnotherFailure]' failed (0.003 seconds)`,
     const result = await xcodebuildTestTool(args);
 
     const response = JSON.parse(result.content[0].text);
-    expect(response.intelligence.hasPreferredConfig).toBe(true);
+    expect(response.cacheMetadata.hadCachedPreferences).toBe(true);
   });
 
   it('should record simulator usage', async () => {
