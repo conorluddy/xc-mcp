@@ -16,9 +16,7 @@ const mockSimulator = {
 describe('simctlTypeTextTool', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(
-      mockSimulator
-    );
+    (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(mockSimulator);
   });
 
   describe('input validation', () => {
@@ -43,15 +41,13 @@ describe('simctlTypeTextTool', () => {
         })
       ).rejects.toThrow(
         expect.objectContaining({
-          message: expect.stringContaining('text'),
+          message: expect.stringMatching(/[Tt]ext/),
         })
       );
     });
 
     it('should reject non-existent simulator', async () => {
-      (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(
-        null
-      );
+      (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(null);
 
       await expect(
         simctlTypeTextTool({
@@ -90,7 +86,7 @@ describe('simctlTypeTextTool', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.success).toBe(true);
-      expect(response.textLength).toBe(5);
+      expect(response.textInfo.textLength).toBe(5);
     });
 
     it('should type email address', async () => {
@@ -107,7 +103,7 @@ describe('simctlTypeTextTool', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.success).toBe(true);
-      expect(response.textLength).toBe(16);
+      expect(response.textInfo.textLength).toBe(16);
     });
 
     it('should type password', async () => {
@@ -125,7 +121,7 @@ describe('simctlTypeTextTool', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.success).toBe(true);
-      expect(response.isSensitive).toBe(true);
+      expect(response.textInfo.isSensitive).toBe(true);
     });
 
     it('should type multi-line text', async () => {
@@ -192,7 +188,7 @@ describe('simctlTypeTextTool', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.success).toBe(true);
-      expect(response.textLength).toBe(1000);
+      expect(response.textInfo.textLength).toBe(1000);
     });
   });
 
@@ -274,12 +270,14 @@ describe('simctlTypeTextTool', () => {
         stderr: 'Typing failed: no text input field focused',
       });
 
-      await expect(
-        simctlTypeTextTool({
-          udid: 'device-iphone16pro',
-          text: 'hello',
-        })
-      ).rejects.toThrow();
+      const result = await simctlTypeTextTool({
+        udid: 'device-iphone16pro',
+        text: 'hello',
+      });
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.success).toBe(false);
+      expect(response.cacheId).toBeDefined();
     });
 
     it('should warn if no input field is focused', async () => {
@@ -289,24 +287,25 @@ describe('simctlTypeTextTool', () => {
         stderr: 'No input field active',
       });
 
-      await expect(
-        simctlTypeTextTool({
-          udid: 'device-iphone16pro',
-          text: 'hello',
-        })
-      ).rejects.toThrow();
+      const result = await simctlTypeTextTool({
+        udid: 'device-iphone16pro',
+        text: 'hello',
+      });
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.success).toBe(false);
+      const guidanceStr = response.guidance.join(' ');
+      expect(guidanceStr).toContain('focused');
     });
 
     it('should handle simulator not booted', async () => {
       const shutdownSimulator = { ...mockSimulator, state: 'Shutdown' };
-      (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(
-        shutdownSimulator
-      );
+      (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(shutdownSimulator);
 
       (executeCommand as jest.Mock).mockResolvedValue({
-        code: 0,
-        stdout: 'Text typed',
-        stderr: '',
+        code: 1,
+        stdout: '',
+        stderr: 'Simulator not available',
       });
 
       const result = await simctlTypeTextTool({
@@ -315,9 +314,9 @@ describe('simctlTypeTextTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.guidance).toContain(
-        expect.stringContaining('boot')
-      );
+      expect(response.success).toBe(false);
+      const guidanceStr = response.guidance.join(' ');
+      expect(guidanceStr).toContain('boot');
     });
   });
 
@@ -335,12 +334,9 @@ describe('simctlTypeTextTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.simulatorInfo).toEqual({
-        name: 'iPhone 16 Pro',
-        udid: 'device-iphone16pro',
-        state: 'Booted',
-        isAvailable: true,
-      });
+      expect(response.simulatorInfo).toBeDefined();
+      expect(response.simulatorInfo.name).toBe('iPhone 16 Pro');
+      expect(response.simulatorInfo.state).toBe('Booted');
     });
 
     it('should include text length information', async () => {
@@ -356,7 +352,7 @@ describe('simctlTypeTextTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.textLength).toBe(11);
+      expect(response.textInfo.textLength).toBe(11);
     });
 
     it('should include text preview for long text', async () => {
@@ -372,7 +368,7 @@ describe('simctlTypeTextTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.textPreview).toBeDefined();
+      expect(response.textInfo.textPreview).toBeDefined();
     });
 
     it('should mask sensitive text in response', async () => {
@@ -389,9 +385,9 @@ describe('simctlTypeTextTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.isSensitive).toBe(true);
+      expect(response.textInfo.isSensitive).toBe(true);
       // Should not expose actual text
-      expect(response.textPreview).not.toContain('secret');
+      expect(response.textInfo.textPreview).not.toContain('secret');
     });
 
     it('should include guidance suggestions', async () => {
@@ -443,9 +439,8 @@ describe('simctlTypeTextTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.guidance).toContain(
-        expect.stringContaining('screenshot')
-      );
+      const guidanceStr = response.guidance.join(' ');
+      expect(guidanceStr).toContain('screenshot');
     });
 
     it('should track text input for interaction validation', async () => {
@@ -462,7 +457,7 @@ describe('simctlTypeTextTool', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.timestamp).toBeDefined();
-      expect(response.textLength).toBe(10);
+      expect(response.textInfo.textLength).toBe(10);
     });
   });
 });

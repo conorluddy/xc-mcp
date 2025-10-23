@@ -1,6 +1,7 @@
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
 import { simulatorCache } from '../../state/simulator-cache.js';
+import { responseCache } from '../../utils/response-cache.js';
 
 type GestureType = 'swipe' | 'pinch' | 'rotate' | 'multitouch';
 type GestureDirection = 'up' | 'down' | 'left' | 'right';
@@ -58,18 +59,10 @@ export async function simctlGestureTool(args: any) {
   try {
     // Validate inputs
     if (!udid || udid.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'UDID is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'UDID is required and cannot be empty');
     }
 
-    const validGestureTypes: GestureType[] = [
-      'swipe',
-      'pinch',
-      'rotate',
-      'multitouch',
-    ];
+    const validGestureTypes: GestureType[] = ['swipe', 'pinch', 'rotate', 'multitouch'];
     if (!type || !validGestureTypes.includes(type)) {
       throw new McpError(
         ErrorCode.InvalidRequest,
@@ -92,10 +85,7 @@ export async function simctlGestureTool(args: any) {
 
     if (type === 'swipe') {
       if (!direction) {
-        throw new McpError(
-          ErrorCode.InvalidRequest,
-          'Direction is required for swipe gesture'
-        );
+        throw new McpError(ErrorCode.InvalidRequest, 'Direction is required for swipe gesture');
       }
 
       const x = startX || 375;
@@ -105,10 +95,7 @@ export async function simctlGestureTool(args: any) {
       gestureDetails = { direction, startX: x, startY: y };
     } else if (type === 'pinch') {
       if (scale === undefined) {
-        throw new McpError(
-          ErrorCode.InvalidRequest,
-          'Scale is required for pinch gesture'
-        );
+        throw new McpError(ErrorCode.InvalidRequest, 'Scale is required for pinch gesture');
       }
 
       const cx = centerX || 375;
@@ -118,10 +105,7 @@ export async function simctlGestureTool(args: any) {
       gestureDetails = { scale, centerX: cx, centerY: cy };
     } else if (type === 'rotate') {
       if (angle === undefined) {
-        throw new McpError(
-          ErrorCode.InvalidRequest,
-          'Angle is required for rotate gesture'
-        );
+        throw new McpError(ErrorCode.InvalidRequest, 'Angle is required for rotate gesture');
       }
 
       const cx = centerX || 375;
@@ -153,42 +137,53 @@ export async function simctlGestureTool(args: any) {
     const success = result.code === 0;
     const timestamp = new Date().toISOString();
 
+    // Store full response in cache for progressive disclosure
+    const interactionId = responseCache.store({
+      tool: 'simctl-gesture',
+      fullOutput: result.stdout,
+      stderr: result.stderr,
+      exitCode: result.code,
+      command,
+      metadata: {
+        udid,
+        gestureType: type,
+        direction: direction || 'none',
+        scale: scale ? String(scale) : 'none',
+        angle: angle ? String(angle) : 'none',
+        actionName: actionName || 'unlabeled',
+        timestamp,
+      },
+    });
+
+    // Create summary response with caching
     const responseData = {
       success,
       udid,
-      gestureType: type,
-      ...gestureDetails,
+      // Progressive disclosure: summary + cacheId
+      gestureInfo: {
+        type,
+        ...gestureDetails,
+        actionName: actionName || undefined,
+      },
       timestamp,
       simulatorInfo: {
         name: simulator.name,
-        udid: simulator.udid,
         state: simulator.state,
-        isAvailable: simulator.isAvailable,
       },
-      command,
-      output: result.stdout,
-      error: result.stderr || undefined,
-      exitCode: result.code,
+      cacheId: interactionId,
       guidance: success
         ? [
-            `✅ Gesture performed: ${type}`,
+            `✅ Gesture executed: ${type}`,
             actionName ? `Action: ${actionName}` : undefined,
-            direction
-              ? `Direction: ${direction}`
-              : scale
-                ? `Scale: ${scale}`
-                : angle
-                  ? `Angle: ${angle}°`
-                  : undefined,
+            `Use simctl-get-interaction-details to view command output`,
             `Verify gesture result: simctl-io ${udid} screenshot`,
             `Query for changes: simctl-query-ui ${udid} ...`,
           ].filter(Boolean)
         : [
-            `❌ Failed to perform ${type} gesture: ${result.stderr || 'Unknown error'}`,
+            `❌ Failed to perform ${type} gesture`,
             simulator.state !== 'Booted'
               ? `Simulator is not booted: simctl-boot ${udid}`
               : `Check gesture parameters`,
-            `Verify app is running and responsive`,
           ],
     };
 

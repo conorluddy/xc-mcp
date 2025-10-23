@@ -1,6 +1,7 @@
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
 import { simulatorCache } from '../../state/simulator-cache.js';
+import { responseCache } from '../../utils/response-cache.js';
 import { promises as fs } from 'fs';
 
 interface SimctlTypeTextToolArgs {
@@ -27,23 +28,16 @@ interface SimctlTypeTextToolArgs {
  * logging of sensitive data. Timestamp enables agent verification with screenshots.
  */
 export async function simctlTypeTextTool(args: any) {
-  const { udid, text, isSensitive, keyboardActions, actionName } =
-    args as SimctlTypeTextToolArgs;
+  const { udid, text, isSensitive, keyboardActions, actionName } = args as SimctlTypeTextToolArgs;
 
   try {
     // Validate inputs
     if (!udid || udid.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'UDID is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'UDID is required and cannot be empty');
     }
 
     if (!text || text.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'Text is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'Text is required and cannot be empty');
     }
 
     // Validate simulator exists
@@ -61,7 +55,7 @@ export async function simctlTypeTextTool(args: any) {
 
     try {
       // Build type command
-      let command = `cat "${tempFile}" | xcrun simctl io "${udid}" type`;
+      const command = `cat "${tempFile}" | xcrun simctl io "${udid}" type`;
 
       console.error(`[simctl-type-text] Typing text to ${udid}`);
 
@@ -88,39 +82,51 @@ export async function simctlTypeTextTool(args: any) {
         textPreview = text;
       }
 
+      // Store full response in cache for progressive disclosure
+      const interactionId = responseCache.store({
+        tool: 'simctl-type-text',
+        fullOutput: result.stdout,
+        stderr: result.stderr,
+        exitCode: result.code,
+        command: isSensitive ? 'xcrun simctl io [UDID] type [REDACTED]' : command,
+        metadata: {
+          udid,
+          textLength: String(text.length),
+          isSensitive: isSensitive ? 'true' : 'false',
+          actionName: actionName || 'unlabeled',
+          keyboardActionsCount: keyboardActions ? String(keyboardActions.length) : '0',
+          timestamp,
+        },
+      });
+
+      // Create summary response with caching
       const responseData = {
         success,
         udid,
-        textLength: text.length,
-        textPreview: isSensitive ? '[REDACTED]' : textPreview,
-        isSensitive: isSensitive ? true : undefined,
+        // Progressive disclosure: summary + cacheId
+        textInfo: {
+          textLength: text.length,
+          textPreview: isSensitive ? '[REDACTED]' : textPreview,
+          isSensitive: isSensitive || false,
+          actionName: actionName || undefined,
+        },
         keyboardActions: keyboardActions || undefined,
         timestamp,
         simulatorInfo: {
           name: simulator.name,
-          udid: simulator.udid,
           state: simulator.state,
-          isAvailable: simulator.isAvailable,
         },
-        command: isSensitive ? 'xcrun simctl io [UDID] type [REDACTED]' : command,
-        output: result.stdout,
-        error: result.stderr || undefined,
-        exitCode: result.code,
+        cacheId: interactionId,
         guidance: success
           ? [
-              `✅ Text typed successfully`,
+              `✅ Text typed (${text.length} characters)`,
               actionName ? `Action: ${actionName}` : undefined,
-              isSensitive
-                ? `Sensitive data - output redacted`
-                : `Typed: ${textPreview}`,
-              keyboardActions && keyboardActions.length > 0
-                ? `Keyboard actions: ${keyboardActions.join(', ')}`
-                : undefined,
+              isSensitive ? `Sensitive data - output redacted` : `Preview: ${textPreview}`,
+              `Use simctl-get-interaction-details to view full output`,
               `Verify input: simctl-io ${udid} screenshot`,
-              `Next step: Tap button or press return to submit`,
             ].filter(Boolean)
           : [
-              `❌ Failed to type text: ${result.stderr || 'Unknown error'}`,
+              `❌ Failed to type text`,
               `Make sure a text input field is focused`,
               `Tap on text field first: simctl-tap ${udid} <x> <y>`,
               simulator.state !== 'Booted'

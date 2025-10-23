@@ -1,4 +1,5 @@
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
+import { responseCache } from '../../utils/response-cache.js';
 import { executeCommand } from '../../utils/command.js';
 import { simulatorCache } from '../../state/simulator-cache.js';
 
@@ -31,16 +32,12 @@ interface SimctlScrollToolArgs {
  * agents to verify scroll success with screenshots and element queries.
  */
 export async function simctlScrollTool(args: any) {
-  const { udid, direction, x, y, velocity = 3, actionName } =
-    args as SimctlScrollToolArgs;
+  const { udid, direction, x, y, velocity = 3, actionName } = args as SimctlScrollToolArgs;
 
   try {
     // Validate inputs
     if (!udid || udid.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'UDID is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'UDID is required and cannot be empty');
     }
 
     const validDirections: ScrollDirection[] = ['up', 'down', 'left', 'right'];
@@ -93,36 +90,51 @@ export async function simctlScrollTool(args: any) {
     const success = result.code === 0;
     const timestamp = new Date().toISOString();
 
+    // Store full response in cache for progressive disclosure
+    const interactionId = responseCache.store({
+      tool: 'simctl-scroll',
+      fullOutput: result.stdout,
+      stderr: result.stderr,
+      exitCode: result.code,
+      command,
+      metadata: {
+        udid,
+        direction,
+        x: String(scrollX),
+        y: String(scrollY),
+        velocity: String(velocity || 3),
+        actionName: actionName || 'unlabeled',
+        timestamp,
+      },
+    });
+
+    // Create summary response with caching
     const responseData = {
       success,
       udid,
-      direction,
-      coordinates: { x: scrollX, y: scrollY },
-      velocity: velocity || 3,
+      // Progressive disclosure: summary + cacheId
+      scrollInfo: {
+        direction,
+        coordinates: { x: scrollX, y: scrollY },
+        velocity: velocity || 3,
+        actionName: actionName || undefined,
+      },
       timestamp,
       simulatorInfo: {
         name: simulator.name,
-        udid: simulator.udid,
         state: simulator.state,
-        isAvailable: simulator.isAvailable,
       },
-      command,
-      output: result.stdout,
-      error: result.stderr || undefined,
-      exitCode: result.code,
+      cacheId: interactionId,
       guidance: success
         ? [
-            `✅ Scroll ${direction} performed at {${scrollX}, ${scrollY}}`,
+            `✅ Scroll ${direction} executed at {${scrollX}, ${scrollY}}`,
             actionName ? `Action: ${actionName}` : undefined,
-            velocity && velocity !== 3
-              ? `Velocity: ${velocity}`
-              : undefined,
+            `Use simctl-get-interaction-details to view command output`,
             `Verify scroll result: simctl-io ${udid} screenshot`,
             `Query for element at new position: simctl-query-ui ${udid} ...`,
-            `Continue scrolling if needed: simctl-scroll ${udid} ${direction}`,
           ].filter(Boolean)
         : [
-            `❌ Failed to scroll ${direction}: ${result.stderr || 'Unknown error'}`,
+            `❌ Failed to scroll ${direction}`,
             `No scrollable element at coordinates {${scrollX}, ${scrollY}}`,
             simulator.state !== 'Booted'
               ? `Simulator is not booted: simctl-boot ${udid}`

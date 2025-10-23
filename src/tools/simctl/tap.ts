@@ -1,6 +1,7 @@
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
 import { simulatorCache } from '../../state/simulator-cache.js';
+import { responseCache } from '../../utils/response-cache.js';
 
 interface SimctlTapToolArgs {
   udid: string;
@@ -26,30 +27,20 @@ interface SimctlTapToolArgs {
  * coordinates enable agents to verify tap success with screenshots.
  */
 export async function simctlTapTool(args: any) {
-  const { udid, x, y, numberOfTaps = 1, duration, actionName } =
-    args as SimctlTapToolArgs;
+  const { udid, x, y, numberOfTaps = 1, duration, actionName } = args as SimctlTapToolArgs;
 
   try {
     // Validate inputs
     if (!udid || udid.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'UDID is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'UDID is required and cannot be empty');
     }
 
     if (x === undefined || y === undefined) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'Coordinates (x, y) are required'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'Coordinates (x, y) are required');
     }
 
     if (x < 0 || y < 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'Coordinates must be non-negative integers'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'Coordinates must be non-negative integers');
     }
 
     // Validate simulator exists
@@ -81,40 +72,53 @@ export async function simctlTapTool(args: any) {
     const success = result.code === 0;
     const timestamp = new Date().toISOString();
 
+    // Store full response in cache for progressive disclosure
+    const interactionId = responseCache.store({
+      tool: 'simctl-tap',
+      fullOutput: result.stdout,
+      stderr: result.stderr,
+      exitCode: result.code,
+      command,
+      metadata: {
+        udid,
+        x: String(x),
+        y: String(y),
+        numberOfTaps: String(numberOfTaps),
+        duration: duration ? String(duration) : 'none',
+        actionName: actionName || 'unlabeled',
+        timestamp,
+      },
+    });
+
+    // Create summary response with caching
     const responseData = {
       success,
       udid,
       coordinates: { x, y },
-      numberOfTaps,
-      duration: duration || undefined,
-      timestamp,
+      // Progressive disclosure: summary + cacheId
+      tapInfo: {
+        numberOfTaps,
+        duration: duration || undefined,
+        actionName: actionName || undefined,
+        timestamp,
+      },
       simulatorInfo: {
         name: simulator.name,
-        udid: simulator.udid,
         state: simulator.state,
-        isAvailable: simulator.isAvailable,
       },
-      command,
-      output: result.stdout,
-      error: result.stderr || undefined,
-      exitCode: result.code,
+      cacheId: interactionId,
       guidance: success
         ? [
-            `✅ Tap performed at coordinates {${x}, ${y}}`,
+            `✅ Tap executed at {${x}, ${y}}`,
             actionName ? `Action: ${actionName}` : undefined,
-            numberOfTaps > 1
-              ? `Number of taps: ${numberOfTaps}`
-              : undefined,
-            duration ? `Duration: ${duration}s (long press)` : undefined,
+            `Use simctl-get-interaction-details to view command output`,
             `Verify result: simctl-io ${udid} screenshot`,
-            `Query next element: simctl-query-ui ${udid} ...`,
           ].filter(Boolean)
         : [
-            `❌ Failed to tap at {${x}, ${y}}: ${result.stderr || 'Unknown error'}`,
+            `❌ Failed to tap at {${x}, ${y}}`,
             simulator.state !== 'Booted'
               ? `Simulator is not booted. Boot it first: simctl-boot ${udid}`
               : `Check coordinates are on screen`,
-            `Verify app is running`,
           ],
     };
 

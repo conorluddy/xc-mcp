@@ -42,6 +42,7 @@ import { simctlTapTool } from './tools/simctl/tap.js';
 import { simctlTypeTextTool } from './tools/simctl/type-text.js';
 import { simctlScrollTool } from './tools/simctl/scroll.js';
 import { simctlGestureTool } from './tools/simctl/gesture.js';
+import { simctlGetInteractionDetailsTool } from './tools/simctl/get-interaction-details.js';
 import { listCachedResponsesTool } from './tools/cache/list-cached.js';
 import {
   getCacheStatsTool,
@@ -527,10 +528,7 @@ Scoring algorithm considers: project preference (40%), recent usage (40%), iOS v
             .string()
             .optional()
             .describe('Filter suggestions by device type (e.g., iPhone, iPad)'),
-          maxSuggestions: z
-            .number()
-            .default(4)
-            .describe('Maximum number of suggestions to return'),
+          maxSuggestions: z.number().default(4).describe('Maximum number of suggestions to return'),
           autoBootTopSuggestion: z
             .boolean()
             .default(false)
@@ -564,9 +562,7 @@ Advantages:
 
 Creates a new simulator device that persists until deleted.`,
         inputSchema: {
-          name: z
-            .string()
-            .describe('Display name for the new simulator (e.g., "MyTestDevice")'),
+          name: z.string().describe('Display name for the new simulator (e.g., "MyTestDevice")'),
           deviceType: z
             .string()
             .describe('Device type (e.g., "iPhone 16 Pro", "iPad Pro", "Apple Watch Series 9")'),
@@ -602,9 +598,7 @@ Advantages:
 
 ⚠️ This action cannot be undone.`,
         inputSchema: {
-          deviceId: z
-            .string()
-            .describe('Device UDID (from simctl-list)'),
+          deviceId: z.string().describe('Device UDID (from simctl-list)'),
         },
       },
       async args => {
@@ -634,13 +628,8 @@ Advantages:
 
 Resets device to clean state while keeping it available.`,
         inputSchema: {
-          deviceId: z
-            .string()
-            .describe('Device UDID (from simctl-list)'),
-          force: z
-            .boolean()
-            .default(false)
-            .describe('Force erase even if device is booted'),
+          deviceId: z.string().describe('Device UDID (from simctl-list)'),
+          force: z.boolean().default(false).describe('Force erase even if device is booted'),
         },
       },
       async args => {
@@ -670,12 +659,8 @@ Advantages:
 
 Creates a new simulator with same configuration and data as source.`,
         inputSchema: {
-          deviceId: z
-            .string()
-            .describe('Source device UDID (from simctl-list)'),
-          newName: z
-            .string()
-            .describe('Display name for the cloned simulator'),
+          deviceId: z.string().describe('Source device UDID (from simctl-list)'),
+          newName: z.string().describe('Display name for the cloned simulator'),
         },
       },
       async args => {
@@ -704,12 +689,8 @@ Advantages:
 
 Renames device while preserving all configuration and data.`,
         inputSchema: {
-          deviceId: z
-            .string()
-            .describe('Device UDID (from simctl-list)'),
-          newName: z
-            .string()
-            .describe('New display name for the simulator'),
+          deviceId: z.string().describe('Device UDID (from simctl-list)'),
+          newName: z.string().describe('New display name for the simulator'),
         },
       },
       async args => {
@@ -742,7 +723,7 @@ Validates:
 Returns detailed diagnostics and actionable guidance for any issues found.`,
         inputSchema: {},
       },
-      async args => {
+      async _args => {
         try {
           await validateXcodeInstallation();
           return await simctlHealthCheckTool();
@@ -863,10 +844,7 @@ Returns: Process ID, launch status, and guidance for app control.`,
             .array(z.string())
             .optional()
             .describe('Command-line arguments to pass to the app'),
-          environment: z
-            .record(z.string())
-            .optional()
-            .describe('Environment variables to set'),
+          environment: z.record(z.string()).optional().describe('Environment variables to set'),
         },
       },
       async args => {
@@ -959,18 +937,13 @@ Supports custom output paths and video codecs (h264, hevc, prores).
 Returns: File path and guidance for viewing captured media.`,
         inputSchema: {
           udid: z.string().describe('Simulator UDID'),
-          operation: z
-            .enum(['screenshot', 'video'])
-            .describe('Operation: screenshot or video'),
+          operation: z.enum(['screenshot', 'video']).describe('Operation: screenshot or video'),
           outputPath: z.string().optional().describe('Custom output file path'),
           codec: z
             .enum(['h264', 'hevc', 'prores'])
             .optional()
             .describe('Video codec (for video operation)'),
-          appName: z
-            .string()
-            .optional()
-            .describe('App name for semantic naming (e.g., "MyApp")'),
+          appName: z.string().optional().describe('App name for semantic naming (e.g., "MyApp")'),
           screenName: z
             .string()
             .optional()
@@ -1009,9 +982,7 @@ Supported formats:
 Returns: Media addition status and guidance for accessing in Photos app.`,
         inputSchema: {
           udid: z.string().describe('Simulator UDID'),
-          mediaPath: z
-            .string()
-            .describe('Path to image or video file (e.g., /path/to/photo.jpg)'),
+          mediaPath: z.string().describe('Path to image or video file (e.g., /path/to/photo.jpg)'),
         },
       },
       async args => {
@@ -1046,20 +1017,17 @@ Returns: Permission modification status and verification guidance.`,
         inputSchema: {
           udid: z.string().describe('Simulator UDID'),
           bundleId: z.string().describe('App bundle ID (e.g., com.example.MyApp)'),
-          action: z
-            .enum(['grant', 'revoke', 'reset'])
-            .describe('Action: grant, revoke, or reset'),
+          action: z.enum(['grant', 'revoke', 'reset']).describe('Action: grant, revoke, or reset'),
           service: z
             .string()
             .describe('Service name (camera, microphone, location, contacts, photos, etc.)'),
           scenario: z
             .string()
             .optional()
-            .describe('Test scenario name for audit trail (e.g., "LocationTest", "CameraOnboarding")'),
-          step: z
-            .number()
-            .optional()
-            .describe('Step number in scenario for audit trail tracking'),
+            .describe(
+              'Test scenario name for audit trail (e.g., "LocationTest", "CameraOnboarding")'
+            ),
+          step: z.number().optional().describe('Step number in scenario for audit trail tracking'),
         },
       },
       async args => {
@@ -1161,28 +1129,18 @@ Supports: Time, network status, WiFi state, battery state and level
 Returns: Status bar modification status and guidance for verification.`,
         inputSchema: {
           udid: z.string().describe('Simulator UDID'),
-          operation: z
-            .enum(['override', 'clear'])
-            .describe('Operation: override or clear'),
+          operation: z.enum(['override', 'clear']).describe('Operation: override or clear'),
           time: z.string().optional().describe('Time in 24-hour format (e.g., "9:41")'),
           dataNetwork: z
             .string()
             .optional()
             .describe('Data network: none, 1x, 3g, 4g, 5g, lte, lte-a'),
-          wifiMode: z
-            .string()
-            .optional()
-            .describe('WiFi state: active, searching, failed'),
+          wifiMode: z.string().optional().describe('WiFi state: active, searching, failed'),
           batteryState: z
             .string()
             .optional()
             .describe('Battery state: charging, charged, discharging'),
-          batteryLevel: z
-            .number()
-            .min(0)
-            .max(100)
-            .optional()
-            .describe('Battery level: 0-100'),
+          batteryLevel: z.number().min(0).max(100).optional().describe('Battery level: 0-100'),
         },
       },
       async args => {
@@ -1254,14 +1212,8 @@ Returns: Tap status and guidance for verification.`,
           udid: z.string().describe('Simulator UDID'),
           x: z.number().describe('X coordinate in pixels'),
           y: z.number().describe('Y coordinate in pixels'),
-          numberOfTaps: z
-            .number()
-            .optional()
-            .describe('Number of taps (default: 1)'),
-          duration: z
-            .number()
-            .optional()
-            .describe('Duration in seconds for long press'),
+          numberOfTaps: z.number().optional().describe('Number of taps (default: 1)'),
+          duration: z.number().optional().describe('Duration in seconds for long press'),
           actionName: z
             .string()
             .optional()
@@ -1331,15 +1283,10 @@ Scroll views, tables, and lists in any direction with configurable velocity.
 Returns: Scroll status and guidance for verification.`,
         inputSchema: {
           udid: z.string().describe('Simulator UDID'),
-          direction: z
-            .enum(['up', 'down', 'left', 'right'])
-            .describe('Scroll direction'),
+          direction: z.enum(['up', 'down', 'left', 'right']).describe('Scroll direction'),
           x: z.number().optional().describe('X coordinate (default: screen center)'),
           y: z.number().optional().describe('Y coordinate (default: screen center)'),
-          velocity: z
-            .number()
-            .optional()
-            .describe('Scroll velocity 1-10 (default: 3)'),
+          velocity: z.number().optional().describe('Scroll velocity 1-10 (default: 3)'),
           actionName: z
             .string()
             .optional()
@@ -1372,55 +1319,67 @@ Gestures: swipe, pinch, rotate, multitouch
 Returns: Gesture status and guidance for verification.`,
         inputSchema: {
           udid: z.string().describe('Simulator UDID'),
-          type: z
-            .enum(['swipe', 'pinch', 'rotate', 'multitouch'])
-            .describe('Gesture type'),
+          type: z.enum(['swipe', 'pinch', 'rotate', 'multitouch']).describe('Gesture type'),
           direction: z
             .enum(['up', 'down', 'left', 'right'])
             .optional()
             .describe('Direction (for swipe)'),
-          scale: z
-            .number()
-            .optional()
-            .describe('Scale factor (for pinch)'),
-          angle: z
-            .number()
-            .optional()
-            .describe('Rotation angle in degrees (for rotate)'),
-          startX: z
-            .number()
-            .optional()
-            .describe('Starting X coordinate (for swipe)'),
-          startY: z
-            .number()
-            .optional()
-            .describe('Starting Y coordinate (for swipe)'),
-          centerX: z
-            .number()
-            .optional()
-            .describe('Center X coordinate (for pinch/rotate)'),
-          centerY: z
-            .number()
-            .optional()
-            .describe('Center Y coordinate (for pinch/rotate)'),
-          fingers: z
-            .number()
-            .optional()
-            .describe('Number of fingers (for multitouch)'),
-          action: z
-            .string()
-            .optional()
-            .describe('Action type (for multitouch, e.g., "tap")'),
-          actionName: z
-            .string()
-            .optional()
-            .describe('Action description for tracking'),
+          scale: z.number().optional().describe('Scale factor (for pinch)'),
+          angle: z.number().optional().describe('Rotation angle in degrees (for rotate)'),
+          startX: z.number().optional().describe('Starting X coordinate (for swipe)'),
+          startY: z.number().optional().describe('Starting Y coordinate (for swipe)'),
+          centerX: z.number().optional().describe('Center X coordinate (for pinch/rotate)'),
+          centerY: z.number().optional().describe('Center Y coordinate (for pinch/rotate)'),
+          fingers: z.number().optional().describe('Number of fingers (for multitouch)'),
+          action: z.string().optional().describe('Action type (for multitouch, e.g., "tap")'),
+          actionName: z.string().optional().describe('Action description for tracking'),
         },
       },
       async args => {
         try {
           await validateXcodeInstallation();
           return await simctlGestureTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    // Phase 4: Progressive Disclosure for UI Interactions
+    this.server.registerTool(
+      'simctl-get-interaction-details',
+      {
+        description: `🔍 **Get Interaction Details** - Retrieve full output from cached UI automation operations.
+
+Supports progressive disclosure for Phase 4 UI automation tools:
+• simctl-query-ui - Element querying results
+• simctl-tap - Tap operation logs
+• simctl-type-text - Text input results
+• simctl-scroll - Scroll operation logs
+• simctl-gesture - Gesture operation logs
+
+Use interactionId from tool responses to fetch full command output, errors, or metadata.
+
+Returns: Detailed operation results with optional log limiting.`,
+        inputSchema: {
+          interactionId: z.string().describe('Interaction ID from UI automation tool response'),
+          detailType: z
+            .enum(['full-log', 'summary', 'command', 'metadata'])
+            .describe('Type of details to retrieve'),
+          maxLines: z
+            .number()
+            .optional()
+            .default(100)
+            .describe('Maximum number of lines to return for logs'),
+        },
+      },
+      async args => {
+        try {
+          return await simctlGetInteractionDetailsTool(args);
         } catch (error) {
           if (error instanceof McpError) throw error;
           throw new McpError(

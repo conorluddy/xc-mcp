@@ -17,9 +17,7 @@ const mockSimulator = {
 describe('simctlQueryUiTool', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(
-      mockSimulator
-    );
+    (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(mockSimulator);
   });
 
   describe('input validation', () => {
@@ -46,7 +44,7 @@ describe('simctlQueryUiTool', () => {
         })
       ).rejects.toThrow(
         expect.objectContaining({
-          message: expect.stringContaining('bundle ID'),
+          message: expect.stringMatching(/[Bb]undle [Ii][Dd]/),
         })
       );
     });
@@ -74,15 +72,13 @@ describe('simctlQueryUiTool', () => {
         })
       ).rejects.toThrow(
         expect.objectContaining({
-          message: expect.stringContaining('predicate'),
+          message: expect.stringMatching(/[Pp]redicate/),
         })
       );
     });
 
     it('should reject non-existent simulator', async () => {
-      (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(
-        null
-      );
+      (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(null);
 
       await expect(
         simctlQueryUiTool({
@@ -116,8 +112,7 @@ describe('simctlQueryUiTool', () => {
     it('should query button elements', async () => {
       (executeCommand as jest.Mock).mockResolvedValue({
         code: 0,
-        stdout:
-          'Button (XCUIElementTypeButton) at {100, 200}, label: "Login"',
+        stdout: 'Button (XCUIElementTypeButton) at {100, 200}, label: "Login"',
         stderr: '',
       });
 
@@ -130,7 +125,9 @@ describe('simctlQueryUiTool', () => {
       const response = JSON.parse(result.content[0].text);
       expect(response.success).toBe(true);
       expect(response.bundleId).toBe('com.example.app');
-      expect(response.elements).toBeDefined();
+      // Progressive disclosure: summary returned instead of full elements
+      expect(response.summary).toBeDefined();
+      expect(response.cacheId).toBeDefined();
     });
 
     it('should query text field elements', async () => {
@@ -210,13 +207,17 @@ describe('simctlQueryUiTool', () => {
         stderr: 'Query failed: invalid predicate syntax',
       });
 
-      await expect(
-        simctlQueryUiTool({
-          udid: 'device-iphone16pro',
-          bundleId: 'com.example.app',
-          predicate: 'invalid syntax',
-        })
-      ).rejects.toThrow();
+      const result = await simctlQueryUiTool({
+        udid: 'device-iphone16pro',
+        bundleId: 'com.example.app',
+        predicate: 'invalid syntax',
+      });
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.success).toBe(false);
+      expect(response.summary).toBeDefined();
+      expect(response.summary.error).toContain('Query failed');
+      expect(result.isError).toBe(true);
     });
 
     it('should handle no elements found', async () => {
@@ -240,16 +241,22 @@ describe('simctlQueryUiTool', () => {
       (executeCommand as jest.Mock).mockResolvedValue({
         code: 1,
         stdout: '',
-        stderr: 'Error',
+        stderr: 'Error executing query',
       });
 
-      await expect(
-        simctlQueryUiTool({
-          udid: 'device-iphone16pro',
-          bundleId: 'com.example.app',
-          predicate: 'bad predicate',
-        })
-      ).rejects.toThrow();
+      const result = await simctlQueryUiTool({
+        udid: 'device-iphone16pro',
+        bundleId: 'com.example.app',
+        predicate: 'bad predicate',
+      });
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.success).toBe(false);
+      expect(response.guidance).toBeDefined();
+      expect(response.guidance.length).toBeGreaterThan(0);
+      // Check for error guidance message
+      const guidanceStr = response.guidance.join(' ');
+      expect(guidanceStr).toContain('❌');
     });
   });
 
@@ -268,15 +275,13 @@ describe('simctlQueryUiTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.simulatorInfo).toEqual({
-        name: 'iPhone 16 Pro',
-        udid: 'device-iphone16pro',
-        state: 'Booted',
-        isAvailable: true,
-      });
+      // Progressive disclosure: simulator info now only includes essential fields
+      expect(response.simulatorInfo).toBeDefined();
+      expect(response.simulatorInfo.name).toBe('iPhone 16 Pro');
+      expect(response.simulatorInfo.state).toBe('Booted');
     });
 
-    it('should include command in response', async () => {
+    it('should include command in cached response details', async () => {
       (executeCommand as jest.Mock).mockResolvedValue({
         code: 0,
         stdout: 'Result',
@@ -290,8 +295,10 @@ describe('simctlQueryUiTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.command).toBeDefined();
-      expect(response.command).toContain('xcrun');
+      // Command is now stored in cache, retrieved via cacheId
+      expect(response.cacheId).toBeDefined();
+      // Guidance should mention how to retrieve full details including command
+      expect(response.guidance.join(' ')).toContain('simctl-get-interaction-details');
     });
 
     it('should include guidance suggestions', async () => {
@@ -412,6 +419,70 @@ describe('simctlQueryUiTool', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.success).toBe(true);
+    });
+  });
+
+  describe('Progressive disclosure caching', () => {
+    it('should include cacheId in response for retrieving full details', async () => {
+      (executeCommand as jest.Mock).mockResolvedValue({
+        code: 0,
+        stdout: 'Button 1\nButton 2\nButton 3',
+        stderr: '',
+      });
+
+      const result = await simctlQueryUiTool({
+        udid: 'device-iphone16pro',
+        bundleId: 'com.example.app',
+        predicate: 'type == "XCUIElementTypeButton"',
+      });
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.success).toBe(true);
+      expect(response.cacheId).toBeDefined();
+      expect(typeof response.cacheId).toBe('string');
+      expect(response.cacheId.length).toBeGreaterThan(0);
+    });
+
+    it('should return summary with cacheId for large result sets', async () => {
+      (executeCommand as jest.Mock).mockResolvedValue({
+        code: 0,
+        stdout: 'Element 1\nElement 2\nElement 3\nElement 4\nElement 5',
+        stderr: '',
+      });
+
+      const result = await simctlQueryUiTool({
+        udid: 'device-iphone16pro',
+        bundleId: 'com.example.app',
+        predicate: 'enabled == true',
+      });
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.success).toBe(true);
+      expect(response.summary).toBeDefined();
+      expect(response.summary.elementCount).toBe(5);
+      expect(response.cacheId).toBeDefined();
+      // Check that guidance contains reference to get-interaction-details
+      const guidanceStr = response.guidance.join(' ');
+      expect(guidanceStr).toContain('simctl-get-interaction-details');
+    });
+
+    it('should include guidance for accessing full element list', async () => {
+      (executeCommand as jest.Mock).mockResolvedValue({
+        code: 0,
+        stdout: 'Button: Login',
+        stderr: '',
+      });
+
+      const result = await simctlQueryUiTool({
+        udid: 'device-iphone16pro',
+        bundleId: 'com.example.app',
+        predicate: 'type == "XCUIElementTypeButton"',
+      });
+
+      const response = JSON.parse(result.content[0].text);
+      // Check that guidance contains reference to get-interaction-details
+      const guidanceStr = response.guidance.join(' ');
+      expect(guidanceStr).toContain('simctl-get-interaction-details');
     });
   });
 });

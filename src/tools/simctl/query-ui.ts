@@ -1,6 +1,7 @@
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
 import { simulatorCache } from '../../state/simulator-cache.js';
+import { responseCache } from '../../utils/response-cache.js';
 
 interface SimctlQueryUiToolArgs {
   udid: string;
@@ -25,23 +26,16 @@ interface SimctlQueryUiToolArgs {
  * - Compound predicates: AND, OR, NOT operators
  */
 export async function simctlQueryUiTool(args: any) {
-  const { udid, bundleId, predicate, captureLocation } =
-    args as SimctlQueryUiToolArgs;
+  const { udid, bundleId, predicate, captureLocation } = args as SimctlQueryUiToolArgs;
 
   try {
     // Validate inputs
     if (!udid || udid.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'UDID is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'UDID is required and cannot be empty');
     }
 
     if (!bundleId || bundleId.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'Bundle ID is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'Bundle ID is required and cannot be empty');
     }
 
     if (!bundleId.includes('.')) {
@@ -52,10 +46,7 @@ export async function simctlQueryUiTool(args: any) {
     }
 
     if (!predicate || predicate.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'Predicate is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'Predicate is required and cannot be empty');
     }
 
     // Validate simulator exists
@@ -78,7 +69,25 @@ export async function simctlQueryUiTool(args: any) {
     });
 
     const success = result.code === 0;
+    const lines = result.stdout.split('\n').filter(line => line.trim());
 
+    // Store full response in cache for progressive disclosure
+    const interactionId = responseCache.store({
+      tool: 'simctl-query-ui',
+      fullOutput: result.stdout,
+      stderr: result.stderr,
+      exitCode: result.code,
+      command,
+      metadata: {
+        udid,
+        bundleId,
+        predicate,
+        captureLocation: captureLocation ? 'true' : 'false',
+        elementCount: lines.length,
+      },
+    });
+
+    // Create summary response with caching
     const responseData = {
       success,
       udid,
@@ -86,37 +95,32 @@ export async function simctlQueryUiTool(args: any) {
       predicate,
       simulatorInfo: {
         name: simulator.name,
-        udid: simulator.udid,
         state: simulator.state,
-        isAvailable: simulator.isAvailable,
       },
-      // LLM optimization: element metadata for agent interaction
-      elements: success
+      // Progressive disclosure: summary + cacheId
+      summary: success
         ? {
-            found: true,
-            query: predicate,
-            output: result.stdout,
+            elementCount: lines.length,
+            firstElement: lines[0] ? lines[0].substring(0, 100) : 'No elements found',
+            note: `Found ${lines.length} element(s) matching predicate`,
           }
-        : undefined,
-      command,
-      output: result.stdout,
-      error: result.stderr || undefined,
-      exitCode: result.code,
+        : {
+            error: result.stderr?.substring(0, 200) || 'Unknown error',
+          },
+      cacheId: interactionId,
       guidance: success
         ? [
-            `✅ UI query successful for "${bundleId}"`,
-            `Predicate: ${predicate}`,
-            `Result summary: ${result.stdout.split('\n')[0]}`,
+            `✅ Query matched ${lines.length} UI element(s)`,
+            `Use simctl-get-interaction-details to view full element list`,
             captureLocation
               ? `Element locations captured for interaction`
-              : `Use captureLocation: true to get element coordinates`,
+              : `Re-run with captureLocation: true to get coordinates`,
             `Next: Interact with element using simctl-tap, simctl-type-text, etc.`,
           ]
         : [
-            `❌ Failed to query UI: ${result.stderr || 'Unknown error'}`,
+            `❌ Failed to query UI: ${result.stderr?.split('\n')[0] || 'Unknown error'}`,
             `Check predicate syntax: ${predicate}`,
             `Verify app is running: simctl-launch ${udid} ${bundleId}`,
-            `Test predicate in Xcode UI Test explorer for debugging`,
           ],
     };
 

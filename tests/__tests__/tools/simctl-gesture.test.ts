@@ -16,9 +16,7 @@ const mockSimulator = {
 describe('simctlGestureTool', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(
-      mockSimulator
-    );
+    (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(mockSimulator);
   });
 
   describe('input validation', () => {
@@ -45,15 +43,13 @@ describe('simctlGestureTool', () => {
         })
       ).rejects.toThrow(
         expect.objectContaining({
-          message: expect.stringContaining('gesture type'),
+          message: expect.stringMatching(/[Gg]esture [Tt]ype/),
         })
       );
     });
 
     it('should reject non-existent simulator', async () => {
-      (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(
-        null
-      );
+      (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(null);
 
       await expect(
         simctlGestureTool({
@@ -85,8 +81,8 @@ describe('simctlGestureTool', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.success).toBe(true);
-      expect(response.gestureType).toBe('swipe');
-      expect(response.direction).toBe('left');
+      expect(response.gestureInfo.type).toBe('swipe');
+      expect(response.gestureInfo.direction).toBe('left');
     });
 
     it('should perform swipe right', async () => {
@@ -104,7 +100,7 @@ describe('simctlGestureTool', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.success).toBe(true);
-      expect(response.direction).toBe('right');
+      expect(response.gestureInfo.direction).toBe('right');
     });
 
     it('should perform swipe up', async () => {
@@ -177,7 +173,7 @@ describe('simctlGestureTool', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.success).toBe(true);
-      expect(response.gestureType).toBe('pinch');
+      expect(response.gestureInfo.type).toBe('pinch');
     });
 
     it('should perform pinch with custom scale', async () => {
@@ -233,7 +229,7 @@ describe('simctlGestureTool', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.success).toBe(true);
-      expect(response.gestureType).toBe('rotate');
+      expect(response.gestureInfo.type).toBe('rotate');
     });
 
     it('should support rotation with custom angle', async () => {
@@ -271,7 +267,7 @@ describe('simctlGestureTool', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.success).toBe(true);
-      expect(response.fingers).toBe(2);
+      expect(response.gestureInfo.fingers).toBe(2);
     });
 
     it('should support three-finger tap', async () => {
@@ -301,25 +297,25 @@ describe('simctlGestureTool', () => {
         stderr: 'Gesture failed: invalid parameters',
       });
 
-      await expect(
-        simctlGestureTool({
-          udid: 'device-iphone16pro',
-          type: 'swipe',
-          direction: 'left',
-        })
-      ).rejects.toThrow();
+      const result = await simctlGestureTool({
+        udid: 'device-iphone16pro',
+        type: 'swipe',
+        direction: 'left',
+      });
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.success).toBe(false);
+      expect(result.isError).toBe(true);
     });
 
     it('should warn if simulator is not booted', async () => {
       const shutdownSimulator = { ...mockSimulator, state: 'Shutdown' };
-      (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(
-        shutdownSimulator
-      );
+      (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(shutdownSimulator);
 
       (executeCommand as jest.Mock).mockResolvedValue({
-        code: 0,
-        stdout: 'Gesture performed',
-        stderr: '',
+        code: 1,
+        stdout: '',
+        stderr: 'Simulator not available',
       });
 
       const result = await simctlGestureTool({
@@ -329,9 +325,8 @@ describe('simctlGestureTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.guidance).toContain(
-        expect.stringContaining('boot')
-      );
+      const guidanceStr = response.guidance.join(' ');
+      expect(guidanceStr).toContain('boot');
     });
   });
 
@@ -350,12 +345,9 @@ describe('simctlGestureTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.simulatorInfo).toEqual({
-        name: 'iPhone 16 Pro',
-        udid: 'device-iphone16pro',
-        state: 'Booted',
-        isAvailable: true,
-      });
+      expect(response.simulatorInfo).toBeDefined();
+      expect(response.simulatorInfo.name).toBe('iPhone 16 Pro');
+      expect(response.simulatorInfo.state).toBe('Booted');
     });
 
     it('should include gesture details', async () => {
@@ -372,8 +364,8 @@ describe('simctlGestureTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.gestureType).toBe('swipe');
-      expect(response.direction).toBe('up');
+      expect(response.gestureInfo.type).toBe('swipe');
+      expect(response.gestureInfo.direction).toBe('up');
     });
 
     it('should include guidance suggestions', async () => {
@@ -428,9 +420,8 @@ describe('simctlGestureTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.guidance).toContain(
-        expect.stringContaining('screenshot')
-      );
+      const guidanceStr = response.guidance.join(' ');
+      expect(guidanceStr).toContain('screenshot');
     });
   });
 });

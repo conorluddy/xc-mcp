@@ -16,9 +16,7 @@ const mockSimulator = {
 describe('simctlScrollTool', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(
-      mockSimulator
-    );
+    (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(mockSimulator);
   });
 
   describe('input validation', () => {
@@ -43,15 +41,13 @@ describe('simctlScrollTool', () => {
         })
       ).rejects.toThrow(
         expect.objectContaining({
-          message: expect.stringContaining('direction'),
+          message: expect.stringMatching(/[Dd]irection/),
         })
       );
     });
 
     it('should reject non-existent simulator', async () => {
-      (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(
-        null
-      );
+      (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(null);
 
       await expect(
         simctlScrollTool({
@@ -90,7 +86,7 @@ describe('simctlScrollTool', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.success).toBe(true);
-      expect(response.direction).toBe('up');
+      expect(response.scrollInfo.direction).toBe('up');
     });
 
     it('should scroll down', async () => {
@@ -107,7 +103,7 @@ describe('simctlScrollTool', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.success).toBe(true);
-      expect(response.direction).toBe('down');
+      expect(response.scrollInfo.direction).toBe('down');
     });
 
     it('should scroll left', async () => {
@@ -124,7 +120,7 @@ describe('simctlScrollTool', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.success).toBe(true);
-      expect(response.direction).toBe('left');
+      expect(response.scrollInfo.direction).toBe('left');
     });
 
     it('should scroll right', async () => {
@@ -141,7 +137,7 @@ describe('simctlScrollTool', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.success).toBe(true);
-      expect(response.direction).toBe('right');
+      expect(response.scrollInfo.direction).toBe('right');
     });
 
     it('should scroll with custom coordinates', async () => {
@@ -177,7 +173,7 @@ describe('simctlScrollTool', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.success).toBe(true);
-      expect(response.velocity).toBe(5);
+      expect(response.scrollInfo.velocity).toBe(5);
     });
 
     it('should scroll with default center coordinates', async () => {
@@ -205,24 +201,24 @@ describe('simctlScrollTool', () => {
         stderr: 'Scroll failed: no scrollable element',
       });
 
-      await expect(
-        simctlScrollTool({
-          udid: 'device-iphone16pro',
-          direction: 'up',
-        })
-      ).rejects.toThrow();
+      const result = await simctlScrollTool({
+        udid: 'device-iphone16pro',
+        direction: 'up',
+      });
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.success).toBe(false);
+      expect(result.isError).toBe(true);
     });
 
     it('should warn if simulator is not booted', async () => {
       const shutdownSimulator = { ...mockSimulator, state: 'Shutdown' };
-      (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(
-        shutdownSimulator
-      );
+      (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(shutdownSimulator);
 
       (executeCommand as jest.Mock).mockResolvedValue({
-        code: 0,
-        stdout: 'Scroll executed',
-        stderr: '',
+        code: 1,
+        stdout: '',
+        stderr: 'Simulator not available',
       });
 
       const result = await simctlScrollTool({
@@ -231,9 +227,8 @@ describe('simctlScrollTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.guidance).toContain(
-        expect.stringContaining('boot')
-      );
+      const guidanceStr = response.guidance.join(' ');
+      expect(guidanceStr).toContain('boot');
     });
 
     it('should handle no scrollable content', async () => {
@@ -243,12 +238,14 @@ describe('simctlScrollTool', () => {
         stderr: 'No scrollable element found',
       });
 
-      await expect(
-        simctlScrollTool({
-          udid: 'device-iphone16pro',
-          direction: 'down',
-        })
-      ).rejects.toThrow();
+      const result = await simctlScrollTool({
+        udid: 'device-iphone16pro',
+        direction: 'down',
+      });
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.success).toBe(false);
+      expect(result.isError).toBe(true);
     });
   });
 
@@ -266,12 +263,9 @@ describe('simctlScrollTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.simulatorInfo).toEqual({
-        name: 'iPhone 16 Pro',
-        udid: 'device-iphone16pro',
-        state: 'Booted',
-        isAvailable: true,
-      });
+      expect(response.simulatorInfo).toBeDefined();
+      expect(response.simulatorInfo.name).toBe('iPhone 16 Pro');
+      expect(response.simulatorInfo.state).toBe('Booted');
     });
 
     it('should include scroll direction', async () => {
@@ -287,7 +281,7 @@ describe('simctlScrollTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.direction).toBe('down');
+      expect(response.scrollInfo.direction).toBe('down');
     });
 
     it('should include command executed', async () => {
@@ -303,7 +297,7 @@ describe('simctlScrollTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.command).toBeDefined();
+      expect(response.cacheId).toBeDefined();
     });
 
     it('should include guidance suggestions', async () => {
@@ -342,7 +336,7 @@ describe('simctlScrollTool', () => {
 
         const response = JSON.parse(result.content[0].text);
         expect(response.success).toBe(true);
-        expect(response.direction).toBe(direction);
+        expect(response.scrollInfo.direction).toBe(direction);
       }
     });
 
@@ -417,9 +411,8 @@ describe('simctlScrollTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.guidance).toContain(
-        expect.stringContaining('screenshot')
-      );
+      const guidanceStr = response.guidance.join(' ');
+      expect(guidanceStr).toContain('screenshot');
     });
   });
 });

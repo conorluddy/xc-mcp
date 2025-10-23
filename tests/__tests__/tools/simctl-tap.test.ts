@@ -16,9 +16,7 @@ const mockSimulator = {
 describe('simctlTapTool', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(
-      mockSimulator
-    );
+    (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(mockSimulator);
   });
 
   describe('input validation', () => {
@@ -61,9 +59,7 @@ describe('simctlTapTool', () => {
     });
 
     it('should reject non-existent simulator', async () => {
-      (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(
-        null
-      );
+      (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(null);
 
       await expect(
         simctlTapTool({
@@ -124,7 +120,8 @@ describe('simctlTapTool', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.success).toBe(true);
-      expect(response.numberOfTaps).toBe(2);
+      expect(response.tapInfo.numberOfTaps).toBe(2);
+      expect(response.cacheId).toBeDefined();
     });
 
     it('should perform long press', async () => {
@@ -143,7 +140,8 @@ describe('simctlTapTool', () => {
 
       const response = JSON.parse(result.content[0].text);
       expect(response.success).toBe(true);
-      expect(response.duration).toBe(1.0);
+      expect(response.tapInfo.duration).toBe(1.0);
+      expect(response.cacheId).toBeDefined();
     });
 
     it('should handle zero coordinates', async () => {
@@ -195,7 +193,7 @@ describe('simctlTapTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.timestamp).toBeDefined();
+      expect(response.tapInfo.timestamp).toBeDefined();
     });
   });
 
@@ -207,25 +205,26 @@ describe('simctlTapTool', () => {
         stderr: 'Tap failed: coordinates out of bounds',
       });
 
-      await expect(
-        simctlTapTool({
-          udid: 'device-iphone16pro',
-          x: 100,
-          y: 200,
-        })
-      ).rejects.toThrow();
+      const result = await simctlTapTool({
+        udid: 'device-iphone16pro',
+        x: 100,
+        y: 200,
+      });
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.success).toBe(false);
+      expect(response.cacheId).toBeDefined();
+      expect(result.isError).toBe(true);
     });
 
     it('should warn if simulator is not booted', async () => {
-      const bootedSimulator = { ...mockSimulator, state: 'Shutdown' };
-      (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(
-        bootedSimulator
-      );
+      const shutdownSimulator = { ...mockSimulator, state: 'Shutdown' };
+      (simulatorCache.findSimulatorByUdid as jest.Mock).mockResolvedValue(shutdownSimulator);
 
       (executeCommand as jest.Mock).mockResolvedValue({
-        code: 0,
-        stdout: 'Tap performed',
-        stderr: '',
+        code: 1,
+        stdout: '',
+        stderr: 'Simulator not available',
       });
 
       const result = await simctlTapTool({
@@ -235,9 +234,9 @@ describe('simctlTapTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.guidance).toContain(
-        expect.stringContaining('booted')
-      );
+      expect(response.success).toBe(false);
+      const guidanceStr = response.guidance.join(' ');
+      expect(guidanceStr).toContain('booted');
     });
 
     it('should handle app not running scenario', async () => {
@@ -247,13 +246,15 @@ describe('simctlTapTool', () => {
         stderr: 'App not running',
       });
 
-      await expect(
-        simctlTapTool({
-          udid: 'device-iphone16pro',
-          x: 100,
-          y: 200,
-        })
-      ).rejects.toThrow();
+      const result = await simctlTapTool({
+        udid: 'device-iphone16pro',
+        x: 100,
+        y: 200,
+      });
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.success).toBe(false);
+      expect(result.isError).toBe(true);
     });
   });
 
@@ -272,12 +273,10 @@ describe('simctlTapTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.simulatorInfo).toEqual({
-        name: 'iPhone 16 Pro',
-        udid: 'device-iphone16pro',
-        state: 'Booted',
-        isAvailable: true,
-      });
+      // Progressive disclosure: simulator info now includes essential fields
+      expect(response.simulatorInfo).toBeDefined();
+      expect(response.simulatorInfo.name).toBe('iPhone 16 Pro');
+      expect(response.simulatorInfo.state).toBe('Booted');
     });
 
     it('should include coordinates in response', async () => {
@@ -311,7 +310,9 @@ describe('simctlTapTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.command).toBeDefined();
+      // Command is now cached, retrieved via cacheId
+      expect(response.cacheId).toBeDefined();
+      expect(response.guidance.join(' ')).toContain('simctl-get-interaction-details');
     });
 
     it('should include guidance for verification', async () => {
@@ -369,7 +370,7 @@ describe('simctlTapTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.duration).toBe(2.5);
+      expect(response.tapInfo.duration).toBe(2.5);
     });
   });
 
@@ -406,9 +407,8 @@ describe('simctlTapTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.guidance).toContain(
-        expect.stringContaining('screenshot')
-      );
+      const guidanceStr = response.guidance.join(' ');
+      expect(guidanceStr).toContain('screenshot');
     });
   });
 });
