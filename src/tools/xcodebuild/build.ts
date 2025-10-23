@@ -4,6 +4,7 @@ import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { responseCache, extractBuildSummary } from '../../utils/response-cache.js';
 import { projectCache, type BuildConfig } from '../../state/project-cache.js';
 import { simulatorCache } from '../../state/simulator-cache.js';
+import { createConfigManager } from '../../utils/config.js';
 
 interface BuildToolArgs {
   projectPath: string;
@@ -74,6 +75,22 @@ export async function xcodebuildBuildTool(args: any) {
       const udidMatch = finalConfig.destination.match(/id=([A-F0-9-]+)/);
       if (udidMatch) {
         simulatorCache.recordSimulatorUsage(udidMatch[1], projectPath);
+
+        // Save simulator preference to project config if build succeeded
+        if (summary.success) {
+          try {
+            const configManager = createConfigManager(projectPath);
+            const simulator = await simulatorCache.findSimulatorByUdid(udidMatch[1]);
+            await configManager.recordSuccessfulBuild(
+              projectPath,
+              udidMatch[1],
+              simulator?.name
+            );
+          } catch (configError) {
+            console.warn('Failed to save simulator preference:', configError);
+            // Continue - config is optional
+          }
+        }
       }
     }
 

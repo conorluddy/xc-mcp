@@ -60,6 +60,31 @@ XC-MCP solves this with progressive disclosure: return concise summaries first, 
 
 ## Usage Examples
 
+### Complete Login Flow UI Automation
+Automate login testing with UI automation tools:
+```bash
+# 1. Query for login button
+simctl-query-ui udid: "device-123", bundleId: "com.example.app", predicate: 'type == "XCUIElementTypeButton" AND label == "Login"'
+
+# 2. Tap email field and enter email
+simctl-tap udid: "device-123", x: 100, y: 150
+simctl-type-text udid: "device-123", text: "user@example.com", actionName: "Enter email"
+
+# 3. Tap password field and enter password
+simctl-tap udid: "device-123", x: 100, y: 200
+simctl-type-text udid: "device-123", text: "password123", isSensitive: true, actionName: "Enter password"
+
+# 4. Scroll to login button if needed
+simctl-scroll udid: "device-123", direction: "down", actionName: "Scroll to login button"
+
+# 5. Query and tap login button
+simctl-query-ui udid: "device-123", bundleId: "com.example.app", predicate: 'label == "Login"', captureLocation: true
+simctl-tap udid: "device-123", x: 100, y: 250, actionName: "Tap Login Button"
+
+# 6. Verify success with screenshot
+simctl-io udid: "device-123", operation: "screenshot", appName: "MyApp", screenName: "HomeView", state: "Success"
+```
+
 ### Progressive Simulator Management
 Get instant simulator summary (2k tokens vs 57k):
 ```json
@@ -178,33 +203,137 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-## Tool Reference
+## Tool Reference (28+ Tools)
 
-| Category | Tool | Description | Progressive Disclosure |
-|----------|------|-------------|----------------------|
-| **Project Discovery** | `xcodebuild-list` | List targets, schemes, configurations | ✓ |
-| | `xcodebuild-showsdks` | Available SDKs | - |
-| | `xcodebuild-version` | Xcode version info | - |
-| **Build Operations** | `xcodebuild-build` | Build with smart defaults | ✓ (via buildId) |
-| | `xcodebuild-clean` | Clean build artifacts | - |
-| | `xcodebuild-get-details` | Access cached build/test logs | - |
-| **Test Operations** | `xcodebuild-test` | Run tests with smart defaults and filtering | ✓ (via testId) |
-| **Simulator Management** | `simctl-list` | Simulator list with 96% token reduction | ✓ (via cacheId) |
-| | `simctl-get-details` | Progressive access to full simulator data | - |
-| | `simctl-boot` | Boot with performance tracking | - |
-| | `simctl-shutdown` | Graceful shutdown | - |
-| **Cache Management** | `cache-get-stats` | Cache performance metrics | - |
-| | `cache-set-config` | Configure cache timeouts | - |
-| | `cache-clear` | Clear cached data | - |
-| | `list-cached-responses` | View cached build/test results | - |
+### Project Discovery (3 tools)
+| Tool | Description |
+|------|-------------|
+| `xcodebuild-list` | List targets, schemes, configurations with smart caching |
+| `xcodebuild-showsdks` | Discover available SDKs for iOS, macOS, watchOS, tvOS |
+| `xcodebuild-version` | Get Xcode and SDK version information |
+
+### Build Operations (3 tools)
+| Tool | Description |
+|------|-------------|
+| `xcodebuild-build` | Build with smart defaults, progressive disclosure via buildId |
+| `xcodebuild-clean` | Clean build artifacts |
+| `xcodebuild-get-details` | Access cached build logs and error details |
+
+### Test Operations (2 tools)
+| Tool | Description |
+|------|-------------|
+| `xcodebuild-test` | Run tests with smart defaults, test plan support, filtering |
+| `xcodebuild-test-without-building` | Run tests without rebuilding |
+
+### Simulator Lifecycle (6 tools)
+| Tool | Description |
+|------|-------------|
+| `simctl-create` | Create new iOS simulator with device type and runtime |
+| `simctl-delete` | Delete simulator device |
+| `simctl-erase` | Erase simulator to factory settings |
+| `simctl-clone` | Clone simulator configuration and data |
+| `simctl-rename` | Rename simulator |
+| `simctl-health-check` | Validate Xcode, simulators, and environment |
+
+### Simulator Control (4 tools)
+| Tool | Description |
+|------|-------------|
+| `simctl-list` | List simulators with 96% token reduction via caching |
+| `simctl-get-details` | Progressive access to full simulator data |
+| `simctl-boot` | Boot simulator with performance tracking |
+| `simctl-shutdown` | Shutdown one or all simulators |
+| `simctl-suggest` | Get smart simulator recommendations with scoring |
+
+### App Management (3 tools)
+| Tool | Description |
+|------|-------------|
+| `simctl-install` | Install iOS app bundle to simulator |
+| `simctl-uninstall` | Uninstall app by bundle ID |
+| `simctl-get-app-container` | Get app container paths (bundle, data, group) |
+
+### App Control (3 tools)
+| Tool | Description |
+|------|-------------|
+| `simctl-launch` | Launch app with arguments and environment variables |
+| `simctl-terminate` | Gracefully terminate running app |
+| `simctl-openurl` | Open URLs and deep links (http, https, custom schemes) |
+
+### I/O & Media (2 tools)
+| Tool | Description |
+|------|-------------|
+| `simctl-io` | Capture screenshots and record videos with semantic naming |
+| `simctl-addmedia` | Add images and videos to simulator photo library |
+
+### Advanced Testing (4 tools)
+| Tool | Description |
+|------|-------------|
+| `simctl-privacy` | Manage app privacy permissions with audit trails |
+| `simctl-push` | Send simulated push notifications with delivery tracking |
+| `simctl-pbcopy` | Copy text to simulator clipboard (UIPasteboard) |
+| `simctl-status-bar` | Override status bar (time, network, battery) |
+
+### UI Automation (5 tools) - Phase 4
+| Tool | Description |
+|------|-------------|
+| `simctl-query-ui` | Find UI elements using XCUITest predicates |
+| `simctl-tap` | Tap screen (single, double, long press) |
+| `simctl-type-text` | Type text into focused fields with keyboard support |
+| `simctl-scroll` | Scroll content in any direction |
+| `simctl-gesture` | Perform complex gestures (swipe, pinch, rotate, multi-touch) |
+
+### Cache Management (5 tools)
+| Tool | Description |
+|------|-------------|
+| `cache-get-stats` | View cache performance metrics and health |
+| `cache-set-config` | Configure cache timeouts per layer |
+| `cache-get-config` | Get current cache configuration |
+| `cache-clear` | Clear cache (simulator, project, response) |
+| `list-cached-responses` | View recent cached build/test results |
 
 ## Advanced Features
+
+### LLM Optimization Patterns
+XC-MCP implements context engineering patterns specifically optimized for AI agent usage:
+
+**Semantic Screenshot Naming** (simctl-io)
+- Automatic naming: `{appName}_{screenName}_{state}_{date}.png`
+- Example: `MyApp_LoginScreen_Empty_2025-01-23.png`
+- Enables agents to reason about screen context and state progression
+
+**Structured Test Context** (simctl-push)
+- Delivery tracking with `deliveryInfo` (sent/sentAt)
+- Test context with `testName`, `expectedBehavior`, `actualBehavior`
+- Enables agents to verify push delivery and validate app behavior
+
+**Permission Audit Trails** (simctl-privacy)
+- Audit entries with timestamp, action, service, success
+- Test context with scenario and step tracking
+- Enables agents to track permission changes across test scenarios
+
+**Interaction Sequence Tracking**
+- All UI automation tools support `actionName` parameter
+- Timestamp tracking for verification with screenshots
+- Guidance suggests next steps for agents
+
+See `docs/LLM_OPTIMIZATION.md` for comprehensive patterns and future phases.
+
+### UI Automation Workflows
+Chain multiple UI tools for complete app testing:
+```json
+[
+  {"tool": "simctl-query-ui", "args": {"udid": "...", "bundleId": "...", "predicate": "type == \"Button\" AND label == \"Login\""}},
+  {"tool": "simctl-tap", "args": {"udid": "...", "x": 100, "y": 200, "actionName": "Tap Login Button"}},
+  {"tool": "simctl-io", "args": {"udid": "...", "operation": "screenshot", "appName": "MyApp", "screenName": "LoginScreen", "state": "Success"}},
+  {"tool": "simctl-query-ui", "args": {"udid": "...", "bundleId": "...", "predicate": "type == \"TextField\" AND identifier == \"emailInput\""}}
+]
+```
 
 ### Performance Optimization
 - **90% fewer repeated calls** through intelligent caching
 - **Boot time tracking** for simulator performance optimization
 - **Build trend analysis** tracks success rates and timing
 - **Usage pattern learning** improves recommendations over time
+- **Smart simulator selection** based on usage history and performance
 
 ### Persistent State Management (Optional)
 Enable file-based persistence for cache data across server restarts:

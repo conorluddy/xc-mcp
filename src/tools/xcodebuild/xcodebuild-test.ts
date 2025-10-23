@@ -4,6 +4,7 @@ import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { responseCache } from '../../utils/response-cache.js';
 import { projectCache, type BuildConfig } from '../../state/project-cache.js';
 import { simulatorCache } from '../../state/simulator-cache.js';
+import { createConfigManager } from '../../utils/config.js';
 
 // ============================================================================
 // TYPES
@@ -376,6 +377,22 @@ async function recordTestExecution(
     const udidMatch = config.destination.match(/id=([A-F0-9-]+)/);
     if (udidMatch) {
       simulatorCache.recordSimulatorUsage(udidMatch[1], config.projectPath);
+
+      // Save simulator preference to project config if tests passed
+      if (metrics.failedTests === 0) {
+        try {
+          const configManager = createConfigManager(config.projectPath);
+          const simulator = await simulatorCache.findSimulatorByUdid(udidMatch[1]);
+          await configManager.recordSuccessfulBuild(
+            config.projectPath,
+            udidMatch[1],
+            simulator?.name
+          );
+        } catch (configError) {
+          console.warn('Failed to save simulator preference:', configError);
+          // Continue - config is optional
+        }
+      }
     }
   }
 

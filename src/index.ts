@@ -17,6 +17,31 @@ import { simctlListTool } from './tools/simctl/list.js';
 import { simctlGetDetailsTool } from './tools/simctl/get-details.js';
 import { simctlBootTool } from './tools/simctl/boot.js';
 import { simctlShutdownTool } from './tools/simctl/shutdown.js';
+import { simctlSuggestTool } from './tools/simctl/suggest.js';
+import { simctlCreateTool } from './tools/simctl/create.js';
+import { simctlDeleteTool } from './tools/simctl/delete.js';
+import { simctlEraseTool } from './tools/simctl/erase.js';
+import { simctlCloneTool } from './tools/simctl/clone.js';
+import { simctlRenameTool } from './tools/simctl/rename.js';
+import { simctlHealthCheckTool } from './tools/simctl/health-check.js';
+import { simctlInstallTool } from './tools/simctl/install.js';
+import { simctlUninstallTool } from './tools/simctl/uninstall.js';
+import { simctlGetAppContainerTool } from './tools/simctl/get-app-container.js';
+import { simctlLaunchTool } from './tools/simctl/launch.js';
+import { simctlTerminateTool } from './tools/simctl/terminate.js';
+import { simctlOpenUrlTool } from './tools/simctl/openurl.js';
+import { simctlIoTool } from './tools/simctl/io.js';
+import { simctlAddmediaTool } from './tools/simctl/addmedia.js';
+import { simctlPrivacyTool } from './tools/simctl/privacy.js';
+import { simctlPushTool } from './tools/simctl/push.js';
+import { simctlPbcopyTool } from './tools/simctl/pbcopy.js';
+import { simctlStatusBarTool } from './tools/simctl/status-bar.js';
+// Phase 4: UI Automation Tools
+import { simctlQueryUiTool } from './tools/simctl/query-ui.js';
+import { simctlTapTool } from './tools/simctl/tap.js';
+import { simctlTypeTextTool } from './tools/simctl/type-text.js';
+import { simctlScrollTool } from './tools/simctl/scroll.js';
+import { simctlGestureTool } from './tools/simctl/gesture.js';
 import { listCachedResponsesTool } from './tools/cache/list-cached.js';
 import {
   getCacheStatsTool,
@@ -470,6 +495,932 @@ Shutdown iOS simulator devices with intelligent device selection and state manag
         try {
           await validateXcodeInstallation();
           return await simctlShutdownTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'simctl-suggest',
+      {
+        description: `🧠 **Intelligent Simulator Suggestion** - Recommends best simulators based on project history, performance, and popularity.
+
+Advantages:
+• 🎯 **Project-aware** - Remembers your preferred simulator per project
+• 📊 **Performance metrics** - Learns boot times and reliability
+• 🏆 **Popularity ranking** - Suggests popular models (iPhone 16 Pro > iPhone 15, etc.)
+• 💡 **Transparent scoring** - Shows reasoning for each recommendation
+• ⚡ **Auto-boot option** - Optionally boots top suggestion immediately
+
+Scoring algorithm considers: project preference (40%), recent usage (40%), iOS version (30%), popular model (20%), boot performance (10%).`,
+        inputSchema: {
+          projectPath: z
+            .string()
+            .optional()
+            .describe('Project path for project-specific suggestions'),
+          deviceType: z
+            .string()
+            .optional()
+            .describe('Filter suggestions by device type (e.g., iPhone, iPad)'),
+          maxSuggestions: z
+            .number()
+            .default(4)
+            .describe('Maximum number of suggestions to return'),
+          autoBootTopSuggestion: z
+            .boolean()
+            .default(false)
+            .describe('Automatically boot the top suggestion'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlSuggestTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'simctl-create',
+      {
+        description: `⚙️ **Create New Simulator** - Create iOS simulator devices dynamically.
+
+Advantages:
+• 🎯 **Dynamic provisioning** - Create simulators on-the-fly for testing
+• 📱 **Device flexibility** - Support all device types (iPhone, iPad, Apple Watch, Apple TV)
+• 🔧 **Runtime control** - Specify iOS version or use latest
+• 💾 **Automated testing** - Useful for CI/CD pipelines
+
+Creates a new simulator device that persists until deleted.`,
+        inputSchema: {
+          name: z
+            .string()
+            .describe('Display name for the new simulator (e.g., "MyTestDevice")'),
+          deviceType: z
+            .string()
+            .describe('Device type (e.g., "iPhone 16 Pro", "iPad Pro", "Apple Watch Series 9")'),
+          runtime: z
+            .string()
+            .optional()
+            .describe('iOS/runtime version (e.g., "17.0") - defaults to latest'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlCreateTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'simctl-delete',
+      {
+        description: `🗑️ **Delete Simulator** - Permanently remove a simulator device.
+
+Advantages:
+• 🧹 **Clean up** - Remove unused simulators to save disk space
+• ⚡ **Quick operation** - Fast permanent deletion
+• 💡 **Safety checks** - Prevents accidental deletion of booted devices
+
+⚠️ This action cannot be undone.`,
+        inputSchema: {
+          deviceId: z
+            .string()
+            .describe('Device UDID (from simctl-list)'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlDeleteTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'simctl-erase',
+      {
+        description: `🔄 **Erase Simulator** - Reset simulator to factory settings.
+
+Advantages:
+• 🔄 **Clean state** - Reset device without deleting it
+• 📦 **Data removal** - Removes all apps and user data
+• 🎯 **Testing** - Perfect for fresh app installation testing
+• 💾 **Device preserved** - Simulator persists for reuse
+
+Resets device to clean state while keeping it available.`,
+        inputSchema: {
+          deviceId: z
+            .string()
+            .describe('Device UDID (from simctl-list)'),
+          force: z
+            .boolean()
+            .default(false)
+            .describe('Force erase even if device is booted'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlEraseTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'simctl-clone',
+      {
+        description: `📋 **Clone Simulator** - Create a duplicate of an existing simulator.
+
+Advantages:
+• 📸 **Snapshots** - Create backups of configured simulators
+• 🧪 **Testing variants** - Have multiple versions for different test scenarios
+• 💾 **State preservation** - Cloned device includes all apps and data
+• ⚡ **Quick setup** - Duplicate existing configuration instead of recreating
+
+Creates a new simulator with same configuration and data as source.`,
+        inputSchema: {
+          deviceId: z
+            .string()
+            .describe('Source device UDID (from simctl-list)'),
+          newName: z
+            .string()
+            .describe('Display name for the cloned simulator'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlCloneTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'simctl-rename',
+      {
+        description: `✏️ **Rename Simulator** - Change a simulator's display name.
+
+Advantages:
+• 🏷️ **Organization** - Better organize and identify your simulators
+• 🔍 **Easy identification** - Use descriptive names for test devices
+• 💾 **Data preserved** - Rename without affecting UDID or data
+
+Renames device while preserving all configuration and data.`,
+        inputSchema: {
+          deviceId: z
+            .string()
+            .describe('Device UDID (from simctl-list)'),
+          newName: z
+            .string()
+            .describe('New display name for the simulator'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlRenameTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'simctl-health-check',
+      {
+        description: `🏥 **Health Check** - Comprehensive environment validation for iOS simulator development.
+
+Validates:
+• ✅ Xcode Command Line Tools installation
+• ✅ simctl availability and functionality
+• ✅ Available simulators and device types
+• ✅ Booted simulators status
+• ✅ Available iOS/simulator runtimes
+• ✅ Disk space for simulator data
+
+Returns detailed diagnostics and actionable guidance for any issues found.`,
+        inputSchema: {},
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlHealthCheckTool();
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    // Phase 3: App Lifecycle & Testing Tools (11 total)
+    // App Management Tools
+    this.server.registerTool(
+      'simctl-install',
+      {
+        description: `📦 **Install App to Simulator** - Deploy built apps to simulators for testing.
+
+Installs an iOS app (.app bundle) to a specified simulator.
+
+Returns: Installation status, app name, and guidance for next steps.`,
+        inputSchema: {
+          udid: z.string().describe('Simulator UDID'),
+          appPath: z.string().describe('Path to .app bundle (e.g., /path/to/MyApp.app)'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlInstallTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'simctl-uninstall',
+      {
+        description: `🗑️ **Uninstall App from Simulator** - Remove apps from simulators.
+
+Uninstalls an app identified by bundle ID from the specified simulator.
+
+Returns: Uninstall status and guidance for reinstalling or managing apps.`,
+        inputSchema: {
+          udid: z.string().describe('Simulator UDID'),
+          bundleId: z.string().describe('App bundle ID (e.g., com.example.MyApp)'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlUninstallTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'simctl-get-app-container',
+      {
+        description: `📂 **Get App Container Path** - Access app file system containers for inspection and debugging.
+
+Retrieves the file system path to an app's container (Documents, Library, etc.).
+
+Supports container types: bundle, data, group
+
+Returns: Container path for file access and inspection.`,
+        inputSchema: {
+          udid: z.string().describe('Simulator UDID'),
+          bundleId: z.string().describe('App bundle ID (e.g., com.example.MyApp)'),
+          containerType: z
+            .enum(['bundle', 'data', 'group'])
+            .optional()
+            .describe('Type of container (default: data)'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlGetAppContainerTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    // App Control Tools
+    this.server.registerTool(
+      'simctl-launch',
+      {
+        description: `▶️ **Launch App on Simulator** - Start apps with arguments and environment variables.
+
+Launches an app on a simulator and returns the process ID.
+
+Supports passing command-line arguments and environment variables.
+
+Returns: Process ID, launch status, and guidance for app control.`,
+        inputSchema: {
+          udid: z.string().describe('Simulator UDID'),
+          bundleId: z.string().describe('App bundle ID (e.g., com.example.MyApp)'),
+          arguments: z
+            .array(z.string())
+            .optional()
+            .describe('Command-line arguments to pass to the app'),
+          environment: z
+            .record(z.string())
+            .optional()
+            .describe('Environment variables to set'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlLaunchTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'simctl-terminate',
+      {
+        description: `⏹️ **Terminate App on Simulator** - Stop running apps.
+
+Terminates a running app identified by bundle ID on the specified simulator.
+
+Returns: Termination status and guidance for relaunching or debugging.`,
+        inputSchema: {
+          udid: z.string().describe('Simulator UDID'),
+          bundleId: z.string().describe('App bundle ID (e.g., com.example.MyApp)'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlTerminateTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'simctl-openurl',
+      {
+        description: `🔗 **Open URL in Simulator** - Test deep linking and URL handling.
+
+Opens a URL in the simulator, supporting:
+• HTTP/HTTPS web URLs
+• Custom scheme deep links (myapp://)
+• Special URLs (mailto:, tel:, sms:)
+
+Returns: URL open status and guidance for testing URL handling.`,
+        inputSchema: {
+          udid: z.string().describe('Simulator UDID'),
+          url: z
+            .string()
+            .describe('URL to open (e.g., https://example.com or myapp://deeplink?id=123)'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlOpenUrlTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    // I/O Tools
+    this.server.registerTool(
+      'simctl-io',
+      {
+        description: `📸 **Capture Screenshots and Videos** - Record simulator screen for testing and documentation.
+
+Operations:
+• screenshot: Capture current screen as PNG
+• video: Record simulator screen (stop with Ctrl+C)
+
+Supports custom output paths and video codecs (h264, hevc, prores).
+
+**LLM Optimization**: Use appName, screenName, and state for semantic naming (e.g., MyApp_LoginScreen_Empty_2025-01-23.png) to enable agents to reason about captured screens.
+
+Returns: File path and guidance for viewing captured media.`,
+        inputSchema: {
+          udid: z.string().describe('Simulator UDID'),
+          operation: z
+            .enum(['screenshot', 'video'])
+            .describe('Operation: screenshot or video'),
+          outputPath: z.string().optional().describe('Custom output file path'),
+          codec: z
+            .enum(['h264', 'hevc', 'prores'])
+            .optional()
+            .describe('Video codec (for video operation)'),
+          appName: z
+            .string()
+            .optional()
+            .describe('App name for semantic naming (e.g., "MyApp")'),
+          screenName: z
+            .string()
+            .optional()
+            .describe('Screen/view name for semantic naming (e.g., "LoginScreen")'),
+          state: z
+            .string()
+            .optional()
+            .describe('UI state for semantic naming (e.g., "Empty", "Filled", "Loading")'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlIoTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'simctl-addmedia',
+      {
+        description: `🖼️ **Add Media to Simulator** - Populate photo library with test images and videos.
+
+Adds images and videos to the simulator's photo library for app testing.
+
+Supported formats:
+• Images: jpg, jpeg, png, heic, gif, bmp
+• Videos: mp4, mov, avi, mkv
+
+Returns: Media addition status and guidance for accessing in Photos app.`,
+        inputSchema: {
+          udid: z.string().describe('Simulator UDID'),
+          mediaPath: z
+            .string()
+            .describe('Path to image or video file (e.g., /path/to/photo.jpg)'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlAddmediaTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    // Advanced Testing Tools
+    this.server.registerTool(
+      'simctl-privacy',
+      {
+        description: `🔐 **Manage Privacy Permissions** - Control app access to sensitive device features.
+
+Grant, revoke, or reset privacy permissions for apps.
+
+Supported services:
+camera, microphone, location, contacts, photos, calendar, health, reminders,
+motion, keyboard, mediaLibrary, calls, siri
+
+**LLM Optimization**: Include scenario and step for structured permission audit trail tracking. Enables agents to track permission changes across test scenarios.
+
+Returns: Permission modification status and verification guidance.`,
+        inputSchema: {
+          udid: z.string().describe('Simulator UDID'),
+          bundleId: z.string().describe('App bundle ID (e.g., com.example.MyApp)'),
+          action: z
+            .enum(['grant', 'revoke', 'reset'])
+            .describe('Action: grant, revoke, or reset'),
+          service: z
+            .string()
+            .describe('Service name (camera, microphone, location, contacts, photos, etc.)'),
+          scenario: z
+            .string()
+            .optional()
+            .describe('Test scenario name for audit trail (e.g., "LocationTest", "CameraOnboarding")'),
+          step: z
+            .number()
+            .optional()
+            .describe('Step number in scenario for audit trail tracking'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlPrivacyTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'simctl-push',
+      {
+        description: `📲 **Send Push Notifications** - Simulate remote push notifications for testing.
+
+Sends simulated push notifications with custom JSON payloads.
+
+Payload format: Valid JSON with APS dictionary for notification properties.
+
+**LLM Optimization**: Include testName and expectedBehavior to enable structured test tracking and assertion verification. Enables agents to validate push delivery and app behavior.
+
+Returns: Push delivery status and guidance for notification testing.`,
+        inputSchema: {
+          udid: z.string().describe('Simulator UDID'),
+          bundleId: z.string().describe('App bundle ID (e.g., com.example.MyApp)'),
+          payload: z
+            .string()
+            .describe(
+              'JSON payload with APS dictionary (e.g., \'{"aps":{"alert":"Test notification"}}\''
+            ),
+          testName: z
+            .string()
+            .optional()
+            .describe('Test name for tracking (e.g., "PushNotification_DeepLinkTest")'),
+          expectedBehavior: z
+            .string()
+            .optional()
+            .describe('Expected app behavior (e.g., "App navigates to ProductDetail view")'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlPushTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'simctl-pbcopy',
+      {
+        description: `📋 **Copy Text to Clipboard** - Simulate pasteboard operations for clipboard-dependent features.
+
+Copies text to the simulator's pasteboard (UIPasteboard).
+
+Apps can access via: UIPasteboard.general.string
+
+Returns: Copy status and verification guidance.`,
+        inputSchema: {
+          udid: z.string().describe('Simulator UDID'),
+          text: z.string().describe('Text to copy to clipboard'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlPbcopyTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'simctl-status-bar',
+      {
+        description: `⏱️ **Control Status Bar Appearance** - Override status bar for consistent testing.
+
+Override or clear status bar appearance for testing UI layouts and handling.
+
+Supports: Time, network status, WiFi state, battery state and level
+
+Returns: Status bar modification status and guidance for verification.`,
+        inputSchema: {
+          udid: z.string().describe('Simulator UDID'),
+          operation: z
+            .enum(['override', 'clear'])
+            .describe('Operation: override or clear'),
+          time: z.string().optional().describe('Time in 24-hour format (e.g., "9:41")'),
+          dataNetwork: z
+            .string()
+            .optional()
+            .describe('Data network: none, 1x, 3g, 4g, 5g, lte, lte-a'),
+          wifiMode: z
+            .string()
+            .optional()
+            .describe('WiFi state: active, searching, failed'),
+          batteryState: z
+            .string()
+            .optional()
+            .describe('Battery state: charging, charged, discharging'),
+          batteryLevel: z
+            .number()
+            .min(0)
+            .max(100)
+            .optional()
+            .describe('Battery level: 0-100'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlStatusBarTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    // Phase 4: UI Automation Tools (5 total)
+    this.server.registerTool(
+      'simctl-query-ui',
+      {
+        description: `🔍 **Query UI Elements** - Find elements on app screen using XCUITest predicates.
+
+Query UI elements with powerful predicate syntax for element discovery.
+
+Predicates enable:
+• Element type matching: Button, TextField, Switch, Table, Cell, etc.
+• Accessibility queries: identifier, label, placeholderValue
+• State queries: enabled, visible, hittable
+• Compound predicates: AND, OR, NOT operators
+
+Returns: Elements found and their properties for interaction.`,
+        inputSchema: {
+          udid: z.string().describe('Simulator UDID'),
+          bundleId: z.string().describe('App bundle ID (e.g., com.example.MyApp)'),
+          predicate: z
+            .string()
+            .describe(
+              'XCUITest predicate (e.g., \'type == "XCUIElementTypeButton" AND label == "Login"\')'
+            ),
+          captureLocation: z
+            .boolean()
+            .optional()
+            .describe('Capture element locations for interaction'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlQueryUiTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'simctl-tap',
+      {
+        description: `👆 **Tap Screen** - Simulate tap interactions on simulator screen.
+
+Perform single tap, double tap, or long press at specified coordinates.
+
+Returns: Tap status and guidance for verification.`,
+        inputSchema: {
+          udid: z.string().describe('Simulator UDID'),
+          x: z.number().describe('X coordinate in pixels'),
+          y: z.number().describe('Y coordinate in pixels'),
+          numberOfTaps: z
+            .number()
+            .optional()
+            .describe('Number of taps (default: 1)'),
+          duration: z
+            .number()
+            .optional()
+            .describe('Duration in seconds for long press'),
+          actionName: z
+            .string()
+            .optional()
+            .describe('Action description for tracking (e.g., "Login Button Tap")'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlTapTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'simctl-type-text',
+      {
+        description: `⌨️ **Type Text** - Enter text into focused text field.
+
+Type text, passwords, or multi-line input. Supports keyboard actions like return, tab, backspace.
+
+Returns: Text entry status and guidance for verification.`,
+        inputSchema: {
+          udid: z.string().describe('Simulator UDID'),
+          text: z.string().describe('Text to type'),
+          isSensitive: z
+            .boolean()
+            .optional()
+            .describe('Mark as sensitive (output will be redacted)'),
+          keyboardActions: z
+            .array(z.string())
+            .optional()
+            .describe('Keyboard actions after text (e.g., ["return", "tab"])'),
+          actionName: z
+            .string()
+            .optional()
+            .describe('Action description for tracking (e.g., "Enter email address")'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlTypeTextTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'simctl-scroll',
+      {
+        description: `📜 **Scroll Content** - Scroll in direction on simulator screen.
+
+Scroll views, tables, and lists in any direction with configurable velocity.
+
+Returns: Scroll status and guidance for verification.`,
+        inputSchema: {
+          udid: z.string().describe('Simulator UDID'),
+          direction: z
+            .enum(['up', 'down', 'left', 'right'])
+            .describe('Scroll direction'),
+          x: z.number().optional().describe('X coordinate (default: screen center)'),
+          y: z.number().optional().describe('Y coordinate (default: screen center)'),
+          velocity: z
+            .number()
+            .optional()
+            .describe('Scroll velocity 1-10 (default: 3)'),
+          actionName: z
+            .string()
+            .optional()
+            .describe('Action description for tracking (e.g., "Scroll to bottom")'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlScrollTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'simctl-gesture',
+      {
+        description: `✋ **Perform Gestures** - Execute complex gestures (swipe, pinch, rotate, multi-touch).
+
+Advanced gesture support for swipes, pinch zoom, rotation, and multi-touch interactions.
+
+Gestures: swipe, pinch, rotate, multitouch
+
+Returns: Gesture status and guidance for verification.`,
+        inputSchema: {
+          udid: z.string().describe('Simulator UDID'),
+          type: z
+            .enum(['swipe', 'pinch', 'rotate', 'multitouch'])
+            .describe('Gesture type'),
+          direction: z
+            .enum(['up', 'down', 'left', 'right'])
+            .optional()
+            .describe('Direction (for swipe)'),
+          scale: z
+            .number()
+            .optional()
+            .describe('Scale factor (for pinch)'),
+          angle: z
+            .number()
+            .optional()
+            .describe('Rotation angle in degrees (for rotate)'),
+          startX: z
+            .number()
+            .optional()
+            .describe('Starting X coordinate (for swipe)'),
+          startY: z
+            .number()
+            .optional()
+            .describe('Starting Y coordinate (for swipe)'),
+          centerX: z
+            .number()
+            .optional()
+            .describe('Center X coordinate (for pinch/rotate)'),
+          centerY: z
+            .number()
+            .optional()
+            .describe('Center Y coordinate (for pinch/rotate)'),
+          fingers: z
+            .number()
+            .optional()
+            .describe('Number of fingers (for multitouch)'),
+          action: z
+            .string()
+            .optional()
+            .describe('Action type (for multitouch, e.g., "tap")'),
+          actionName: z
+            .string()
+            .optional()
+            .describe('Action description for tracking'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlGestureTool(args);
         } catch (error) {
           if (error instanceof McpError) throw error;
           throw new McpError(
