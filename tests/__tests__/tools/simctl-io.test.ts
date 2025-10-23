@@ -1,5 +1,6 @@
 import { simctlIoTool } from '../../../src/tools/simctl/io.js';
 import { simulatorCache } from '../../../src/state/simulator-cache.js';
+import { McpError } from '@modelcontextprotocol/sdk/types.js';
 
 // Mock the simulator cache
 jest.mock('../../../src/state/simulator-cache.js', () => ({
@@ -143,56 +144,48 @@ describe('simctlIoTool', () => {
 
   describe('input validation', () => {
     it('should reject empty UDID', async () => {
-      const result = await simctlIoTool({
-        udid: '',
-        operation: 'screenshot',
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('UDID');
+      await expect(
+        simctlIoTool({
+          udid: '',
+          operation: 'screenshot',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject invalid operation', async () => {
-      const result = await simctlIoTool({
-        udid: validUDID,
-        operation: 'invalid',
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('operation');
+      await expect(
+        simctlIoTool({
+          udid: validUDID,
+          operation: 'invalid',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject non-existent simulator', async () => {
       mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(null);
 
-      const result = await simctlIoTool({
-        udid: 'invalid-udid',
-        operation: 'screenshot',
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('not found');
+      await expect(
+        simctlIoTool({
+          udid: 'invalid-udid',
+          operation: 'screenshot',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should handle whitespace-only UDID', async () => {
-      const result = await simctlIoTool({
-        udid: '   ',
-        operation: 'screenshot',
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlIoTool({
+          udid: '   ',
+          operation: 'screenshot',
+        })
+      ).rejects.toThrow(McpError);
     });
   });
 
   describe('simulator state handling', () => {
     it('should work with booted simulator', async () => {
       const bootedSimulator = { ...validSimulator, state: 'Booted' };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        bootedSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(bootedSimulator as any);
 
       const result = await simctlIoTool({
         udid: validUDID,
@@ -204,9 +197,7 @@ describe('simctlIoTool', () => {
 
     it('should warn if simulator is shutdown', async () => {
       const shutdownSimulator = { ...validSimulator, state: 'Shutdown' };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        shutdownSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(shutdownSimulator as any);
 
       const result = await simctlIoTool({
         udid: validUDID,
@@ -214,16 +205,14 @@ describe('simctlIoTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.guidance.some((g: string) =>
-        g.includes('boot') || g.includes('shutdown')
-      )).toBe(true);
+      expect(
+        response.guidance.some((g: string) => g.includes('boot') || g.includes('shutdown'))
+      ).toBe(true);
     });
 
     it('should warn if simulator is unavailable', async () => {
       const unavailableSimulator = { ...validSimulator, isAvailable: false };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        unavailableSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(unavailableSimulator as any);
 
       const result = await simctlIoTool({
         udid: validUDID,
@@ -231,9 +220,7 @@ describe('simctlIoTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.guidance.some((g: string) =>
-        g.includes('unavailable')
-      )).toBe(true);
+      expect(response.guidance.some((g: string) => g.includes('unavailable'))).toBe(true);
     });
   });
 
@@ -274,25 +261,23 @@ describe('simctlIoTool', () => {
       const { executeCommand } = require('../../../src/utils/command.js');
       executeCommand.mockRejectedValueOnce(new Error('Command failed'));
 
-      const result = await simctlIoTool({
-        udid: validUDID,
-        operation: 'screenshot',
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlIoTool({
+          udid: validUDID,
+          operation: 'screenshot',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should handle simulator cache error', async () => {
-      mockSimulatorCache.findSimulatorByUdid.mockRejectedValueOnce(
-        new Error('Cache error')
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockRejectedValueOnce(new Error('Cache error'));
 
-      const result = await simctlIoTool({
-        udid: validUDID,
-        operation: 'screenshot',
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlIoTool({
+          udid: validUDID,
+          operation: 'screenshot',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should handle invalid output path', async () => {
@@ -326,14 +311,12 @@ describe('simctlIoTool', () => {
     it('should include error details on failure', async () => {
       mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(null);
 
-      const result = await simctlIoTool({
-        udid: 'invalid',
-        operation: 'screenshot',
-      });
-
-      const response = JSON.parse(result.content[0].text);
-      expect(response).toHaveProperty('success', false);
-      expect(response).toHaveProperty('error');
+      await expect(
+        simctlIoTool({
+          udid: 'invalid',
+          operation: 'screenshot',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should be valid JSON', async () => {
@@ -403,9 +386,10 @@ describe('simctlIoTool', () => {
 
     it('should handle very long UDID values', async () => {
       const longUDID = 'a'.repeat(100);
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        { ...validSimulator, udid: longUDID } as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce({
+        ...validSimulator,
+        udid: longUDID,
+      } as any);
 
       const result = await simctlIoTool({
         udid: longUDID,

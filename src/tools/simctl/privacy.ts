@@ -30,23 +30,16 @@ interface SimctlPrivacyToolArgs {
  * permission changes across test scenarios and verify state at each step.
  */
 export async function simctlPrivacyTool(args: any) {
-  const { udid, bundleId, action, service, scenario, step } =
-    args as SimctlPrivacyToolArgs;
+  const { udid, bundleId, action, service, scenario, step } = args as SimctlPrivacyToolArgs;
 
   try {
     // Validate inputs
     if (!udid || udid.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'UDID is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'UDID is required and cannot be empty');
     }
 
     if (!bundleId || bundleId.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'Bundle ID is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'Bundle ID is required and cannot be empty');
     }
 
     if (!bundleId.includes('.')) {
@@ -57,10 +50,7 @@ export async function simctlPrivacyTool(args: any) {
     }
 
     if (!action || !['grant', 'revoke', 'reset'].includes(action)) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'Action must be "grant", "revoke", or "reset"'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'Action must be "grant", "revoke", or "reset"');
     }
 
     // Validate service
@@ -107,6 +97,42 @@ export async function simctlPrivacyTool(args: any) {
 
     const success = result.code === 0;
 
+    // Build guidance messages
+    const guidanceMessages: (string | undefined)[] = [];
+
+    if (success) {
+      guidanceMessages.push(
+        `✅ Privacy permission ${action}ed for "${service}" on "${bundleId}"`,
+        scenario ? `Scenario: ${scenario}` : undefined,
+        step !== undefined ? `Step: ${step}` : undefined,
+        `Action: ${action}`,
+        `Service: ${service}`,
+        `Verify in Settings app: simctl-launch ${udid} com.apple.Preferences`,
+        `Grant another permission: simctl-privacy ${udid} ${bundleId} grant microphone`
+      );
+    } else {
+      guidanceMessages.push(
+        `❌ Failed to ${action} permission: ${result.stderr || 'Unknown error'}`,
+        scenario ? `Scenario: ${scenario}` : undefined,
+        step !== undefined ? `Step: ${step}` : undefined,
+        `App may not be installed on this simulator`,
+        `Verify bundle ID: ${bundleId}`,
+        `Install app first: simctl-install ${udid} /path/to/App.app`
+      );
+    }
+
+    // Add warnings for simulator state regardless of success
+    if (simulator.state !== 'Booted') {
+      guidanceMessages.push(
+        `⚠️ Warning: Simulator is in ${simulator.state} state. Boot the simulator for optimal functionality: simctl-boot ${udid}`
+      );
+    }
+    if (simulator.isAvailable === false) {
+      guidanceMessages.push(
+        `⚠️ Warning: Simulator is marked as unavailable. This may cause issues with operations.`
+      );
+    }
+
     const responseData = {
       success,
       udid,
@@ -127,33 +153,19 @@ export async function simctlPrivacyTool(args: any) {
         bundleId,
         success,
         // Context for test scenario tracking
-        testContext: scenario || step !== undefined ? {
-          scenario: scenario || undefined,
-          step: step !== undefined ? step : undefined,
-        } : undefined,
+        testContext:
+          scenario || step !== undefined
+            ? {
+                scenario: scenario || undefined,
+                step: step !== undefined ? step : undefined,
+              }
+            : undefined,
       },
       command,
       output: result.stdout,
       error: result.stderr || undefined,
       exitCode: result.code,
-      guidance: success
-        ? [
-            `✅ Privacy permission ${action}ed for "${service}" on "${bundleId}"`,
-            scenario ? `Scenario: ${scenario}` : undefined,
-            step !== undefined ? `Step: ${step}` : undefined,
-            `Action: ${action}`,
-            `Service: ${service}`,
-            `Verify in Settings app: simctl-launch ${udid} com.apple.Preferences`,
-            `Grant another permission: simctl-privacy ${udid} ${bundleId} grant microphone`,
-          ].filter(Boolean)
-        : [
-            `❌ Failed to ${action} permission: ${result.stderr || 'Unknown error'}`,
-            scenario ? `Scenario: ${scenario}` : undefined,
-            step !== undefined ? `Step: ${step}` : undefined,
-            `App may not be installed on this simulator`,
-            `Verify bundle ID: ${bundleId}`,
-            `Install app first: simctl-install ${udid} /path/to/App.app`,
-          ].filter(Boolean),
+      guidance: guidanceMessages.filter(Boolean),
     };
 
     const responseText = JSON.stringify(responseData, null, 2);

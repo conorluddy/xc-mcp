@@ -156,7 +156,7 @@ export class ConfigManager {
       if (error instanceof Error && 'code' in error && (error as any).code === 'ENOENT') {
         return null; // File doesn't exist yet
       }
-      console.warn('Failed to load config from disk:', error);
+      // JSON parse errors or other corruption - gracefully degrade
       return null;
     }
   }
@@ -197,8 +197,11 @@ export class ConfigManager {
     try {
       const configPath = this.getConfigPath();
       await fs.unlink(configPath);
-    } catch {
-      // File doesn't exist, that's fine
+    } catch (error) {
+      // File doesn't exist, that's fine - only log other errors
+      if (error instanceof Error && 'code' in error && (error as any).code !== 'ENOENT') {
+        console.warn('Failed to delete config file:', error);
+      }
     }
   }
 

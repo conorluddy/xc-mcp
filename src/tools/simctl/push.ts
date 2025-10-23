@@ -27,23 +27,16 @@ interface SimctlPushToolArgs {
  * push delivery and validate app behavior against expectations.
  */
 export async function simctlPushTool(args: any) {
-  const { udid, bundleId, payload, testName, expectedBehavior } =
-    args as SimctlPushToolArgs;
+  const { udid, bundleId, payload, testName, expectedBehavior } = args as SimctlPushToolArgs;
 
   try {
     // Validate inputs
     if (!udid || udid.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'UDID is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'UDID is required and cannot be empty');
     }
 
     if (!bundleId || bundleId.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'Bundle ID is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'Bundle ID is required and cannot be empty');
     }
 
     if (!bundleId.includes('.')) {
@@ -54,10 +47,7 @@ export async function simctlPushTool(args: any) {
     }
 
     if (!payload || payload.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'Payload is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'Payload is required and cannot be empty');
     }
 
     // Validate JSON payload
@@ -65,10 +55,7 @@ export async function simctlPushTool(args: any) {
     try {
       parsedPayload = JSON.parse(payload);
     } catch {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'Payload must be valid JSON'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'Payload must be valid JSON');
     }
 
     // Validate simulator exists
@@ -96,6 +83,40 @@ export async function simctlPushTool(args: any) {
 
       const success = result.code === 0;
 
+      // Build guidance messages
+      const guidanceMessages: (string | undefined)[] = [];
+
+      if (success) {
+        guidanceMessages.push(
+          `✅ Push notification sent to "${bundleId}" on "${simulator.name}"`,
+          testName ? `Test: ${testName}` : undefined,
+          expectedBehavior ? `Expected: ${expectedBehavior}` : undefined,
+          `Verify notification in app`,
+          `Take screenshot to confirm visual delivery: simctl-io ${udid} screenshot`,
+          `Send another notification: simctl-push ${udid} ${bundleId} '{"aps":{"alert":"Test"}}'`
+        );
+      } else {
+        guidanceMessages.push(
+          `❌ Failed to send push: ${result.stderr || 'Unknown error'}`,
+          testName ? `Test: ${testName}` : undefined,
+          `App may not be running`,
+          `Launch app first: simctl-launch ${udid} ${bundleId}`,
+          `Verify app has push support`
+        );
+      }
+
+      // Add warnings for simulator state regardless of success
+      if (simulator.state !== 'Booted') {
+        guidanceMessages.push(
+          `⚠️ Warning: Simulator is in ${simulator.state} state. Boot the simulator for optimal functionality: simctl-boot ${udid}`
+        );
+      }
+      if (simulator.isAvailable === false) {
+        guidanceMessages.push(
+          `⚠️ Warning: Simulator is marked as unavailable. This may cause issues with operations.`
+        );
+      }
+
       const responseData = {
         success,
         udid,
@@ -114,32 +135,22 @@ export async function simctlPushTool(args: any) {
           // Note: For full delivery confirmation with app response, pair with simctl-io screenshot
           // to verify the notification was visually displayed in the app
         },
-        testContext: testName || expectedBehavior ? {
-          testName: testName || undefined,
-          expectedBehavior: expectedBehavior || undefined,
-          actualBehavior: success ? 'Notification sent successfully' : 'Notification delivery failed',
-          passed: success,
-        } : undefined,
+        testContext:
+          testName || expectedBehavior
+            ? {
+                testName: testName || undefined,
+                expectedBehavior: expectedBehavior || undefined,
+                actualBehavior: success
+                  ? 'Notification sent successfully'
+                  : 'Notification delivery failed',
+                passed: success,
+              }
+            : undefined,
         command,
         output: result.stdout,
         error: result.stderr || undefined,
         exitCode: result.code,
-        guidance: success
-          ? [
-              `✅ Push notification sent to "${bundleId}" on "${simulator.name}"`,
-              testName ? `Test: ${testName}` : undefined,
-              expectedBehavior ? `Expected: ${expectedBehavior}` : undefined,
-              `Verify notification in app`,
-              `Take screenshot to confirm visual delivery: simctl-io ${udid} screenshot`,
-              `Send another notification: simctl-push ${udid} ${bundleId} '{"aps":{"alert":"Test"}}'`,
-            ].filter(Boolean)
-          : [
-              `❌ Failed to send push: ${result.stderr || 'Unknown error'}`,
-              testName ? `Test: ${testName}` : undefined,
-              `App may not be running`,
-              `Launch app first: simctl-launch ${udid} ${bundleId}`,
-              `Verify app has push support`,
-            ].filter(Boolean),
+        guidance: guidanceMessages.filter(Boolean),
       };
 
       const responseText = JSON.stringify(responseData, null, 2);

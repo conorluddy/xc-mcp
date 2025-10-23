@@ -46,18 +46,20 @@ XC-MCP is a Model Context Protocol (MCP) server that provides intelligent access
 - **src/state/** - Intelligent caching system:
   - `simulator-cache.ts` - Simulator state with usage tracking and performance metrics
   - `project-cache.ts` - Project configuration memory and build history
+  - `build-settings-cache.ts` - Xcode build settings with auto-discovery of bundle IDs, deployment targets, and capabilities
 - **src/utils/** - Shared utilities for command execution and validation
 - **src/types/** - TypeScript definitions for Xcode data structures
 
 ### Key Architectural Features
 - **Progressive Disclosure**: Returns concise summaries by default, full details on demand via cache IDs
-- **Intelligent Caching**: 3-layer cache system (simulator, project, response) with smart invalidation
+- **Intelligent Caching**: 4-layer cache system (simulator, project, build settings, response) with smart invalidation
 - **Performance Tracking**: Boot times, build metrics, and usage patterns for optimization
 - **Smart Defaults**: Learns from successful builds and suggests optimal configurations
 
 ### Cache System Design
 - **SimulatorCache**: 1-hour default retention, tracks device usage and boot performance
 - **ProjectCache**: Remembers successful build configurations per project
+- **BuildSettingsCache**: 1-hour default retention, auto-discovers bundle IDs, deployment targets, device families, and app capabilities from project build settings
 - **ResponseCache**: 30-minute retention for progressive disclosure of large outputs
 - All caches support configurable timeouts and selective clearing
 

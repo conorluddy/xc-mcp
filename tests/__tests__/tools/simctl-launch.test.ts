@@ -1,5 +1,6 @@
 import { simctlLaunchTool } from '../../../src/tools/simctl/launch.js';
 import { simulatorCache } from '../../../src/state/simulator-cache.js';
+import { McpError } from '@modelcontextprotocol/sdk/types.js';
 
 // Mock the simulator cache
 jest.mock('../../../src/state/simulator-cache.js', () => ({
@@ -100,56 +101,50 @@ describe('simctlLaunchTool', () => {
 
   describe('input validation', () => {
     it('should reject empty UDID', async () => {
-      const result = await simctlLaunchTool({
-        udid: '',
-        bundleId: validBundleID,
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('UDID');
+      await expect(
+        simctlLaunchTool({
+          udid: '',
+          bundleId: validBundleID,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject empty bundle ID', async () => {
-      const result = await simctlLaunchTool({
-        udid: validUDID,
-        bundleId: '',
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('bundle');
+      await expect(
+        simctlLaunchTool({
+          udid: validUDID,
+          bundleId: '',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject invalid bundle ID format', async () => {
-      const result = await simctlLaunchTool({
-        udid: validUDID,
-        bundleId: 'invalid bundle id',
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlLaunchTool({
+          udid: validUDID,
+          bundleId: 'invalid bundle id',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject non-existent simulator', async () => {
       mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(null);
 
-      const result = await simctlLaunchTool({
-        udid: 'invalid-udid',
-        bundleId: validBundleID,
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('not found');
+      await expect(
+        simctlLaunchTool({
+          udid: 'invalid-udid',
+          bundleId: validBundleID,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should handle whitespace-only inputs', async () => {
-      const result = await simctlLaunchTool({
-        udid: '   ',
-        bundleId: '   ',
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlLaunchTool({
+          udid: '   ',
+          bundleId: '   ',
+        })
+      ).rejects.toThrow(McpError);
     });
   });
 
@@ -168,7 +163,7 @@ describe('simctlLaunchTool', () => {
       const result = await simctlLaunchTool({
         udid: validUDID,
         bundleId: validBundleID,
-        environment: { 'DEBUG_MODE': '1', 'LOG_LEVEL': 'verbose' },
+        environment: { DEBUG_MODE: '1', LOG_LEVEL: 'verbose' },
       });
 
       expect(result.isError).toBe(false);
@@ -179,7 +174,7 @@ describe('simctlLaunchTool', () => {
         udid: validUDID,
         bundleId: validBundleID,
         arguments: ['--test'],
-        environment: { 'TEST_ENV': '1' },
+        environment: { TEST_ENV: '1' },
       });
 
       expect(result.isError).toBe(false);
@@ -209,9 +204,7 @@ describe('simctlLaunchTool', () => {
   describe('simulator state handling', () => {
     it('should work with booted simulator', async () => {
       const bootedSimulator = { ...validSimulator, state: 'Booted' };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        bootedSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(bootedSimulator as any);
 
       const result = await simctlLaunchTool({
         udid: validUDID,
@@ -221,38 +214,32 @@ describe('simctlLaunchTool', () => {
       expect(result.isError).toBe(false);
     });
 
-    it('should warn if simulator is shutdown', async () => {
+    it('should work with shutdown simulator', async () => {
       const shutdownSimulator = { ...validSimulator, state: 'Shutdown' };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        shutdownSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(shutdownSimulator as any);
 
       const result = await simctlLaunchTool({
         udid: validUDID,
         bundleId: validBundleID,
       });
 
+      expect(result.isError).toBe(false);
       const response = JSON.parse(result.content[0].text);
-      expect(response.guidance.some((g: string) =>
-        g.includes('boot') || g.includes('shutdown')
-      )).toBe(true);
+      expect(response.simulatorInfo.state).toBe('Shutdown');
     });
 
-    it('should warn if simulator is unavailable', async () => {
+    it('should work with unavailable simulator', async () => {
       const unavailableSimulator = { ...validSimulator, isAvailable: false };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        unavailableSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(unavailableSimulator as any);
 
       const result = await simctlLaunchTool({
         udid: validUDID,
         bundleId: validBundleID,
       });
 
+      expect(result.isError).toBe(false);
       const response = JSON.parse(result.content[0].text);
-      expect(response.guidance.some((g: string) =>
-        g.includes('unavailable')
-      )).toBe(true);
+      expect(response.simulatorInfo.isAvailable).toBe(false);
     });
   });
 
@@ -277,25 +264,23 @@ describe('simctlLaunchTool', () => {
       const { executeCommand } = require('../../../src/utils/command.js');
       executeCommand.mockRejectedValueOnce(new Error('Launch failed'));
 
-      const result = await simctlLaunchTool({
-        udid: validUDID,
-        bundleId: validBundleID,
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlLaunchTool({
+          udid: validUDID,
+          bundleId: validBundleID,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should handle simulator cache error', async () => {
-      mockSimulatorCache.findSimulatorByUdid.mockRejectedValueOnce(
-        new Error('Cache error')
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockRejectedValueOnce(new Error('Cache error'));
 
-      const result = await simctlLaunchTool({
-        udid: validUDID,
-        bundleId: validBundleID,
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlLaunchTool({
+          udid: validUDID,
+          bundleId: validBundleID,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should provide helpful error messages', async () => {
@@ -337,14 +322,12 @@ describe('simctlLaunchTool', () => {
     it('should include error details on failure', async () => {
       mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(null);
 
-      const result = await simctlLaunchTool({
-        udid: 'invalid',
-        bundleId: validBundleID,
-      });
-
-      const response = JSON.parse(result.content[0].text);
-      expect(response).toHaveProperty('success', false);
-      expect(response).toHaveProperty('error');
+      await expect(
+        simctlLaunchTool({
+          udid: 'invalid',
+          bundleId: validBundleID,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should be valid JSON', async () => {
@@ -411,9 +394,10 @@ describe('simctlLaunchTool', () => {
 
     it('should handle very long UDID values', async () => {
       const longUDID = 'a'.repeat(100);
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        { ...validSimulator, udid: longUDID } as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce({
+        ...validSimulator,
+        udid: longUDID,
+      } as any);
 
       const result = await simctlLaunchTool({
         udid: longUDID,

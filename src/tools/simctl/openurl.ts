@@ -27,10 +27,7 @@ export async function simctlOpenUrlTool(args: any) {
   try {
     // Validate inputs
     if (!udid || udid.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'UDID is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'UDID is required and cannot be empty');
     }
 
     if (!url || url.trim().length === 0) {
@@ -69,6 +66,41 @@ export async function simctlOpenUrlTool(args: any) {
     const schemeMatch = url.match(/^([a-z][a-z0-9+.-]*?):/i);
     const scheme = schemeMatch ? schemeMatch[1] : 'http';
 
+    // Build guidance messages
+    const guidanceMessages: string[] = [];
+
+    if (success) {
+      guidanceMessages.push(
+        `✅ URL opened on "${simulator.name}"`,
+        `URL: ${url}`,
+        `Scheme: ${scheme}`,
+        `View open URLs in Safari: simctl-launch ${udid} com.apple.mobilesafari`,
+        `Test deep links with different parameters`
+      );
+    } else {
+      guidanceMessages.push(
+        `❌ Failed to open URL: ${result.stderr || 'Unknown error'}`,
+        simulator.state !== 'Booted'
+          ? `Simulator is not booted. Boot it first: simctl-boot ${udid}`
+          : scheme !== 'http' && scheme !== 'https'
+            ? `No handler registered for scheme "${scheme}". Install an app that handles this scheme.`
+            : `Verify URL format: ${url}`,
+        `Check simulator health: simctl-health-check`
+      );
+    }
+
+    // Add warnings for simulator state regardless of success
+    if (simulator.state !== 'Booted') {
+      guidanceMessages.push(
+        `⚠️ Warning: Simulator is in ${simulator.state} state. Boot the simulator for optimal functionality: simctl-boot ${udid}`
+      );
+    }
+    if (simulator.isAvailable === false) {
+      guidanceMessages.push(
+        `⚠️ Warning: Simulator is marked as unavailable. This may cause issues with operations.`
+      );
+    }
+
     const responseData = {
       success,
       udid,
@@ -84,23 +116,7 @@ export async function simctlOpenUrlTool(args: any) {
       output: result.stdout,
       error: result.stderr || undefined,
       exitCode: result.code,
-      guidance: success
-        ? [
-            `✅ URL opened on "${simulator.name}"`,
-            `URL: ${url}`,
-            `Scheme: ${scheme}`,
-            `View open URLs in Safari: simctl-launch ${udid} com.apple.mobilesafari`,
-            `Test deep links with different parameters`,
-          ]
-        : [
-            `❌ Failed to open URL: ${result.stderr || 'Unknown error'}`,
-            simulator.state !== 'Booted'
-              ? `Simulator is not booted. Boot it first: simctl-boot ${udid}`
-              : scheme !== 'http' && scheme !== 'https'
-                ? `No handler registered for scheme "${scheme}". Install an app that handles this scheme.`
-                : `Verify URL format: ${url}`,
-            `Check simulator health: simctl-health-check`,
-          ],
+      guidance: guidanceMessages,
     };
 
     const responseText = JSON.stringify(responseData, null, 2);

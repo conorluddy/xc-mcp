@@ -34,10 +34,7 @@ export async function simctlStatusBarTool(args: any) {
   try {
     // Validate inputs
     if (!udid || udid.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'UDID is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'UDID is required and cannot be empty');
     }
 
     if (!operation || !['override', 'clear'].includes(operation)) {
@@ -69,13 +66,43 @@ export async function simctlStatusBarTool(args: any) {
         }
       }
 
+      // Validate dataNetwork if provided
+      if (dataNetwork) {
+        const validDataNetworks = ['none', '1x', '3g', '4g', '5g', 'lte', 'lte-a'];
+        if (!validDataNetworks.includes(dataNetwork)) {
+          throw new McpError(
+            ErrorCode.InvalidRequest,
+            `Data network must be one of: ${validDataNetworks.join(', ')}. Received: "${dataNetwork}"`
+          );
+        }
+      }
+
+      // Validate wifiMode if provided
+      if (wifiMode) {
+        const validWifiModes = ['active', 'searching', 'failed'];
+        if (!validWifiModes.includes(wifiMode)) {
+          throw new McpError(
+            ErrorCode.InvalidRequest,
+            `WiFi mode must be one of: ${validWifiModes.join(', ')}. Received: "${wifiMode}"`
+          );
+        }
+      }
+
+      // Validate batteryState if provided
+      if (batteryState) {
+        const validBatteryStates = ['charging', 'charged', 'discharging'];
+        if (!validBatteryStates.includes(batteryState)) {
+          throw new McpError(
+            ErrorCode.InvalidRequest,
+            `Battery state must be one of: ${validBatteryStates.join(', ')}. Received: "${batteryState}"`
+          );
+        }
+      }
+
       // Validate battery level if provided
       if (batteryLevel !== undefined) {
         if (batteryLevel < 0 || batteryLevel > 100) {
-          throw new McpError(
-            ErrorCode.InvalidRequest,
-            'Battery level must be between 0 and 100'
-          );
+          throw new McpError(ErrorCode.InvalidRequest, 'Battery level must be between 0 and 100');
         }
       }
     }
@@ -116,17 +143,59 @@ export async function simctlStatusBarTool(args: any) {
 
     const success = result.code === 0;
 
+    // Build guidance messages
+    const guidanceMessages: string[] = [];
+
+    if (success) {
+      if (operation === 'override') {
+        guidanceMessages.push(
+          `✅ Status bar ${operation}d on "${simulator.name}"`,
+          `Time: ${time || 'default'}`,
+          `Network: ${dataNetwork || 'unchanged'}`,
+          `WiFi: ${wifiMode || 'unchanged'}`,
+          `Battery: ${batteryLevel !== undefined ? `${batteryLevel}%` : 'unchanged'} (${batteryState || 'unchanged'})`,
+          `Take screenshot to verify: simctl-io ${udid} screenshot`
+        );
+      } else {
+        guidanceMessages.push(
+          `✅ Status bar overrides cleared on "${simulator.name}"`,
+          `Status bar will show actual device state`
+        );
+      }
+    } else {
+      guidanceMessages.push(
+        `❌ Failed to ${operation} status bar: ${result.stderr || 'Unknown error'}`,
+        `Check simulator version compatibility`,
+        `Verify simulator is available: simctl-health-check`
+      );
+    }
+
+    // Add warnings for simulator state regardless of success
+    if (simulator.state !== 'Booted') {
+      guidanceMessages.push(
+        `⚠️ Warning: Simulator is in ${simulator.state} state. Boot the simulator for optimal functionality: simctl-boot ${udid}`
+      );
+    }
+    if (simulator.isAvailable === false) {
+      guidanceMessages.push(
+        `⚠️ Warning: Simulator is marked as unavailable. This may cause issues with operations.`
+      );
+    }
+
     const responseData = {
       success,
       udid,
       operation,
-      parameters: operation === 'override' ? {
-        time,
-        dataNetwork,
-        wifiMode,
-        batteryState,
-        batteryLevel,
-      } : undefined,
+      parameters:
+        operation === 'override'
+          ? {
+              time,
+              dataNetwork,
+              wifiMode,
+              batteryState,
+              batteryLevel,
+            }
+          : undefined,
       simulatorInfo: {
         name: simulator.name,
         udid: simulator.udid,
@@ -137,25 +206,7 @@ export async function simctlStatusBarTool(args: any) {
       output: result.stdout,
       error: result.stderr || undefined,
       exitCode: result.code,
-      guidance: success
-        ? operation === 'override'
-          ? [
-              `✅ Status bar ${operation}d on "${simulator.name}"`,
-              `Time: ${time || 'default'}`,
-              `Network: ${dataNetwork || 'unchanged'}`,
-              `WiFi: ${wifiMode || 'unchanged'}`,
-              `Battery: ${batteryLevel !== undefined ? `${batteryLevel}%` : 'unchanged'} (${batteryState || 'unchanged'})`,
-              `Take screenshot to verify: simctl-io ${udid} screenshot`,
-            ]
-          : [
-              `✅ Status bar overrides cleared on "${simulator.name}"`,
-              `Status bar will show actual device state`,
-            ]
-        : [
-            `❌ Failed to ${operation} status bar: ${result.stderr || 'Unknown error'}`,
-            `Check simulator version compatibility`,
-            `Verify simulator is available: simctl-health-check`,
-          ],
+      guidance: guidanceMessages,
     };
 
     const responseText = JSON.stringify(responseData, null, 2);

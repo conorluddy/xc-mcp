@@ -1,6 +1,7 @@
 import { simctlGestureTool } from '../../../src/tools/simctl/gesture';
 import { simulatorCache } from '../../../src/state/simulator-cache';
 import { executeCommand } from '../../../src/utils/command';
+import { McpError } from '@modelcontextprotocol/sdk/types.js';
 
 jest.mock('../../../src/state/simulator-cache');
 jest.mock('../../../src/utils/command');

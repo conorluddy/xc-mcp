@@ -2,7 +2,6 @@ import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
 import { simulatorCache } from '../../state/simulator-cache.js';
 import { promises as fs } from 'fs';
-import * as path from 'path';
 
 interface SimctlIoToolArgs {
   udid: string;
@@ -42,10 +41,7 @@ export async function simctlIoTool(args: any) {
   try {
     // Validate inputs
     if (!udid || udid.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'UDID is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'UDID is required and cannot be empty');
     }
 
     if (!operation || !['screenshot', 'video'].includes(operation)) {
@@ -111,6 +107,52 @@ export async function simctlIoTool(args: any) {
       }
     }
 
+    // Build guidance messages
+    const guidanceMessages: (string | undefined)[] = [];
+
+    if (success) {
+      if (operation === 'screenshot') {
+        guidanceMessages.push(
+          `✅ Screenshot captured successfully`,
+          `File: ${finalOutputPath}`,
+          `File size: ${fileSize} bytes`,
+          appName && screenName && state
+            ? `Semantic path: ${appName}_${screenName}_${state}`
+            : undefined,
+          `View screenshot: open "${finalOutputPath}"`,
+          `Copy to clipboard: pbcopy < "${finalOutputPath}"`
+        );
+      } else {
+        guidanceMessages.push(
+          `✅ Video recording started`,
+          `File: ${finalOutputPath}`,
+          `Codec: ${codec || 'h264'}`,
+          `Stop recording: Press Ctrl+C`,
+          `View video: open "${finalOutputPath}"`
+        );
+      }
+    } else {
+      guidanceMessages.push(
+        `❌ Failed to ${operation}: ${result.stderr || 'Unknown error'}`,
+        simulator.state !== 'Booted'
+          ? `Simulator is not booted. Boot it first: simctl-boot ${udid}`
+          : `Check file path permissions: ${finalOutputPath}`,
+        `Check simulator health: simctl-health-check`
+      );
+    }
+
+    // Add warnings for simulator state regardless of success
+    if (simulator.state !== 'Booted') {
+      guidanceMessages.push(
+        `⚠️ Warning: Simulator is in ${simulator.state} state. Boot the simulator for optimal functionality: simctl-boot ${udid}`
+      );
+    }
+    if (simulator.isAvailable === false) {
+      guidanceMessages.push(
+        `⚠️ Warning: Simulator is marked as unavailable. This may cause issues with operations.`
+      );
+    }
+
     const responseData = {
       success,
       udid,
@@ -127,41 +169,19 @@ export async function simctlIoTool(args: any) {
         isAvailable: simulator.isAvailable,
       },
       // LLM optimization: include semantic metadata when provided
-      semanticMetadata: appName || screenName || state ? {
-        appName: appName || undefined,
-        screenName: screenName || undefined,
-        state: state || undefined,
-      } : undefined,
+      semanticMetadata:
+        appName || screenName || state
+          ? {
+              appName: appName || undefined,
+              screenName: screenName || undefined,
+              state: state || undefined,
+            }
+          : undefined,
       command,
       output: result.stdout,
       error: result.stderr || undefined,
       exitCode: result.code,
-      guidance: success
-        ? operation === 'screenshot'
-          ? [
-              `✅ Screenshot captured successfully`,
-              `File: ${finalOutputPath}`,
-              `File size: ${fileSize} bytes`,
-              appName && screenName && state
-                ? `Semantic path: ${appName}_${screenName}_${state}`
-                : undefined,
-              `View screenshot: open "${finalOutputPath}"`,
-              `Copy to clipboard: pbcopy < "${finalOutputPath}"`,
-            ].filter(Boolean)
-          : [
-              `✅ Video recording started`,
-              `File: ${finalOutputPath}`,
-              `Codec: ${codec || 'h264'}`,
-              `Stop recording: Press Ctrl+C`,
-              `View video: open "${finalOutputPath}"`,
-            ]
-        : [
-            `❌ Failed to ${operation}: ${result.stderr || 'Unknown error'}`,
-            simulator.state !== 'Booted'
-              ? `Simulator is not booted. Boot it first: simctl-boot ${udid}`
-              : `Check file path permissions: ${finalOutputPath}`,
-            `Check simulator health: simctl-health-check`,
-          ],
+      guidance: guidanceMessages.filter(Boolean),
     };
 
     const responseText = JSON.stringify(responseData, null, 2);

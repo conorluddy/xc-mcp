@@ -1,5 +1,6 @@
 import { simctlPushTool } from '../../../src/tools/simctl/push.js';
 import { simulatorCache } from '../../../src/state/simulator-cache.js';
+import { McpError } from '@modelcontextprotocol/sdk/types.js';
 
 // Mock the simulator cache
 jest.mock('../../../src/state/simulator-cache.js', () => ({
@@ -134,7 +135,8 @@ describe('simctlPushTool', () => {
     });
 
     it('should handle complex nested payloads', async () => {
-      const complexPayload = '{"aps":{"alert":{"title":"Test","body":"Message"},"badge":1,"sound":"default"},"customKey":"customValue","nested":{"deep":"data"}}';
+      const complexPayload =
+        '{"aps":{"alert":{"title":"Test","body":"Message"},"badge":1,"sound":"default"},"customKey":"customValue","nested":{"deep":"data"}}';
       const result = await simctlPushTool({
         udid: validUDID,
         bundleId: validBundleID,
@@ -147,84 +149,72 @@ describe('simctlPushTool', () => {
 
   describe('input validation', () => {
     it('should reject empty UDID', async () => {
-      const result = await simctlPushTool({
-        udid: '',
-        bundleId: validBundleID,
-        payload: '{"aps":{"alert":"Test"}}',
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('UDID');
+      await expect(
+        simctlPushTool({
+          udid: '',
+          bundleId: validBundleID,
+          payload: '{"aps":{"alert":"Test"}}',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject empty bundle ID', async () => {
-      const result = await simctlPushTool({
-        udid: validUDID,
-        bundleId: '',
-        payload: '{"aps":{"alert":"Test"}}',
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('bundle');
+      await expect(
+        simctlPushTool({
+          udid: validUDID,
+          bundleId: '',
+          payload: '{"aps":{"alert":"Test"}}',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject empty payload', async () => {
-      const result = await simctlPushTool({
-        udid: validUDID,
-        bundleId: validBundleID,
-        payload: '',
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('payload');
+      await expect(
+        simctlPushTool({
+          udid: validUDID,
+          bundleId: validBundleID,
+          payload: '',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject invalid JSON payload', async () => {
-      const result = await simctlPushTool({
-        udid: validUDID,
-        bundleId: validBundleID,
-        payload: 'not valid json {]',
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('JSON');
+      await expect(
+        simctlPushTool({
+          udid: validUDID,
+          bundleId: validBundleID,
+          payload: 'not valid json {]',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject non-existent simulator', async () => {
       mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(null);
 
-      const result = await simctlPushTool({
-        udid: 'invalid-udid',
-        bundleId: validBundleID,
-        payload: '{"aps":{"alert":"Test"}}',
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('not found');
+      await expect(
+        simctlPushTool({
+          udid: 'invalid-udid',
+          bundleId: validBundleID,
+          payload: '{"aps":{"alert":"Test"}}',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should handle whitespace-only inputs', async () => {
-      const result = await simctlPushTool({
-        udid: '   ',
-        bundleId: '   ',
-        payload: '   ',
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlPushTool({
+          udid: '   ',
+          bundleId: '   ',
+          payload: '   ',
+        })
+      ).rejects.toThrow(McpError);
     });
   });
 
   describe('simulator state handling', () => {
     it('should work with booted simulator', async () => {
       const bootedSimulator = { ...validSimulator, state: 'Booted' };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        bootedSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(bootedSimulator as any);
 
       const result = await simctlPushTool({
         udid: validUDID,
@@ -237,9 +227,7 @@ describe('simctlPushTool', () => {
 
     it('should warn if simulator is shutdown', async () => {
       const shutdownSimulator = { ...validSimulator, state: 'Shutdown' };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        shutdownSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(shutdownSimulator as any);
 
       const result = await simctlPushTool({
         udid: validUDID,
@@ -248,16 +236,14 @@ describe('simctlPushTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.guidance.some((g: string) =>
-        g.includes('boot') || g.includes('shutdown')
-      )).toBe(true);
+      expect(
+        response.guidance.some((g: string) => g.includes('boot') || g.includes('shutdown'))
+      ).toBe(true);
     });
 
     it('should warn if simulator is unavailable', async () => {
       const unavailableSimulator = { ...validSimulator, isAvailable: false };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        unavailableSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(unavailableSimulator as any);
 
       const result = await simctlPushTool({
         udid: validUDID,
@@ -266,9 +252,7 @@ describe('simctlPushTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.guidance.some((g: string) =>
-        g.includes('unavailable')
-      )).toBe(true);
+      expect(response.guidance.some((g: string) => g.includes('unavailable'))).toBe(true);
     });
   });
 
@@ -311,27 +295,25 @@ describe('simctlPushTool', () => {
       const { executeCommand } = require('../../../src/utils/command.js');
       executeCommand.mockRejectedValueOnce(new Error('Command failed'));
 
-      const result = await simctlPushTool({
-        udid: validUDID,
-        bundleId: validBundleID,
-        payload: '{"aps":{"alert":"Test"}}',
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlPushTool({
+          udid: validUDID,
+          bundleId: validBundleID,
+          payload: '{"aps":{"alert":"Test"}}',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should handle simulator cache error', async () => {
-      mockSimulatorCache.findSimulatorByUdid.mockRejectedValueOnce(
-        new Error('Cache error')
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockRejectedValueOnce(new Error('Cache error'));
 
-      const result = await simctlPushTool({
-        udid: validUDID,
-        bundleId: validBundleID,
-        payload: '{"aps":{"alert":"Test"}}',
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlPushTool({
+          udid: validUDID,
+          bundleId: validBundleID,
+          payload: '{"aps":{"alert":"Test"}}',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should provide helpful error messages', async () => {
@@ -374,15 +356,13 @@ describe('simctlPushTool', () => {
     it('should include error details on failure', async () => {
       mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(null);
 
-      const result = await simctlPushTool({
-        udid: 'invalid',
-        bundleId: validBundleID,
-        payload: '{"aps":{"alert":"Test"}}',
-      });
-
-      const response = JSON.parse(result.content[0].text);
-      expect(response).toHaveProperty('success', false);
-      expect(response).toHaveProperty('error');
+      await expect(
+        simctlPushTool({
+          udid: 'invalid',
+          bundleId: validBundleID,
+          payload: '{"aps":{"alert":"Test"}}',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should be valid JSON', async () => {
@@ -466,9 +446,10 @@ describe('simctlPushTool', () => {
 
     it('should handle very long UDID values', async () => {
       const longUDID = 'a'.repeat(100);
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        { ...validSimulator, udid: longUDID } as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce({
+        ...validSimulator,
+        udid: longUDID,
+      } as any);
 
       const result = await simctlPushTool({
         udid: longUDID,
@@ -493,7 +474,8 @@ describe('simctlPushTool', () => {
     });
 
     it('should accept full APS payload', async () => {
-      const fullPayload = '{"aps":{"alert":{"title":"Title","body":"Body"},"badge":1,"sound":"default","category":"CATEGORY","mutable-content":1,"custom-data":"value"}}';
+      const fullPayload =
+        '{"aps":{"alert":{"title":"Title","body":"Body"},"badge":1,"sound":"default","category":"CATEGORY","mutable-content":1,"custom-data":"value"}}';
       const result = await simctlPushTool({
         udid: validUDID,
         bundleId: validBundleID,

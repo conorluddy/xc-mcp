@@ -155,6 +155,38 @@ export async function simctlGestureTool(args: any) {
       },
     });
 
+    // Build guidance messages
+    const guidanceMessages: (string | undefined)[] = [];
+
+    if (success) {
+      guidanceMessages.push(
+        `✅ Gesture executed: ${type}`,
+        actionName ? `Action: ${actionName}` : undefined,
+        `Use simctl-get-interaction-details to view command output`,
+        `Verify gesture result: simctl-io ${udid} screenshot`,
+        `Query for changes: simctl-query-ui ${udid} ...`
+      );
+    } else {
+      guidanceMessages.push(
+        `❌ Failed to perform ${type} gesture`,
+        simulator.state !== 'Booted'
+          ? `Simulator is not booted: simctl-boot ${udid}`
+          : `Check gesture parameters`
+      );
+    }
+
+    // Add warnings for simulator state regardless of success
+    if (simulator.state !== 'Booted') {
+      guidanceMessages.push(
+        `⚠️ Warning: Simulator is in ${simulator.state} state. Boot the simulator for optimal functionality: simctl-boot ${udid}`
+      );
+    }
+    if (simulator.isAvailable === false) {
+      guidanceMessages.push(
+        `⚠️ Warning: Simulator is marked as unavailable. This may cause issues with operations.`
+      );
+    }
+
     // Create summary response with caching
     const responseData = {
       success,
@@ -171,20 +203,7 @@ export async function simctlGestureTool(args: any) {
         state: simulator.state,
       },
       cacheId: interactionId,
-      guidance: success
-        ? [
-            `✅ Gesture executed: ${type}`,
-            actionName ? `Action: ${actionName}` : undefined,
-            `Use simctl-get-interaction-details to view command output`,
-            `Verify gesture result: simctl-io ${udid} screenshot`,
-            `Query for changes: simctl-query-ui ${udid} ...`,
-          ].filter(Boolean)
-        : [
-            `❌ Failed to perform ${type} gesture`,
-            simulator.state !== 'Booted'
-              ? `Simulator is not booted: simctl-boot ${udid}`
-              : `Check gesture parameters`,
-          ],
+      guidance: guidanceMessages.filter(Boolean),
     };
 
     const responseText = JSON.stringify(responseData, null, 2);

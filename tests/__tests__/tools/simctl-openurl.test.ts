@@ -1,5 +1,6 @@
 import { simctlOpenUrlTool } from '../../../src/tools/simctl/openurl.js';
 import { simulatorCache } from '../../../src/state/simulator-cache.js';
+import { McpError } from '@modelcontextprotocol/sdk/types.js';
 
 // Mock the simulator cache
 jest.mock('../../../src/state/simulator-cache.js', () => ({
@@ -101,58 +102,50 @@ describe('simctlOpenUrlTool', () => {
 
   describe('input validation', () => {
     it('should reject empty UDID', async () => {
-      const result = await simctlOpenUrlTool({
-        udid: '',
-        url: validURL,
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('UDID');
+      await expect(
+        simctlOpenUrlTool({
+          udid: '',
+          url: validURL,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject empty URL', async () => {
-      const result = await simctlOpenUrlTool({
-        udid: validUDID,
-        url: '',
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('URL');
+      await expect(
+        simctlOpenUrlTool({
+          udid: validUDID,
+          url: '',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject invalid URL format', async () => {
-      const result = await simctlOpenUrlTool({
-        udid: validUDID,
-        url: 'not a url',
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('URL');
+      await expect(
+        simctlOpenUrlTool({
+          udid: validUDID,
+          url: 'not a url',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject non-existent simulator', async () => {
       mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(null);
 
-      const result = await simctlOpenUrlTool({
-        udid: 'invalid-udid',
-        url: validURL,
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('not found');
+      await expect(
+        simctlOpenUrlTool({
+          udid: 'invalid-udid',
+          url: validURL,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should handle whitespace-only inputs', async () => {
-      const result = await simctlOpenUrlTool({
-        udid: '   ',
-        url: '   ',
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlOpenUrlTool({
+          udid: '   ',
+          url: '   ',
+        })
+      ).rejects.toThrow(McpError);
     });
   });
 
@@ -254,9 +247,7 @@ describe('simctlOpenUrlTool', () => {
   describe('simulator state handling', () => {
     it('should work with booted simulator', async () => {
       const bootedSimulator = { ...validSimulator, state: 'Booted' };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        bootedSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(bootedSimulator as any);
 
       const result = await simctlOpenUrlTool({
         udid: validUDID,
@@ -268,9 +259,7 @@ describe('simctlOpenUrlTool', () => {
 
     it('should warn if simulator is shutdown', async () => {
       const shutdownSimulator = { ...validSimulator, state: 'Shutdown' };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        shutdownSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(shutdownSimulator as any);
 
       const result = await simctlOpenUrlTool({
         udid: validUDID,
@@ -278,16 +267,14 @@ describe('simctlOpenUrlTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.guidance.some((g: string) =>
-        g.includes('boot') || g.includes('shutdown')
-      )).toBe(true);
+      expect(
+        response.guidance.some((g: string) => g.includes('boot') || g.includes('shutdown'))
+      ).toBe(true);
     });
 
     it('should warn if simulator is unavailable', async () => {
       const unavailableSimulator = { ...validSimulator, isAvailable: false };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        unavailableSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(unavailableSimulator as any);
 
       const result = await simctlOpenUrlTool({
         udid: validUDID,
@@ -295,9 +282,7 @@ describe('simctlOpenUrlTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.guidance.some((g: string) =>
-        g.includes('unavailable')
-      )).toBe(true);
+      expect(response.guidance.some((g: string) => g.includes('unavailable'))).toBe(true);
     });
   });
 
@@ -338,25 +323,23 @@ describe('simctlOpenUrlTool', () => {
       const { executeCommand } = require('../../../src/utils/command.js');
       executeCommand.mockRejectedValueOnce(new Error('Command failed'));
 
-      const result = await simctlOpenUrlTool({
-        udid: validUDID,
-        url: validURL,
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlOpenUrlTool({
+          udid: validUDID,
+          url: validURL,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should handle simulator cache error', async () => {
-      mockSimulatorCache.findSimulatorByUdid.mockRejectedValueOnce(
-        new Error('Cache error')
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockRejectedValueOnce(new Error('Cache error'));
 
-      const result = await simctlOpenUrlTool({
-        udid: validUDID,
-        url: validURL,
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlOpenUrlTool({
+          udid: validUDID,
+          url: validURL,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should provide helpful error messages', async () => {
@@ -397,14 +380,12 @@ describe('simctlOpenUrlTool', () => {
     it('should include error details on failure', async () => {
       mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(null);
 
-      const result = await simctlOpenUrlTool({
-        udid: 'invalid',
-        url: validURL,
-      });
-
-      const response = JSON.parse(result.content[0].text);
-      expect(response).toHaveProperty('success', false);
-      expect(response).toHaveProperty('error');
+      await expect(
+        simctlOpenUrlTool({
+          udid: 'invalid',
+          url: validURL,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should be valid JSON', async () => {
@@ -421,7 +402,8 @@ describe('simctlOpenUrlTool', () => {
 
   describe('edge cases', () => {
     it('should handle very long URLs', async () => {
-      const longUrl = 'https://example.com/path?' +
+      const longUrl =
+        'https://example.com/path?' +
         Array.from({ length: 100 }, (_, i) => `param${i}=value${i}`).join('&');
       const result = await simctlOpenUrlTool({
         udid: validUDID,
@@ -459,9 +441,10 @@ describe('simctlOpenUrlTool', () => {
 
     it('should handle very long UDID values', async () => {
       const longUDID = 'a'.repeat(100);
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        { ...validSimulator, udid: longUDID } as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce({
+        ...validSimulator,
+        udid: longUDID,
+      } as any);
 
       const result = await simctlOpenUrlTool({
         udid: longUDID,

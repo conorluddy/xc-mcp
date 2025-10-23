@@ -1,14 +1,18 @@
 import { ConfigManager, type ProjectConfig } from '../../../src/utils/config.js';
 import { promises as fs } from 'fs';
-import * as path from 'path';
-import { mkdtempSync } from 'fs';
+import { join } from 'path';
 import { tmpdir } from 'os';
 
-// Use a temporary directory for testing
-const baseTmpDir = (() => {
-  const dir = tmpdir();
-  return (dir && dir.length > 0) ? dir : '/tmp';
-})();
+// Use a temporary directory for testing - ensure it's always a valid string
+function getBaseTmpDir(): string {
+  const dir = process.env.TMPDIR || tmpdir();
+  if (!dir || typeof dir !== 'string' || dir.length === 0) {
+    return '/tmp';
+  }
+  return dir;
+}
+
+const baseTmpDir = getBaseTmpDir();
 
 describe('ConfigManager', () => {
   let configManager: ConfigManager;
@@ -16,7 +20,8 @@ describe('ConfigManager', () => {
 
   beforeEach(async () => {
     // Create fresh temp directory for each test
-    testDir = path.join(baseTmpDir, `xc-mcp-config-test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+    const suffix = `xc-mcp-config-test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    testDir = join(baseTmpDir, suffix);
     await fs.mkdir(testDir, { recursive: true });
     configManager = new ConfigManager(testDir);
   });
@@ -227,7 +232,7 @@ describe('ConfigManager', () => {
       const projectPath = '/path/to/project';
       await configManager.recordSuccessfulBuild(projectPath);
 
-      const configPath = path.join(testDir, 'config.json');
+      const configPath = join(testDir, '.xc-mcp', 'config.json');
       const existsBefore = await fs
         .stat(configPath)
         .then(() => true)
@@ -247,7 +252,7 @@ describe('ConfigManager', () => {
   describe('graceful degradation', () => {
     it('should handle missing config directory gracefully', async () => {
       // Config manager should work even if directory doesn't exist initially
-      const newTestDir = path.join(baseTmpDir, 'xc-mcp-nonexistent-' + Date.now());
+      const newTestDir = join(baseTmpDir, 'xc-mcp-nonexistent-' + Date.now());
       const manager = new ConfigManager(newTestDir);
 
       // Should not throw
@@ -262,7 +267,7 @@ describe('ConfigManager', () => {
       await configManager.updateProjectConfig(projectPath, { buildCount: 5 });
 
       // Corrupt the config file
-      const configPath = path.join(testDir, 'config.json');
+      const configPath = join(testDir, '.xc-mcp', 'config.json');
       await fs.writeFile(configPath, 'invalid json {]');
 
       // Create new manager and try to load

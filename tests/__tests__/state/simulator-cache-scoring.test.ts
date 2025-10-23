@@ -33,7 +33,8 @@ jest.mock('../../../src/utils/command.js', () => ({
             state: 'Shutdown',
             isAvailable: true,
             availability: '(available)',
-            deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPad-Pro-12-9-6th-generation',
+            deviceTypeIdentifier:
+              'com.apple.CoreSimulator.SimDeviceType.iPad-Pro-12-9-6th-generation',
             bootHistory: [],
           },
         ],
@@ -150,15 +151,10 @@ describe('SimulatorCache - Scoring & Suggestions', () => {
     });
 
     it('should filter by device type', async () => {
-      const suggestions = await simulatorCache.getSuggestedSimulators(
-        undefined,
-        'iPhone'
-      );
+      const suggestions = await simulatorCache.getSuggestedSimulators(undefined, 'iPhone');
 
       // All suggestions should be iPhones
-      const allIPhones = suggestions.every(s =>
-        s.simulator.name.includes('iPhone')
-      );
+      const allIPhones = suggestions.every(s => s.simulator.name.includes('iPhone'));
       expect(allIPhones).toBe(true);
     });
   });
@@ -234,9 +230,7 @@ describe('SimulatorCache - Scoring & Suggestions', () => {
       const suggestions = await simulatorCache.getSuggestedSimulators();
 
       // Recently used device should rank high
-      const iphone16Pro = suggestions.find(
-        s => s.simulator.udid === 'device-iphone16pro'
-      );
+      const iphone16Pro = suggestions.find(s => s.simulator.udid === 'device-iphone16pro');
       expect(iphone16Pro).toBeDefined();
       expect(iphone16Pro!.reasons.some(r => r.includes('Recently'))).toBe(true);
     });
@@ -245,9 +239,7 @@ describe('SimulatorCache - Scoring & Suggestions', () => {
       const suggestions = await simulatorCache.getSuggestedSimulators();
 
       // All suggestions should include iOS version in reasons
-      const allHaveVersion = suggestions.every(s =>
-        s.reasons.some(r => r.includes('iOS'))
-      );
+      const allHaveVersion = suggestions.every(s => s.reasons.some(r => r.includes('iOS')));
       expect(allHaveVersion).toBe(true);
     });
 
@@ -255,20 +247,21 @@ describe('SimulatorCache - Scoring & Suggestions', () => {
       const suggestions = await simulatorCache.getSuggestedSimulators();
 
       // iPhone 16 Pro should rank high (popular model)
-      const iphone16Pro = suggestions.find(
-        s => s.simulator.name === 'iPhone 16 Pro'
-      );
+      const iphone16Pro = suggestions.find(s => s.simulator.name === 'iPhone 16 Pro');
       expect(iphone16Pro).toBeDefined();
       expect(iphone16Pro!.reasons.some(r => r.includes('Common model'))).toBe(true);
     });
 
     it('should weight boot performance (10%)', async () => {
+      // Record boot events to populate performance metrics
+      await simulatorCache.getSimulatorList();
+      simulatorCache.recordBootEvent('device-iphone16pro', true, 8500);
+      simulatorCache.recordBootEvent('device-iphone15', true, 9200);
+
       const suggestions = await simulatorCache.getSuggestedSimulators();
 
       // Simulators with performance metrics should show boot times
-      const withMetrics = suggestions.find(s =>
-        s.reasons.some(r => r.includes('Boot'))
-      );
+      const withMetrics = suggestions.find(s => s.reasons.some(r => r.includes('Boot')));
       expect(withMetrics).toBeDefined();
     });
   });
@@ -332,12 +325,8 @@ describe('SimulatorCache - Scoring & Suggestions', () => {
       const after = await simulatorCache.getSuggestedSimulators();
 
       // iPhone 15 should rank higher after heavy usage
-      const beforeIPhone15 = before.findIndex(
-        s => s.simulator.udid === 'device-iphone15'
-      );
-      const afterIPhone15 = after.findIndex(
-        s => s.simulator.udid === 'device-iphone15'
-      );
+      const beforeIPhone15 = before.findIndex(s => s.simulator.udid === 'device-iphone15');
+      const afterIPhone15 = after.findIndex(s => s.simulator.udid === 'device-iphone15');
 
       expect(afterIPhone15).toBeLessThanOrEqual(beforeIPhone15);
     });

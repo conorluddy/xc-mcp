@@ -1,5 +1,6 @@
 import { simctlPbcopyTool } from '../../../src/tools/simctl/pbcopy.js';
 import { simulatorCache } from '../../../src/state/simulator-cache.js';
+import { McpError } from '@modelcontextprotocol/sdk/types.js';
 
 // Mock the simulator cache
 jest.mock('../../../src/state/simulator-cache.js', () => ({
@@ -84,47 +85,41 @@ describe('simctlPbcopyTool', () => {
 
   describe('input validation', () => {
     it('should reject empty UDID', async () => {
-      const result = await simctlPbcopyTool({
-        udid: '',
-        text: 'Test',
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('UDID');
+      await expect(
+        simctlPbcopyTool({
+          udid: '',
+          text: 'Test',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject empty text', async () => {
-      const result = await simctlPbcopyTool({
-        udid: validUDID,
-        text: '',
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('text');
+      await expect(
+        simctlPbcopyTool({
+          udid: validUDID,
+          text: '',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject non-existent simulator', async () => {
       mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(null);
 
-      const result = await simctlPbcopyTool({
-        udid: 'invalid-udid',
-        text: 'Test',
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('not found');
+      await expect(
+        simctlPbcopyTool({
+          udid: 'invalid-udid',
+          text: 'Test',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should handle whitespace-only inputs', async () => {
-      const result = await simctlPbcopyTool({
-        udid: '   ',
-        text: '   ',
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlPbcopyTool({
+          udid: '   ',
+          text: '   ',
+        })
+      ).rejects.toThrow(McpError);
     });
   });
 
@@ -211,9 +206,7 @@ describe('simctlPbcopyTool', () => {
   describe('simulator state handling', () => {
     it('should work with booted simulator', async () => {
       const bootedSimulator = { ...validSimulator, state: 'Booted' };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        bootedSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(bootedSimulator as any);
 
       const result = await simctlPbcopyTool({
         udid: validUDID,
@@ -225,9 +218,7 @@ describe('simctlPbcopyTool', () => {
 
     it('should work with shutdown simulator', async () => {
       const shutdownSimulator = { ...validSimulator, state: 'Shutdown' };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        shutdownSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(shutdownSimulator as any);
 
       const result = await simctlPbcopyTool({
         udid: validUDID,
@@ -239,9 +230,7 @@ describe('simctlPbcopyTool', () => {
 
     it('should warn if simulator is unavailable', async () => {
       const unavailableSimulator = { ...validSimulator, isAvailable: false };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        unavailableSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(unavailableSimulator as any);
 
       const result = await simctlPbcopyTool({
         udid: validUDID,
@@ -249,9 +238,7 @@ describe('simctlPbcopyTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.guidance.some((g: string) =>
-        g.includes('unavailable')
-      )).toBe(true);
+      expect(response.guidance.some((g: string) => g.includes('unavailable'))).toBe(true);
     });
   });
 
@@ -276,25 +263,23 @@ describe('simctlPbcopyTool', () => {
       const { executeCommand } = require('../../../src/utils/command.js');
       executeCommand.mockRejectedValueOnce(new Error('Command failed'));
 
-      const result = await simctlPbcopyTool({
-        udid: validUDID,
-        text: 'Test',
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlPbcopyTool({
+          udid: validUDID,
+          text: 'Test',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should handle simulator cache error', async () => {
-      mockSimulatorCache.findSimulatorByUdid.mockRejectedValueOnce(
-        new Error('Cache error')
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockRejectedValueOnce(new Error('Cache error'));
 
-      const result = await simctlPbcopyTool({
-        udid: validUDID,
-        text: 'Test',
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlPbcopyTool({
+          udid: validUDID,
+          text: 'Test',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should provide helpful error messages', async () => {
@@ -335,14 +320,12 @@ describe('simctlPbcopyTool', () => {
     it('should include error details on failure', async () => {
       mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(null);
 
-      const result = await simctlPbcopyTool({
-        udid: 'invalid',
-        text: 'Test',
-      });
-
-      const response = JSON.parse(result.content[0].text);
-      expect(response).toHaveProperty('success', false);
-      expect(response).toHaveProperty('error');
+      await expect(
+        simctlPbcopyTool({
+          udid: 'invalid',
+          text: 'Test',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should be valid JSON', async () => {
@@ -419,9 +402,10 @@ describe('simctlPbcopyTool', () => {
 
     it('should handle very long UDID values', async () => {
       const longUDID = 'a'.repeat(100);
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        { ...validSimulator, udid: longUDID } as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce({
+        ...validSimulator,
+        udid: longUDID,
+      } as any);
 
       const result = await simctlPbcopyTool({
         udid: longUDID,

@@ -24,17 +24,11 @@ export async function simctlPbcopyTool(args: any) {
   try {
     // Validate inputs
     if (!udid || udid.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'UDID is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'UDID is required and cannot be empty');
     }
 
     if (!text || text.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'Text is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'Text is required and cannot be empty');
     }
 
     // Validate simulator exists
@@ -62,6 +56,36 @@ export async function simctlPbcopyTool(args: any) {
 
       const success = result.code === 0;
 
+      // Build guidance messages
+      const guidanceMessages: string[] = [];
+
+      if (success) {
+        guidanceMessages.push(
+          `✅ Text copied to clipboard on "${simulator.name}"`,
+          `Text length: ${text.length} characters`,
+          `App can access via: UIPasteboard.general.string`,
+          `Test paste in app: simctl-launch ${udid} com.example.app`
+        );
+      } else {
+        guidanceMessages.push(
+          `❌ Failed to copy to clipboard: ${result.stderr || 'Unknown error'}`,
+          `Check simulator is available: simctl-health-check`,
+          `Verify text format: ${text.substring(0, 50)}...`
+        );
+      }
+
+      // Add warnings for simulator state regardless of success
+      if (simulator.state !== 'Booted') {
+        guidanceMessages.push(
+          `⚠️ Warning: Simulator is in ${simulator.state} state. Boot the simulator for optimal functionality: simctl-boot ${udid}`
+        );
+      }
+      if (simulator.isAvailable === false) {
+        guidanceMessages.push(
+          `⚠️ Warning: Simulator is marked as unavailable. This may cause issues with operations.`
+        );
+      }
+
       const responseData = {
         success,
         udid,
@@ -77,18 +101,7 @@ export async function simctlPbcopyTool(args: any) {
         output: result.stdout,
         error: result.stderr || undefined,
         exitCode: result.code,
-        guidance: success
-          ? [
-              `✅ Text copied to clipboard on "${simulator.name}"`,
-              `Text length: ${text.length} characters`,
-              `App can access via: UIPasteboard.general.string`,
-              `Test paste in app: simctl-launch ${udid} com.example.app`,
-            ]
-          : [
-              `❌ Failed to copy to clipboard: ${result.stderr || 'Unknown error'}`,
-              `Check simulator is available: simctl-health-check`,
-              `Verify text format: ${text.substring(0, 50)}...`,
-            ],
+        guidance: guidanceMessages,
       };
 
       const responseText = JSON.stringify(responseData, null, 2);

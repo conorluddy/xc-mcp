@@ -23,23 +23,25 @@ export async function simctlAddmediaTool(args: any) {
   try {
     // Validate inputs
     if (!udid || udid.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'UDID is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'UDID is required and cannot be empty');
     }
 
     if (!mediaPath || mediaPath.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'Media path is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'Media path is required and cannot be empty');
     }
 
     // Validate file format
     const supportedExtensions = [
-      'jpg', 'jpeg', 'png', 'heic', 'gif', 'bmp', // images
-      'mp4', 'mov', 'avi', 'mkv', // videos
+      'jpg',
+      'jpeg',
+      'png',
+      'heic',
+      'gif',
+      'bmp', // images
+      'mp4',
+      'mov',
+      'avi',
+      'mkv', // videos
     ];
 
     const extension = mediaPath.split('.').pop()?.toLowerCase();
@@ -76,6 +78,38 @@ export async function simctlAddmediaTool(args: any) {
     // Extract filename
     const filename = mediaPath.split('/').pop() || 'media';
 
+    // Build guidance messages
+    const guidanceMessages: string[] = [];
+
+    if (success) {
+      guidanceMessages.push(
+        `✅ Media "${filename}" added to "${simulator.name}" photo library`,
+        `Media type: ${mediaType}`,
+        `Format: ${extension?.toUpperCase()}`,
+        `View in Photos app: simctl-launch ${udid} com.apple.mobileslideshow`,
+        `Add more media: simctl-addmedia ${udid} /path/to/another/photo.jpg`
+      );
+    } else {
+      guidanceMessages.push(
+        `❌ Failed to add media: ${result.stderr || 'Unknown error'}`,
+        `Check file exists: ${mediaPath}`,
+        `Check format: .${extension}`,
+        `Verify simulator is available: simctl-health-check`
+      );
+    }
+
+    // Add warnings for simulator state regardless of success
+    if (simulator.state !== 'Booted') {
+      guidanceMessages.push(
+        `⚠️ Warning: Simulator is in ${simulator.state} state. Boot the simulator for optimal functionality: simctl-boot ${udid}`
+      );
+    }
+    if (simulator.isAvailable === false) {
+      guidanceMessages.push(
+        `⚠️ Warning: Simulator is marked as unavailable. This may cause issues with operations.`
+      );
+    }
+
     const responseData = {
       success,
       udid,
@@ -93,20 +127,7 @@ export async function simctlAddmediaTool(args: any) {
       output: result.stdout,
       error: result.stderr || undefined,
       exitCode: result.code,
-      guidance: success
-        ? [
-            `✅ Media "${filename}" added to "${simulator.name}" photo library`,
-            `Media type: ${mediaType}`,
-            `Format: ${extension?.toUpperCase()}`,
-            `View in Photos app: simctl-launch ${udid} com.apple.mobileslideshow`,
-            `Add more media: simctl-addmedia ${udid} /path/to/another/photo.jpg`,
-          ]
-        : [
-            `❌ Failed to add media: ${result.stderr || 'Unknown error'}`,
-            `Check file exists: ${mediaPath}`,
-            `Check format: .${extension}`,
-            `Verify simulator is available: simctl-health-check`,
-          ],
+      guidance: guidanceMessages,
     };
 
     const responseText = JSON.stringify(responseData, null, 2);

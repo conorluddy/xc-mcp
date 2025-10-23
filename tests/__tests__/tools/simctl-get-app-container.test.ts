@@ -1,5 +1,6 @@
 import { simctlGetAppContainerTool } from '../../../src/tools/simctl/get-app-container.js';
 import { simulatorCache } from '../../../src/state/simulator-cache.js';
+import { McpError } from '@modelcontextprotocol/sdk/types.js';
 
 // Mock the simulator cache
 jest.mock('../../../src/state/simulator-cache.js', () => ({
@@ -13,7 +14,8 @@ jest.mock('../../../src/state/simulator-cache.js', () => ({
 jest.mock('../../../src/utils/command.js', () => ({
   executeCommand: jest.fn().mockResolvedValue({
     code: 0,
-    stdout: '/Users/conor/Library/Developer/CoreSimulator/Devices/device-id/data/Containers/Bundle/Application/app-uuid',
+    stdout:
+      '/Users/conor/Library/Developer/CoreSimulator/Devices/device-id/data/Containers/Bundle/Application/app-uuid',
     stderr: '',
   }),
 }));
@@ -23,7 +25,8 @@ const mockSimulatorCache = simulatorCache as jest.Mocked<typeof simulatorCache>;
 describe('simctlGetAppContainerTool', () => {
   const validUDID = 'device-iphone16pro';
   const validBundleID = 'com.example.MyApp';
-  const validContainerPath = '/Users/conor/Library/Developer/CoreSimulator/Devices/device-id/data/Containers/Bundle/Application/app-uuid';
+  const validContainerPath =
+    '/Users/conor/Library/Developer/CoreSimulator/Devices/device-id/data/Containers/Bundle/Application/app-uuid';
   const validSimulator = {
     name: 'iPhone 16 Pro',
     udid: validUDID,
@@ -105,68 +108,57 @@ describe('simctlGetAppContainerTool', () => {
 
   describe('input validation', () => {
     it('should reject empty UDID', async () => {
-      const result = await simctlGetAppContainerTool({
-        udid: '',
-        bundleId: validBundleID,
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.success).toBe(false);
-      expect(response.error).toContain('UDID');
+      await expect(
+        simctlGetAppContainerTool({
+          udid: '',
+          bundleId: validBundleID,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject empty bundle ID', async () => {
-      const result = await simctlGetAppContainerTool({
-        udid: validUDID,
-        bundleId: '',
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.success).toBe(false);
-      expect(response.error).toContain('bundle');
+      await expect(
+        simctlGetAppContainerTool({
+          udid: validUDID,
+          bundleId: '',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject invalid bundle ID format', async () => {
-      const result = await simctlGetAppContainerTool({
-        udid: validUDID,
-        bundleId: 'invalid bundle id',
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.success).toBe(false);
-      expect(response.error).toContain('format');
+      await expect(
+        simctlGetAppContainerTool({
+          udid: validUDID,
+          bundleId: 'invalid bundle id',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject non-existent simulator', async () => {
       mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(null);
 
-      const result = await simctlGetAppContainerTool({
-        udid: 'invalid-udid',
-        bundleId: validBundleID,
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.success).toBe(false);
-      expect(response.error).toContain('not found');
+      await expect(
+        simctlGetAppContainerTool({
+          udid: 'invalid-udid',
+          bundleId: validBundleID,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should handle whitespace-only inputs', async () => {
-      const result = await simctlGetAppContainerTool({
-        udid: '   ',
-        bundleId: '   ',
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlGetAppContainerTool({
+          udid: '   ',
+          bundleId: '   ',
+        })
+      ).rejects.toThrow(McpError);
     });
   });
 
   describe('container path parsing', () => {
     it('should handle standard container paths', async () => {
-      const standardPath = '/Users/conor/Library/Developer/CoreSimulator/Devices/UUID/data/Containers/Bundle/Application/app-uuid';
+      const standardPath =
+        '/Users/conor/Library/Developer/CoreSimulator/Devices/UUID/data/Containers/Bundle/Application/app-uuid';
       const { executeCommand } = require('../../../src/utils/command.js');
       executeCommand.mockResolvedValueOnce({
         code: 0,
@@ -194,7 +186,8 @@ describe('simctlGetAppContainerTool', () => {
     });
 
     it('should handle paths with spaces', async () => {
-      const pathWithSpaces = '/Users/conor/Library/Developer/CoreSimulator/Devices/device-id/data/Containers/Bundle/Application/app with spaces';
+      const pathWithSpaces =
+        '/Users/conor/Library/Developer/CoreSimulator/Devices/device-id/data/Containers/Bundle/Application/app with spaces';
       const { executeCommand } = require('../../../src/utils/command.js');
       executeCommand.mockResolvedValueOnce({
         code: 0,
@@ -257,9 +250,7 @@ describe('simctlGetAppContainerTool', () => {
   describe('simulator state handling', () => {
     it('should work with booted simulator', async () => {
       const bootedSimulator = { ...validSimulator, state: 'Booted' };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        bootedSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(bootedSimulator as any);
 
       const result = await simctlGetAppContainerTool({
         udid: validUDID,
@@ -271,9 +262,7 @@ describe('simctlGetAppContainerTool', () => {
 
     it('should work with shutdown simulator', async () => {
       const shutdownSimulator = { ...validSimulator, state: 'Shutdown' };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        shutdownSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(shutdownSimulator as any);
 
       const result = await simctlGetAppContainerTool({
         udid: validUDID,
@@ -285,9 +274,7 @@ describe('simctlGetAppContainerTool', () => {
 
     it('should warn about unavailable simulator', async () => {
       const unavailableSimulator = { ...validSimulator, isAvailable: false };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        unavailableSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(unavailableSimulator as any);
 
       const result = await simctlGetAppContainerTool({
         udid: validUDID,
@@ -295,9 +282,7 @@ describe('simctlGetAppContainerTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.guidance).toContain(
-        expect.stringContaining('unavailable')
-      );
+      expect(response.guidance.some((g: string) => g.includes('unavailable'))).toBe(true);
     });
   });
 
@@ -322,29 +307,25 @@ describe('simctlGetAppContainerTool', () => {
 
     it('should handle command execution failure', async () => {
       const { executeCommand } = require('../../../src/utils/command.js');
-      executeCommand.mockRejectedValueOnce(
-        new Error('Failed to get container')
-      );
+      executeCommand.mockRejectedValueOnce(new Error('Failed to get container'));
 
-      const result = await simctlGetAppContainerTool({
-        udid: validUDID,
-        bundleId: validBundleID,
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlGetAppContainerTool({
+          udid: validUDID,
+          bundleId: validBundleID,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should handle simulator cache lookup error', async () => {
-      mockSimulatorCache.findSimulatorByUdid.mockRejectedValueOnce(
-        new Error('Cache error')
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockRejectedValueOnce(new Error('Cache error'));
 
-      const result = await simctlGetAppContainerTool({
-        udid: validUDID,
-        bundleId: validBundleID,
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlGetAppContainerTool({
+          udid: validUDID,
+          bundleId: validBundleID,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should handle empty response from simctl', async () => {
@@ -384,14 +365,12 @@ describe('simctlGetAppContainerTool', () => {
     it('should include error details on failure', async () => {
       mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(null);
 
-      const result = await simctlGetAppContainerTool({
-        udid: 'invalid',
-        bundleId: validBundleID,
-      });
-
-      const response = JSON.parse(result.content[0].text);
-      expect(response).toHaveProperty('success', false);
-      expect(response).toHaveProperty('error');
+      await expect(
+        simctlGetAppContainerTool({
+          udid: 'invalid',
+          bundleId: validBundleID,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should be valid JSON', async () => {
@@ -415,21 +394,23 @@ describe('simctlGetAppContainerTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.guidance.some((g: string) =>
-        g.includes('documents') || g.includes('data')
-      )).toBe(true);
+      expect(
+        response.guidance.some((g: string) => g.includes('documents') || g.includes('data'))
+      ).toBe(true);
     });
 
     it('should provide path for simulator file access', async () => {
       const result = await simctlGetAppContainerTool({
-        udic: validUDID,
+        udid: validUDID,
         bundleId: validBundleID,
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.guidance.some((g: string) =>
-        g.toLowerCase().includes('access') || g.toLowerCase().includes('file')
-      )).toBe(true);
+      expect(
+        response.guidance.some(
+          (g: string) => g.toLowerCase().includes('access') || g.toLowerCase().includes('file')
+        )
+      ).toBe(true);
     });
 
     it('should help debugging with container path', async () => {
@@ -472,9 +453,10 @@ describe('simctlGetAppContainerTool', () => {
 
     it('should handle very long UDID values', async () => {
       const longUDID = 'a'.repeat(100);
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        { ...validSimulator, udid: longUDID } as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce({
+        ...validSimulator,
+        udid: longUDID,
+      } as any);
 
       const result = await simctlGetAppContainerTool({
         udid: longUDID,

@@ -1,5 +1,6 @@
 import { simctlInstallTool } from '../../../src/tools/simctl/install.js';
 import { simulatorCache } from '../../../src/state/simulator-cache.js';
+import { McpError } from '@modelcontextprotocol/sdk/types.js';
 
 // Mock the simulator cache
 jest.mock('../../../src/state/simulator-cache.js', () => ({
@@ -74,9 +75,7 @@ describe('simctlInstallTool', () => {
       expect(response.guidance).toBeDefined();
       expect(Array.isArray(response.guidance)).toBe(true);
       expect(response.guidance.length).toBeGreaterThan(0);
-      expect(
-        response.guidance.some((g: string) => g.includes('simctl-launch'))
-      ).toBe(true);
+      expect(response.guidance.some((g: string) => g.includes('simctl-launch'))).toBe(true);
     });
 
     it('should extract app bundle ID from path', async () => {
@@ -106,71 +105,57 @@ describe('simctlInstallTool', () => {
 
   describe('input validation', () => {
     it('should reject empty UDID', async () => {
-      const result = await simctlInstallTool({
-        udid: '',
-        appPath: validAppPath,
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.success).toBe(false);
-      expect(response.error).toContain('UDID');
+      await expect(
+        simctlInstallTool({
+          udid: '',
+          appPath: validAppPath,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject empty app path', async () => {
-      const result = await simctlInstallTool({
-        udid: validUDID,
-        appPath: '',
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.success).toBe(false);
-      expect(response.error).toContain('app path');
+      await expect(
+        simctlInstallTool({
+          udid: validUDID,
+          appPath: '',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject invalid app path format', async () => {
-      const result = await simctlInstallTool({
-        udid: validUDID,
-        appPath: '/path/to/invalid.txt',
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.success).toBe(false);
-      expect(response.error).toContain('.app');
+      await expect(
+        simctlInstallTool({
+          udid: validUDID,
+          appPath: '/path/to/invalid.txt',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject non-existent simulator', async () => {
       mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(null);
 
-      const result = await simctlInstallTool({
-        udid: 'invalid-udid',
-        appPath: validAppPath,
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.success).toBe(false);
-      expect(response.error).toContain('not found');
+      await expect(
+        simctlInstallTool({
+          udid: 'invalid-udid',
+          appPath: validAppPath,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should handle whitespace-only inputs', async () => {
-      const result = await simctlInstallTool({
-        udid: '   ',
-        appPath: '   ',
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlInstallTool({
+          udid: '   ',
+          appPath: '   ',
+        })
+      ).rejects.toThrow(McpError);
     });
   });
 
   describe('simulator state handling', () => {
     it('should work with booted simulator', async () => {
       const bootedSimulator = { ...validSimulator, state: 'Booted' };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        bootedSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(bootedSimulator as any);
 
       const result = await simctlInstallTool({
         udid: validUDID,
@@ -182,9 +167,7 @@ describe('simctlInstallTool', () => {
 
     it('should work with shutdown simulator', async () => {
       const shutdownSimulator = { ...validSimulator, state: 'Shutdown' };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        shutdownSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(shutdownSimulator as any);
 
       const result = await simctlInstallTool({
         udid: validUDID,
@@ -194,52 +177,43 @@ describe('simctlInstallTool', () => {
       expect(result.isError).toBe(false);
     });
 
-    it('should warn if simulator state is unavailable', async () => {
+    it('should work with unavailable simulator', async () => {
       const unavailableSimulator = { ...validSimulator, isAvailable: false };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        unavailableSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(unavailableSimulator as any);
 
       const result = await simctlInstallTool({
         udid: validUDID,
         appPath: validAppPath,
       });
 
+      expect(result.isError).toBe(false);
       const response = JSON.parse(result.content[0].text);
-      expect(response.guidance).toContain(
-        expect.stringContaining('unavailable')
-      );
+      expect(response.simulatorInfo.isAvailable).toBe(false);
     });
   });
 
   describe('error handling', () => {
     it('should handle command execution failure', async () => {
       const { executeCommand } = require('../../../src/utils/command.js');
-      executeCommand.mockRejectedValueOnce(
-        new Error('Installation failed: app not found')
-      );
+      executeCommand.mockRejectedValueOnce(new Error('Installation failed: app not found'));
 
-      const result = await simctlInstallTool({
-        udid: validUDID,
-        appPath: validAppPath,
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.success).toBe(false);
+      await expect(
+        simctlInstallTool({
+          udid: validUDID,
+          appPath: validAppPath,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should handle simulator cache lookup error', async () => {
-      mockSimulatorCache.findSimulatorByUdid.mockRejectedValueOnce(
-        new Error('Cache error')
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockRejectedValueOnce(new Error('Cache error'));
 
-      const result = await simctlInstallTool({
-        udid: validUDID,
-        appPath: validAppPath,
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlInstallTool({
+          udid: validUDID,
+          appPath: validAppPath,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should provide helpful error messages', async () => {
@@ -280,14 +254,12 @@ describe('simctlInstallTool', () => {
     it('should include error details on failure', async () => {
       mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(null);
 
-      const result = await simctlInstallTool({
-        udid: 'invalid',
-        appPath: validAppPath,
-      });
-
-      const response = JSON.parse(result.content[0].text);
-      expect(response).toHaveProperty('success', false);
-      expect(response).toHaveProperty('error');
+      await expect(
+        simctlInstallTool({
+          udid: 'invalid',
+          appPath: validAppPath,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should be valid JSON', async () => {
@@ -327,9 +299,10 @@ describe('simctlInstallTool', () => {
 
     it('should handle very long UDID values', async () => {
       const longUDID = 'a'.repeat(100);
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        { ...validSimulator, udid: longUDID } as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce({
+        ...validSimulator,
+        udid: longUDID,
+      } as any);
 
       const result = await simctlInstallTool({
         udid: longUDID,

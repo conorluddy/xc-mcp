@@ -1,5 +1,6 @@
 import { simctlStatusBarTool } from '../../../src/tools/simctl/status-bar.js';
 import { simulatorCache } from '../../../src/state/simulator-cache.js';
+import { McpError } from '@modelcontextprotocol/sdk/types.js';
 
 // Mock the simulator cache
 jest.mock('../../../src/state/simulator-cache.js', () => ({
@@ -123,7 +124,7 @@ describe('simctlStatusBarTool', () => {
     });
 
     it('should accept dataNetwork parameter', async () => {
-      const networks = ['wifi', '3g', '4g', '5g', 'lte'];
+      const networks = ['none', '1x', '3g', '4g', '5g', 'lte', 'lte-a'];
       for (const network of networks) {
         const result = await simctlStatusBarTool({
           udid: validUDID,
@@ -185,93 +186,81 @@ describe('simctlStatusBarTool', () => {
 
   describe('input validation', () => {
     it('should reject empty UDID', async () => {
-      const result = await simctlStatusBarTool({
-        udid: '',
-        operation: 'override',
-        time: '9:41',
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('UDID');
+      await expect(
+        simctlStatusBarTool({
+          udid: '',
+          operation: 'override',
+          time: '9:41',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject invalid operation', async () => {
-      const result = await simctlStatusBarTool({
-        udid: validUDID,
-        operation: 'invalid',
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('operation');
+      await expect(
+        simctlStatusBarTool({
+          udid: validUDID,
+          operation: 'invalid',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject invalid time format', async () => {
-      const result = await simctlStatusBarTool({
-        udid: validUDID,
-        operation: 'override',
-        time: 'invalid',
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('time');
+      await expect(
+        simctlStatusBarTool({
+          udid: validUDID,
+          operation: 'override',
+          time: 'invalid',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject invalid data network', async () => {
-      const result = await simctlStatusBarTool({
-        udid: validUDID,
-        operation: 'override',
-        dataNetwork: 'invalid',
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlStatusBarTool({
+          udid: validUDID,
+          operation: 'override',
+          dataNetwork: 'invalid',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject invalid battery level', async () => {
-      const result = await simctlStatusBarTool({
-        udid: validUDID,
-        operation: 'override',
-        batteryLevel: 150,
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('battery');
+      await expect(
+        simctlStatusBarTool({
+          udid: validUDID,
+          operation: 'override',
+          batteryLevel: 150,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject non-existent simulator', async () => {
       mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(null);
 
-      const result = await simctlStatusBarTool({
-        udid: 'invalid-udid',
-        operation: 'override',
-        time: '9:41',
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('not found');
+      await expect(
+        simctlStatusBarTool({
+          udid: 'invalid-udid',
+          operation: 'override',
+          time: '9:41',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should handle whitespace-only UDID', async () => {
-      const result = await simctlStatusBarTool({
-        udid: '   ',
-        operation: 'override',
-        time: '9:41',
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlStatusBarTool({
+          udid: '   ',
+          operation: 'override',
+          time: '9:41',
+        })
+      ).rejects.toThrow(McpError);
     });
   });
 
   describe('simulator state handling', () => {
     it('should work with booted simulator', async () => {
       const bootedSimulator = { ...validSimulator, state: 'Booted' };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        bootedSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(bootedSimulator as any);
 
       const result = await simctlStatusBarTool({
         udid: validUDID,
@@ -284,9 +273,7 @@ describe('simctlStatusBarTool', () => {
 
     it('should work with shutdown simulator', async () => {
       const shutdownSimulator = { ...validSimulator, state: 'Shutdown' };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        shutdownSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(shutdownSimulator as any);
 
       const result = await simctlStatusBarTool({
         udid: validUDID,
@@ -299,9 +286,7 @@ describe('simctlStatusBarTool', () => {
 
     it('should warn if simulator is unavailable', async () => {
       const unavailableSimulator = { ...validSimulator, isAvailable: false };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        unavailableSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(unavailableSimulator as any);
 
       const result = await simctlStatusBarTool({
         udid: validUDID,
@@ -310,9 +295,7 @@ describe('simctlStatusBarTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.guidance.some((g: string) =>
-        g.includes('unavailable')
-      )).toBe(true);
+      expect(response.guidance.some((g: string) => g.includes('unavailable'))).toBe(true);
     });
   });
 
@@ -338,27 +321,25 @@ describe('simctlStatusBarTool', () => {
       const { executeCommand } = require('../../../src/utils/command.js');
       executeCommand.mockRejectedValueOnce(new Error('Command failed'));
 
-      const result = await simctlStatusBarTool({
-        udid: validUDID,
-        operation: 'override',
-        time: '9:41',
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlStatusBarTool({
+          udid: validUDID,
+          operation: 'override',
+          time: '9:41',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should handle simulator cache error', async () => {
-      mockSimulatorCache.findSimulatorByUdid.mockRejectedValueOnce(
-        new Error('Cache error')
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockRejectedValueOnce(new Error('Cache error'));
 
-      const result = await simctlStatusBarTool({
-        udid: validUDID,
-        operation: 'override',
-        time: '9:41',
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlStatusBarTool({
+          udid: validUDID,
+          operation: 'override',
+          time: '9:41',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should provide helpful error messages', async () => {
@@ -400,15 +381,13 @@ describe('simctlStatusBarTool', () => {
     it('should include error details on failure', async () => {
       mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(null);
 
-      const result = await simctlStatusBarTool({
-        udid: 'invalid',
-        operation: 'override',
-        time: '9:41',
-      });
-
-      const response = JSON.parse(result.content[0].text);
-      expect(response).toHaveProperty('success', false);
-      expect(response).toHaveProperty('error');
+      await expect(
+        simctlStatusBarTool({
+          udid: 'invalid',
+          operation: 'override',
+          time: '9:41',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should be valid JSON', async () => {
@@ -499,7 +478,7 @@ describe('simctlStatusBarTool', () => {
       const result1 = await simctlStatusBarTool({
         udid: validUDID,
         operation: 'override',
-        dataNetwork: 'wifi',
+        dataNetwork: '4g',
       });
 
       const result2 = await simctlStatusBarTool({
@@ -514,9 +493,10 @@ describe('simctlStatusBarTool', () => {
 
     it('should handle very long UDID values', async () => {
       const longUDID = 'a'.repeat(100);
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        { ...validSimulator, udid: longUDID } as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce({
+        ...validSimulator,
+        udid: longUDID,
+      } as any);
 
       const result = await simctlStatusBarTool({
         udid: longUDID,

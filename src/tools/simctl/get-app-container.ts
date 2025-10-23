@@ -27,17 +27,11 @@ export async function simctlGetAppContainerTool(args: any) {
   try {
     // Validate inputs
     if (!udid || udid.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'UDID is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'UDID is required and cannot be empty');
     }
 
     if (!bundleId || bundleId.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'Bundle ID is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'Bundle ID is required and cannot be empty');
     }
 
     // Validate bundle ID format
@@ -69,11 +63,45 @@ export async function simctlGetAppContainerTool(args: any) {
       timeout: 10000,
     });
 
-    const success = result.code === 0;
-    const containerPath = success ? result.stdout.trim() : null;
+    const containerPath = result.code === 0 ? result.stdout.trim() : null;
+    const success = !!(result.code === 0 && containerPath && containerPath.length > 0);
 
     // Extract container type for response
     const displayContainerType = containerType || 'data';
+
+    // Build guidance messages
+    const guidanceMessages: string[] = [];
+
+    if (success) {
+      guidanceMessages.push(
+        `✅ Container path retrieved for "${bundleId}"`,
+        `Path: ${containerPath}`,
+        `Access files: cd "${containerPath}" && ls -la`,
+        `View app documents: open "${containerPath}/Documents"`,
+        `Inspect app data: find "${containerPath}" -type f | head -20`,
+        `Container type: ${displayContainerType} (bundle/data/group)`
+      );
+    } else {
+      guidanceMessages.push(
+        `❌ Failed to get app container: ${result.stderr || 'Unknown error'}`,
+        `App may not be installed on this simulator`,
+        `Verify bundle ID: ${bundleId}`,
+        `Install app first: simctl-install ${udid} /path/to/App.app`,
+        `Check app is running: simctl-launch ${udid} ${bundleId}`
+      );
+    }
+
+    // Add warnings for simulator state regardless of success
+    if (simulator.state !== 'Booted') {
+      guidanceMessages.push(
+        `⚠️ Warning: Simulator is in ${simulator.state} state. Boot the simulator for optimal functionality: simctl-boot ${udid}`
+      );
+    }
+    if (simulator.isAvailable === false) {
+      guidanceMessages.push(
+        `⚠️ Warning: Simulator is marked as unavailable. This may cause issues with operations.`
+      );
+    }
 
     const responseData = {
       success,
@@ -91,22 +119,7 @@ export async function simctlGetAppContainerTool(args: any) {
       output: result.stdout,
       error: result.stderr || undefined,
       exitCode: result.code,
-      guidance: success
-        ? [
-            `✅ Container path retrieved for "${bundleId}"`,
-            `Path: ${containerPath}`,
-            `Access files: cd "${containerPath}" && ls -la`,
-            `View app documents: open "${containerPath}/Documents"`,
-            `Inspect app data: find "${containerPath}" -type f | head -20`,
-            `Container type: ${displayContainerType} (bundle/data/group)`,
-          ]
-        : [
-            `❌ Failed to get app container: ${result.stderr || 'Unknown error'}`,
-            `App may not be installed on this simulator`,
-            `Verify bundle ID: ${bundleId}`,
-            `Install app first: simctl-install ${udid} /path/to/App.app`,
-            `Check app is running: simctl-launch ${udid} ${bundleId}`,
-          ],
+      guidance: guidanceMessages,
     };
 
     const responseText = JSON.stringify(responseData, null, 2);

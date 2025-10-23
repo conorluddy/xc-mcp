@@ -1,5 +1,6 @@
 import { simctlAddmediaTool } from '../../../src/tools/simctl/addmedia.js';
 import { simulatorCache } from '../../../src/state/simulator-cache.js';
+import { McpError } from '@modelcontextprotocol/sdk/types.js';
 
 // Mock the simulator cache
 jest.mock('../../../src/state/simulator-cache.js', () => ({
@@ -100,58 +101,50 @@ describe('simctlAddmediaTool', () => {
 
   describe('input validation', () => {
     it('should reject empty UDID', async () => {
-      const result = await simctlAddmediaTool({
-        udid: '',
-        mediaPath: validImagePath,
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('UDID');
+      await expect(
+        simctlAddmediaTool({
+          udid: '',
+          mediaPath: validImagePath,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject empty media path', async () => {
-      const result = await simctlAddmediaTool({
-        udid: validUDID,
-        mediaPath: '',
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('media path');
+      await expect(
+        simctlAddmediaTool({
+          udid: validUDID,
+          mediaPath: '',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject invalid media file format', async () => {
-      const result = await simctlAddmediaTool({
-        udid: validUDID,
-        mediaPath: '/path/to/file.txt',
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('format');
+      await expect(
+        simctlAddmediaTool({
+          udid: validUDID,
+          mediaPath: '/path/to/file.txt',
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should reject non-existent simulator', async () => {
       mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(null);
 
-      const result = await simctlAddmediaTool({
-        udid: 'invalid-udid',
-        mediaPath: validImagePath,
-      });
-
-      expect(result.isError).toBe(true);
-      const response = JSON.parse(result.content[0].text);
-      expect(response.error).toContain('not found');
+      await expect(
+        simctlAddmediaTool({
+          udid: 'invalid-udid',
+          mediaPath: validImagePath,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should handle whitespace-only inputs', async () => {
-      const result = await simctlAddmediaTool({
-        udid: '   ',
-        mediaPath: '   ',
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlAddmediaTool({
+          udid: '   ',
+          mediaPath: '   ',
+        })
+      ).rejects.toThrow(McpError);
     });
   });
 
@@ -207,12 +200,12 @@ describe('simctlAddmediaTool', () => {
     });
 
     it('should reject unsupported formats', async () => {
-      const result = await simctlAddmediaTool({
-        udid: validUDID,
-        mediaPath: '/path/to/file.exe',
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlAddmediaTool({
+          udid: validUDID,
+          mediaPath: '/path/to/file.exe',
+        })
+      ).rejects.toThrow(McpError);
     });
   });
 
@@ -265,9 +258,7 @@ describe('simctlAddmediaTool', () => {
   describe('simulator state handling', () => {
     it('should work with booted simulator', async () => {
       const bootedSimulator = { ...validSimulator, state: 'Booted' };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        bootedSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(bootedSimulator as any);
 
       const result = await simctlAddmediaTool({
         udid: validUDID,
@@ -279,9 +270,7 @@ describe('simctlAddmediaTool', () => {
 
     it('should work with shutdown simulator', async () => {
       const shutdownSimulator = { ...validSimulator, state: 'Shutdown' };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        shutdownSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(shutdownSimulator as any);
 
       const result = await simctlAddmediaTool({
         udid: validUDID,
@@ -293,9 +282,7 @@ describe('simctlAddmediaTool', () => {
 
     it('should warn if simulator is unavailable', async () => {
       const unavailableSimulator = { ...validSimulator, isAvailable: false };
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        unavailableSimulator as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(unavailableSimulator as any);
 
       const result = await simctlAddmediaTool({
         udid: validUDID,
@@ -303,9 +290,7 @@ describe('simctlAddmediaTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.guidance.some((g: string) =>
-        g.includes('unavailable')
-      )).toBe(true);
+      expect(response.guidance.some((g: string) => g.includes('unavailable'))).toBe(true);
     });
   });
 
@@ -346,25 +331,23 @@ describe('simctlAddmediaTool', () => {
       const { executeCommand } = require('../../../src/utils/command.js');
       executeCommand.mockRejectedValueOnce(new Error('Command failed'));
 
-      const result = await simctlAddmediaTool({
-        udid: validUDID,
-        mediaPath: validImagePath,
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlAddmediaTool({
+          udid: validUDID,
+          mediaPath: validImagePath,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should handle simulator cache error', async () => {
-      mockSimulatorCache.findSimulatorByUdid.mockRejectedValueOnce(
-        new Error('Cache error')
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockRejectedValueOnce(new Error('Cache error'));
 
-      const result = await simctlAddmediaTool({
-        udid: validUDID,
-        mediaPath: validImagePath,
-      });
-
-      expect(result.isError).toBe(true);
+      await expect(
+        simctlAddmediaTool({
+          udid: validUDID,
+          mediaPath: validImagePath,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should provide helpful error messages', async () => {
@@ -405,14 +388,12 @@ describe('simctlAddmediaTool', () => {
     it('should include error details on failure', async () => {
       mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(null);
 
-      const result = await simctlAddmediaTool({
-        udid: 'invalid',
-        mediaPath: validImagePath,
-      });
-
-      const response = JSON.parse(result.content[0].text);
-      expect(response).toHaveProperty('success', false);
-      expect(response).toHaveProperty('error');
+      await expect(
+        simctlAddmediaTool({
+          udid: 'invalid',
+          mediaPath: validImagePath,
+        })
+      ).rejects.toThrow(McpError);
     });
 
     it('should be valid JSON', async () => {
@@ -455,11 +436,7 @@ describe('simctlAddmediaTool', () => {
     });
 
     it('should handle adding multiple files in sequence', async () => {
-      const files = [
-        '/path/to/photo1.jpg',
-        '/path/to/photo2.png',
-        '/path/to/video.mp4',
-      ];
+      const files = ['/path/to/photo1.jpg', '/path/to/photo2.png', '/path/to/video.mp4'];
 
       for (const file of files) {
         const result = await simctlAddmediaTool({
@@ -472,9 +449,10 @@ describe('simctlAddmediaTool', () => {
 
     it('should handle very long UDID values', async () => {
       const longUDID = 'a'.repeat(100);
-      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(
-        { ...validSimulator, udid: longUDID } as any
-      );
+      mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce({
+        ...validSimulator,
+        udid: longUDID,
+      } as any);
 
       const result = await simctlAddmediaTool({
         udid: longUDID,
