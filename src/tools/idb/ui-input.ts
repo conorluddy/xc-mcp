@@ -1,4 +1,5 @@
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
+import { formatToolError } from '../../utils/error-formatter.js';
 import { executeCommandWithArgs } from '../../utils/command.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
 import { IDBTargetCache } from '../../state/idb-target-cache.js';
@@ -285,7 +286,7 @@ async function executeInputCommand(
   return {
     success: result.code === 0,
     output: result.stdout,
-    error: result.stderr || undefined,
+    error: result.stderr ? formatToolError(result.stderr) : undefined,
   };
 }
 

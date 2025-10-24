@@ -3,6 +3,7 @@ import { executeCommand } from '../../utils/command.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
 import { IDBTargetCache } from '../../state/idb-target-cache.js';
 import { isValidBundleId } from '../../utils/shell-escape.js';
+import { formatToolError } from '../../utils/error-formatter.js';
 
 interface IdbLaunchArgs {
   udid?: string;
@@ -188,11 +189,12 @@ async function executeLaunchOperation(
   const result = await executeCommand(command, { timeout });
 
   if (result.code !== 0) {
+    const condensedError = formatToolError(result.stderr, 'Launch failed');
     return {
       success: false,
       bundleId,
-      error: result.stderr || 'Launch failed',
-      guidance: formatErrorGuidance(bundleId, result.stderr || '', udid),
+      error: condensedError,
+      guidance: formatErrorGuidance(bundleId, condensedError, udid),
     };
   }
 
@@ -272,32 +274,32 @@ function formatSuccessGuidance(
   return guidance;
 }
 
-function formatErrorGuidance(bundleId: string, stderr: string, udid: string): string[] {
-  const guidance: string[] = [`❌ Failed to launch ${bundleId}`, ``, `Error: ${stderr}`, ``];
+function formatErrorGuidance(bundleId: string, condensedError: string, udid: string): string[] {
+  const guidance: string[] = [
+    `❌ Failed to launch ${bundleId}`,
+    ``,
+    `Reason: ${condensedError}`,
+    ``,
+  ];
 
   // Provide context-specific troubleshooting
-  if (stderr.includes('not found') || stderr.includes('not installed')) {
+  if (condensedError.includes('not found') || condensedError.includes('not installed')) {
     guidance.push(`App not installed:`);
     guidance.push(`• Install app: idb-install --app-path /path/to/App.app --udid ${udid}`);
-    guidance.push(`• Verify installation: idb-list-apps --filter-type user --udid ${udid}`);
-    guidance.push(`• Check bundle ID is correct`);
-  } else if (stderr.includes('already running')) {
+    guidance.push(`• Verify: idb-list-apps --filter-type user --udid ${udid}`);
+  } else if (condensedError.includes('already running')) {
     guidance.push(`App already running:`);
     guidance.push(`• Terminate first: idb-terminate --bundle-id ${bundleId} --udid ${udid}`);
     guidance.push(`• Then retry launch`);
-    guidance.push(`• Or interact with running app directly`);
-  } else if (stderr.includes('crashed') || stderr.includes('exited')) {
+  } else if (condensedError.includes('crashed') || condensedError.includes('exited')) {
     guidance.push(`App crashed on launch:`);
-    guidance.push(`• Check crash logs: idb crash list --bundle-id ${bundleId} --udid ${udid}`);
-    guidance.push(`• View crash report: idb crash show <crash-name> --udid ${udid}`);
-    guidance.push(`• Enable streaming: streamOutput: true for stdout/stderr`);
-    guidance.push(`• Check app dependencies and build settings`);
+    guidance.push(`• Enable streaming: streamOutput: true`);
+    guidance.push(`• Check build configuration`);
   } else {
     guidance.push(`Troubleshooting:`);
-    guidance.push(`• Verify app is installed: idb-list-apps --udid ${udid}`);
-    guidance.push(`• Check target is booted: idb-targets --operation list --state Booted`);
-    guidance.push(`• Try installing app: idb-install --app-path /path/to/App.app --udid ${udid}`);
-    guidance.push(`• Check IDB connection: idb list-targets`);
+    guidance.push(`• Verify installed: idb-list-apps --udid ${udid}`);
+    guidance.push(`• Check device: idb-targets --operation list`);
+    guidance.push(`• Check IDB: idb-connect --udid ${udid}`);
   }
 
   return guidance;

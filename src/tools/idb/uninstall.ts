@@ -3,6 +3,7 @@ import { executeCommand } from '../../utils/command.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
 import { IDBTargetCache } from '../../state/idb-target-cache.js';
 import { isValidBundleId } from '../../utils/shell-escape.js';
+import { formatToolError } from '../../utils/error-formatter.js';
 
 interface IdbUninstallArgs {
   udid?: string;
@@ -143,11 +144,12 @@ async function executeUninstallOperation(udid: string, bundleId: string): Promis
   const result = await executeCommand(command, { timeout: 30000 });
 
   if (result.code !== 0) {
+    const condensedError = formatToolError(result.stderr, 'Uninstallation failed');
     return {
       success: false,
       bundleId,
-      error: result.stderr || 'Uninstallation failed',
-      guidance: formatErrorGuidance(bundleId, result.stderr || '', udid),
+      error: condensedError,
+      guidance: formatErrorGuidance(bundleId, condensedError, udid),
     };
   }
 
@@ -177,26 +179,27 @@ function formatSuccessGuidance(bundleId: string, udid: string): string[] {
   ];
 }
 
-function formatErrorGuidance(bundleId: string, stderr: string, udid: string): string[] {
-  const guidance: string[] = [`❌ Failed to uninstall ${bundleId}`, ``, `Error: ${stderr}`, ``];
+function formatErrorGuidance(bundleId: string, condensedError: string, udid: string): string[] {
+  const guidance: string[] = [
+    `❌ Failed to uninstall ${bundleId}`,
+    ``,
+    `Reason: ${condensedError}`,
+    ``,
+  ];
 
-  if (stderr.includes('not found') || stderr.includes('not installed')) {
-    guidance.push(`App not installed:`);
-    guidance.push(`• App may already be uninstalled`);
-    guidance.push(`• Verify with: idb-list-apps --udid ${udid}`);
-    guidance.push(`• Check bundle ID is correct`);
-  } else if (stderr.includes('system') || stderr.includes('cannot remove')) {
+  if (condensedError.includes('not found') || condensedError.includes('not installed')) {
+    guidance.push(`Next steps:`);
+    guidance.push(`• Verify app exists: idb-list-apps --udid ${udid}`);
+    guidance.push(`• Confirm bundle ID: ${bundleId}`);
+  } else if (condensedError.includes('system') || condensedError.includes('cannot remove')) {
     guidance.push(`Cannot remove system app:`);
-    guidance.push(`• System apps cannot be uninstalled`);
-    guidance.push(`• Only user-installed apps can be removed`);
+    guidance.push(`• Only user-installed apps can be uninstalled`);
     guidance.push(`• Check install type: idb-list-apps --udid ${udid}`);
   } else {
     guidance.push(`Troubleshooting:`);
-    guidance.push(`• Terminate app first: idb-terminate --bundle-id ${bundleId} --udid ${udid}`);
-    guidance.push(`• Verify target is booted: idb-targets --operation list --state Booted`);
+    guidance.push(`• Terminate first: idb-terminate --bundle-id ${bundleId} --udid ${udid}`);
+    guidance.push(`• Verify target is booted: idb-targets --operation list`);
     guidance.push(`• Check app exists: idb-list-apps --udid ${udid}`);
-    guidance.push(`• Retry uninstallation`);
-    guidance.push(`• Try simctl-uninstall as alternative`);
   }
 
   return guidance;

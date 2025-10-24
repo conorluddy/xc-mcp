@@ -3,6 +3,7 @@ import { executeCommand } from '../../utils/command.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
 import { IDBTargetCache } from '../../state/idb-target-cache.js';
 import { isValidBundleId } from '../../utils/shell-escape.js';
+import { formatToolError } from '../../utils/error-formatter.js';
 
 interface IdbTerminateArgs {
   udid?: string;
@@ -147,11 +148,12 @@ async function executeTerminateOperation(udid: string, bundleId: string): Promis
   const success = result.code === 0;
 
   if (!success) {
+    const condensedError = formatToolError(result.stderr, 'Termination failed');
     return {
       success: false,
       bundleId,
-      error: result.stderr || 'Termination failed',
-      guidance: formatErrorGuidance(bundleId, result.stderr || '', udid),
+      error: condensedError,
+      guidance: formatErrorGuidance(bundleId, condensedError, udid),
     };
   }
 
@@ -197,19 +199,31 @@ function formatSuccessGuidance(bundleId: string, wasRunning: boolean, udid: stri
   return guidance;
 }
 
-function formatErrorGuidance(bundleId: string, stderr: string, udid: string): string[] {
-  const guidance: string[] = [`❌ Failed to terminate ${bundleId}`, ``, `Error: ${stderr}`, ``];
+function formatErrorGuidance(bundleId: string, condensedError: string, udid: string): string[] {
+  const guidance: string[] = [
+    `❌ Failed to terminate ${bundleId}`,
+    ``,
+    `Reason: ${condensedError}`,
+    ``,
+  ];
 
-  if (stderr.includes('not found') || stderr.includes('not installed')) {
-    guidance.push(`App not installed:`);
-    guidance.push(`• Verify app exists: idb-list-apps --udid ${udid}`);
-    guidance.push(`• Check bundle ID is correct`);
-    guidance.push(`• No termination needed if app not installed`);
+  // Detect error type from condensed message
+  if (
+    condensedError.includes('not found') ||
+    condensedError.includes('nothing to terminate') ||
+    condensedError.includes('No such process')
+  ) {
+    guidance.push(`Next steps:`);
+    guidance.push(`• List running apps: idb-list-apps --udid ${udid} --running-only`);
+    guidance.push(`• Verify bundle ID: ${bundleId}`);
+  } else if (condensedError.includes('not installed')) {
+    guidance.push(`Next steps:`);
+    guidance.push(`• Check installed apps: idb-list-apps --udid ${udid}`);
+    guidance.push(`• Install app first if needed`);
   } else {
     guidance.push(`Troubleshooting:`);
-    guidance.push(`• Verify target is booted: idb-targets --operation list --state Booted`);
-    guidance.push(`• Check app installation: idb-list-apps --udid ${udid}`);
-    guidance.push(`• Check IDB connection: idb list-targets`);
+    guidance.push(`• Check IDB connection: idb-connect --udid ${udid}`);
+    guidance.push(`• Verify device is booted: idb-targets --operation list`);
     guidance.push(`• Retry termination`);
   }
 

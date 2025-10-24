@@ -8,6 +8,7 @@ import {
   type CoordinateTransform,
 } from '../../utils/coordinate-transform.js';
 import { toInt } from '../../types/coordinates.js';
+import { formatToolError } from '../../utils/error-formatter.js';
 
 interface IdbUiTapArgs {
   udid?: string;
@@ -278,10 +279,11 @@ async function executeTapCommand(
     lastResult = await executeCommand(command, { timeout: 10000 });
 
     if (lastResult.code !== 0) {
+      const condensedError = formatToolError(lastResult.stderr, 'Tap failed');
       return {
         success: false,
         output: lastResult.stdout,
-        error: lastResult.stderr || 'Tap failed',
+        error: condensedError,
       };
     }
 

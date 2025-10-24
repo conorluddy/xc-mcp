@@ -3,6 +3,7 @@ import { executeCommand } from '../../utils/command.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
 import { IDBTargetCache } from '../../state/idb-target-cache.js';
 import { isSafePath } from '../../utils/shell-escape.js';
+import { formatToolError } from '../../utils/error-formatter.js';
 
 interface IdbInstallArgs {
   udid?: string;
@@ -157,11 +158,12 @@ async function executeInstallOperation(udid: string, appPath: string, target: an
   const result = await executeCommand(command, { timeout: 120000 });
 
   if (result.code !== 0) {
+    const condensedError = formatToolError(result.stderr, 'Installation failed');
     return {
       success: false,
       appPath,
-      error: result.stderr || 'Installation failed',
-      guidance: formatErrorGuidance(appPath, result.stderr || '', udid),
+      error: condensedError,
+      guidance: formatErrorGuidance(appPath, condensedError, udid),
     };
   }
 
@@ -244,39 +246,28 @@ function formatSuccessGuidance(
   return guidance;
 }
 
-function formatErrorGuidance(appPath: string, stderr: string, udid: string): string[] {
-  const guidance: string[] = [`❌ Failed to install app`, ``, `Error: ${stderr}`, ``];
+function formatErrorGuidance(appPath: string, condensedError: string, udid: string): string[] {
+  const guidance: string[] = [`❌ Failed to install app`, ``, `Reason: ${condensedError}`, ``];
 
   // Provide context-specific troubleshooting
-  if (stderr.includes('No such file') || stderr.includes('not found')) {
-    guidance.push(`Troubleshooting:`);
-    guidance.push(`• Verify app path exists: ${appPath}`);
-    guidance.push(`• Use absolute path (not relative)`);
-    guidance.push(`• For .app: Must be built for simulator (if installing to simulator)`);
-    guidance.push(`• For .ipa: Must be signed for device (if installing to device)`);
-  } else if (stderr.includes('signature') || stderr.includes('provisioning')) {
+  if (condensedError.includes('No such file') || condensedError.includes('not found')) {
+    guidance.push(`Next steps:`);
+    guidance.push(`• Verify path exists: ${appPath}`);
+    guidance.push(`• Use absolute path, not relative`);
+  } else if (condensedError.includes('signature') || condensedError.includes('provisioning')) {
     guidance.push(`Code signing issue:`);
-    guidance.push(`• For simulators: No signing required, use .app bundle`);
-    guidance.push(`• For devices: Must have valid provisioning profile`);
-    guidance.push(`• Check Xcode signing settings`);
-    guidance.push(`• Verify device UDID in provisioning profile`);
-  } else if (stderr.includes('already installed')) {
+    guidance.push(`• Simulators: Use unsigned .app bundles`);
+    guidance.push(`• Devices: Must have valid provisioning profile`);
+  } else if (condensedError.includes('already installed')) {
     guidance.push(`App already installed:`);
-    guidance.push(`• Uninstall first: idb-uninstall --bundle-id <bundle-id> --udid ${udid}`);
-    guidance.push(`• Then retry installation`);
-    guidance.push(`• Or use simctl-install for force reinstall`);
-  } else if (stderr.includes('architecture')) {
+    guidance.push(`• Uninstall first: idb-uninstall --bundle-id <id> --udid ${udid}`);
+  } else if (condensedError.includes('architecture')) {
     guidance.push(`Architecture mismatch:`);
-    guidance.push(`• Simulator requires x86_64 or arm64 (M-series Mac)`);
-    guidance.push(`• Device requires arm64`);
-    guidance.push(`• Check build settings: ARCHS in Xcode`);
-    guidance.push(`• Rebuild for correct architecture`);
+    guidance.push(`• Rebuild for correct target architecture`);
   } else {
     guidance.push(`Troubleshooting:`);
-    guidance.push(`• Verify target is booted: idb-targets --operation list --state Booted`);
-    guidance.push(`• Check app is valid: file ${appPath}`);
-    guidance.push(`• Try simctl-install as alternative`);
-    guidance.push(`• Check IDB logs for details`);
+    guidance.push(`• Verify device is booted: idb-targets --operation list`);
+    guidance.push(`• Check target is ready: idb-connect --udid ${udid}`);
   }
 
   return guidance;

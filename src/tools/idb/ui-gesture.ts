@@ -2,6 +2,7 @@ import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
 import { IDBTargetCache } from '../../state/idb-target-cache.js';
+import { formatToolError } from '../../utils/error-formatter.js';
 import {
   calculateSwipeCoordinates,
   toInt,
@@ -382,7 +383,7 @@ async function executeSwipeCommand(
   return {
     success: result.code === 0,
     output: result.stdout,
-    error: result.stderr || undefined,
+    error: result.stderr ? formatToolError(result.stderr) : undefined,
     path: swipePath,
     velocity: Math.round(velocity),
     velocityWarning: velocityValidation.warning,
@@ -409,7 +410,7 @@ async function executeButtonCommand(
   return {
     success: result.code === 0,
     output: result.stdout,
-    error: result.stderr || undefined,
+    error: result.stderr ? formatToolError(result.stderr) : undefined,
   };
 }
 

@@ -3,6 +3,7 @@ import { executeCommand } from '../../utils/command.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
 import { IDBTargetCache } from '../../state/idb-target-cache.js';
 import { responseCache } from '../../utils/response-cache.js';
+import { formatToolError } from '../../utils/error-formatter.js';
 
 interface IdbUiDescribeArgs {
   udid?: string;
@@ -179,20 +180,20 @@ async function executeDescribeAllOperation(
   const result = await executeCommand(command, { timeout: 30000 });
 
   if (result.code !== 0) {
+    const condensedError = formatToolError(result.stderr, 'Failed to query UI tree');
     return {
       success: false,
       operation: 'all',
       udid,
       targetName: target.name,
-      error: result.stderr || 'Failed to query UI tree',
+      error: condensedError,
       guidance: [
         `❌ Failed to query UI tree`,
         ``,
         `Troubleshooting:`,
         `• Verify app is running: idb-launch --bundle-id com.example.App`,
-        `• Check accessibility enabled: Some apps require accessibility permissions`,
-        `• Ensure UI is stable: Wait for loading/animation to complete`,
-        `• Try simpler query: idb-ui-describe --operation point --x 200 --y 400`,
+        `• Ensure UI is stable: Wait for animations to complete`,
+        `• Try point query: idb-ui-describe --operation point --x 200 --y 400`,
       ],
     };
   }
@@ -312,12 +313,13 @@ async function executeDescribePointOperation(udid: string, x: number, y: number)
   const success = result.code === 0;
 
   if (!success) {
+    const condensedError = formatToolError(result.stderr, 'No element found at coordinates');
     return {
       success: false,
       operation: 'point',
       udid,
       coordinates: { x, y },
-      error: result.stderr || 'No element found at coordinates',
+      error: condensedError,
       guidance: [
         `❌ No element found at (${x}, ${y})`,
         ``,
@@ -325,7 +327,6 @@ async function executeDescribePointOperation(udid: string, x: number, y: number)
         `• Verify coordinates are on screen`,
         `• Take screenshot to see what's at that location`,
         `• Try nearby coordinates`,
-        `• Use idb-ui-describe --operation all to see all elements`,
       ],
     };
   }
