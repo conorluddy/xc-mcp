@@ -9,22 +9,45 @@ interface SimctlCreateToolArgs {
 }
 
 /**
- * Create a new iOS simulator device
+ * Create new iOS simulator devices dynamically
  *
- * Examples:
- * - Create iPhone 16 Pro with latest iOS:
- *   name: "MyTestDevice", deviceType: "iPhone 16 Pro"
+ * **What it does:**
+ * Creates a new iOS simulator device with specified device type and runtime version.
+ * Automatically validates device types and runtimes against available options, defaulting
+ * to the latest iOS version if no runtime is specified.
  *
- * - Create iPad with specific iOS version:
- *   name: "TestPad", deviceType: "iPad Pro (6th generation)", runtime: "17.0"
+ * **Why you'd use it:**
+ * - Dynamic provisioning for on-the-fly simulator creation during testing
+ * - Device flexibility supports all device types (iPhone, iPad, Apple Watch, Apple TV)
+ * - Runtime control lets you specify iOS version or use latest automatically
+ * - Automated testing workflows can create simulators as needed for CI/CD pipelines
  *
- * Device type identifiers:
- * - iPhone models: "iPhone 16 Pro", "iPhone 16", "iPhone 15 Pro", etc.
- * - iPad models: "iPad Pro (12.9-inch)", "iPad (10th generation)", etc.
- * - Apple Watch: "Apple Watch Series 9 (45mm)", etc.
- * - Apple TV: "Apple TV 4K (3rd generation)", etc.
+ * **Parameters:**
+ * - `name` (string): Display name for the new simulator (e.g., "MyTestDevice")
+ * - `deviceType` (string): Device type identifier (e.g., "iPhone 16 Pro", "iPad Pro")
+ * - `runtime` (string, optional): iOS/runtime version (e.g., "17.0") - defaults to latest
  *
- * Use simctl-list to see available device types and runtimes.
+ * **Returns:**
+ * Creation status with new device UDID and guidance for next steps
+ *
+ * **Example:**
+ * ```typescript
+ * // Create iPhone with latest iOS
+ * await simctlCreateTool({ name: "TestiPhone", deviceType: "iPhone 16 Pro" })
+ *
+ * // Create iPad with specific iOS version
+ * await simctlCreateTool({
+ *   name: "TestiPad",
+ *   deviceType: "iPad Pro (12.9-inch)",
+ *   runtime: "17.0"
+ * })
+ * ```
+ *
+ * **Full documentation:** See simctl/create.md for detailed device types and runtime options
+ *
+ * @param args Creation configuration (requires name and deviceType)
+ * @returns Tool result with creation status, UDID, and guidance
+ * @throws McpError for invalid name, device type, or runtime
  */
 export async function simctlCreateTool(args: any) {
   const { name, deviceType, runtime } = args as SimctlCreateToolArgs;

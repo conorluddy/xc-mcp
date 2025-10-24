@@ -12,27 +12,51 @@ interface IdbLaunchArgs {
 }
 
 /**
- * Launch application on iOS target
+ * Launch application on iOS target - start apps with optional output streaming and environment control
  *
- * Examples:
- * - Simple launch: bundleId: "com.example.MyApp"
- * - Stream output: bundleId: "com.example.MyApp", streamOutput: true
- * - With arguments: bundleId: "com.example.MyApp", arguments: ["--debug", "--verbose"]
- * - With env vars: bundleId: "com.example.MyApp", environment: {"DEBUG": "1"}
+ * **What it does:**
+ * Launches installed applications by bundle ID with optional stdout/stderr streaming, command-line
+ * arguments, and environment variables. Extracts process ID for tracking, streams app output when
+ * debugging is needed, and provides detailed error guidance for launch failures (app not installed,
+ * already running, crashed on launch).
  *
- * Output streaming (-w flag):
- * - streamOutput: true enables stdout/stderr capture
- * - Useful for debugging and behavior analysis
- * - Output included in response for analysis
+ * **Why you'd use it:**
+ * - Start apps programmatically for automated testing workflows - no manual interaction required
+ * - Stream stdout/stderr for debugging app behavior and crash analysis during test execution
+ * - Pass launch arguments and environment variables for test configuration and feature flags
+ * - Track process IDs for monitoring app lifecycle and termination in multi-app orchestration
  *
- * Process control:
- * - Returns process ID for tracking
- * - App runs in background after launch
- * - Use idb-terminate to stop app
+ * **Parameters:**
+ * - bundleId (required): App bundle identifier (from idb-list-apps or app installation)
+ * - udid (optional): Target identifier - auto-detects if omitted
+ * - streamOutput (optional): Boolean - enable stdout/stderr capture with -w flag
+ * - arguments (optional): Array of command-line arguments to pass to app
+ * - environment (optional): Object of environment variables to set (KEY=VALUE format)
  *
- * Device Support:
- * - Simulators: Full support ✅
- * - Physical Devices: Requires USB + idb_companion ✅
+ * **Returns:**
+ * Launch status with success indicator, bundle ID, extracted process ID, streaming status,
+ * captured stdout/stderr (if streaming enabled), error details if failed, and troubleshooting
+ * guidance (app not found, already running, crash logs).
+ *
+ * **Example:**
+ * ```typescript
+ * // Simple launch for UI automation
+ * const result = await idbLaunchTool({
+ *   bundleId: 'com.example.MyApp'
+ * });
+ *
+ * // Launch with debug output streaming
+ * await idbLaunchTool({
+ *   bundleId: 'com.example.MyApp',
+ *   streamOutput: true,
+ *   environment: { DEBUG: '1', LOG_LEVEL: 'verbose' }
+ * });
+ * ```
+ *
+ * **Full documentation:** See idb/launch.md for detailed parameters and streaming options
+ *
+ * @param args Tool arguments with bundle ID and optional launch configuration
+ * @returns Tool result with launch status and process ID
  */
 export async function idbLaunchTool(args: IdbLaunchArgs) {
   const { udid, bundleId, streamOutput, arguments: appArgs, environment } = args;

@@ -8,13 +8,39 @@ interface SimctlUninstallToolArgs {
 }
 
 /**
- * Uninstall an iOS app from a simulator
+ * Uninstall iOS apps from simulators
  *
- * Examples:
- * - Uninstall app: udid: "device-123", bundleId: "com.example.MyApp"
- * - Uninstall built-in app: udid: "device-123", bundleId: "com.apple.mobilesafari"
+ * **What it does:**
+ * Removes an installed app from a simulator by its bundle ID. This cleans up all app
+ * data, preferences, and the app bundle itself from the simulator.
  *
- * Bundle ID format: com.company.appname
+ * **Why you'd use it:**
+ * - Clean testing enables fresh installation testing after uninstall
+ * - Data removal clears all app data and preferences completely
+ * - Space management frees simulator disk space by removing unused apps
+ * - Workflow automation supports test cycles requiring clean app installs
+ *
+ * **Parameters:**
+ * - `udid` (string): Simulator UDID (from simctl-list)
+ * - `bundleId` (string): App bundle ID (e.g., com.example.MyApp)
+ *
+ * **Returns:**
+ * Uninstall status with bundle ID, simulator info, and guidance for reinstallation
+ *
+ * **Example:**
+ * ```typescript
+ * // Uninstall app from simulator
+ * await simctlUninstallTool({
+ *   udid: 'ABC-123-DEF',
+ *   bundleId: 'com.example.MyApp'
+ * })
+ * ```
+ *
+ * **Full documentation:** See simctl/uninstall.md for app management patterns
+ *
+ * @param args Uninstall configuration (requires udid and bundleId)
+ * @returns Tool result with uninstall status and guidance
+ * @throws McpError for invalid bundle ID or uninstall failure
  */
 export async function simctlUninstallTool(args: any) {
   const { udid, bundleId } = args as SimctlUninstallToolArgs;

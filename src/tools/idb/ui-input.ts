@@ -36,27 +36,52 @@ interface IdbUiInputArgs {
 }
 
 /**
- * Input text and keyboard commands on iOS target
+ * Input text and keyboard commands - automated text entry and special key presses for form automation
  *
- * Examples:
- * - Type text: operation: "text", text: "test@example.com"
- * - Press key: operation: "key", key: "return"
- * - Key sequence: operation: "key-sequence", keySequence: ["tab", "return"]
- * - Sensitive input: operation: "text", text: "password123", isSensitive: true
- * - With context: operation: "text", text: "user@example.com", actionName: "Enter Email"
+ * **What it does:**
+ * Sends text input and keyboard commands to focused elements on iOS targets. Types text strings into
+ * active text fields, presses special keys (home, return, delete, arrows), and executes key sequences
+ * for complex input workflows. Automatically redacts sensitive data (passwords) in responses and provides
+ * semantic field context tracking for test documentation.
  *
- * Operations:
- * - text: Type text string (requires focused text field)
- * - key: Press single special key (home, return, etc.)
- * - key-sequence: Press multiple keys in sequence
+ * **Why you'd use it:**
+ * - Automate form filling without manual keyboard interaction - login flows, search, data entry
+ * - Execute keyboard shortcuts and navigation (tab, return, arrows) for multi-field workflows
+ * - Safely handle sensitive data with automatic redaction in tool responses and logs
+ * - Track input operations with semantic metadata (actionName, fieldContext, expectedOutcome)
  *
- * Available Keys:
- * home, lock, siri, delete, return, space, escape, tab,
- * up, down, left, right
+ * **Parameters:**
+ * - operation (required): "text" | "key" | "key-sequence"
+ * - text (required for text operation): String to type into focused field
+ * - key (required for key operation): Special key name (home, return, delete, tab, arrows, etc.)
+ * - keySequence (required for key-sequence operation): Array of key names to press in order
+ * - udid (optional): Target identifier - auto-detects if omitted
+ * - actionName, fieldContext, expectedOutcome (optional): Semantic tracking for test documentation
+ * - isSensitive (optional): Mark as sensitive to redact from output
  *
- * Device Support:
- * - Simulators: Full support ✅
- * - Physical Devices: Requires USB + idb_companion ✅
+ * **Returns:**
+ * Input execution status with operation details (redacted if sensitive), duration, input context
+ * metadata for test tracking, error details if failed, and troubleshooting guidance specific to
+ * text vs. key operations.
+ *
+ * **Example:**
+ * ```typescript
+ * // Type email into focused field
+ * const result = await idbUiInputTool({
+ *   operation: 'text',
+ *   text: 'user@example.com',
+ *   actionName: 'Enter Email',
+ *   fieldContext: 'Email TextField'
+ * });
+ *
+ * // Press return to submit
+ * await idbUiInputTool({ operation: 'key', key: 'return' });
+ * ```
+ *
+ * **Full documentation:** See idb/ui-input.md for detailed parameters and available keys
+ *
+ * @param args Tool arguments with operation type and input data
+ * @returns Tool result with input status and semantic context
  */
 export async function idbUiInputTool(args: IdbUiInputArgs) {
   const {

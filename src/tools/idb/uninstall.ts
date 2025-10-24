@@ -9,28 +9,46 @@ interface IdbUninstallArgs {
 }
 
 /**
- * Uninstall (remove) application from iOS target
+ * Uninstall application from iOS target - remove apps with complete data deletion for clean installs
  *
- * Examples:
- * - Uninstall app: bundleId: "com.example.MyApp"
- * - Auto-detect target: bundleId: "com.example.MyApp"
- * - Specific target: bundleId: "com.example.MyApp", udid: "ABC-123"
+ * **What it does:**
+ * Removes installed applications by bundle ID with complete data and preferences deletion. Automatically
+ * terminates running apps before uninstall. Cannot remove system apps (user-installed only). Provides
+ * detailed error guidance for common failures (app not found, system app protection, uninstall errors).
  *
- * Behavior:
- * - Removes app from device/simulator
- * - Deletes app data and preferences
- * - Cannot uninstall system apps
- * - If app running, it will be terminated first
+ * **Why you'd use it:**
+ * - Clean install testing workflows - remove old version completely before installing new build
+ * - Reset app state by deleting all data and preferences (more thorough than terminate alone)
+ * - Free device storage by removing unused test apps from device farms
+ * - Automate uninstall/reinstall cycles for testing fresh installs and onboarding flows
  *
- * Use cases:
- * - Clean install testing
- * - Removing old versions before reinstall
- * - Freeing device storage
- * - Resetting app state
+ * **Parameters:**
+ * - bundleId (required): App bundle identifier to uninstall
+ * - udid (optional): Target identifier - auto-detects if omitted
  *
- * Device Support:
- * - Simulators: Full support ✅
- * - Physical Devices: Requires USB + idb_companion ✅
+ * **Returns:**
+ * Uninstallation status with success indicator, bundle ID, command output, error details
+ * if failed, and troubleshooting guidance (app not found, system app protection, termination
+ * advice, alternative tools).
+ *
+ * **Example:**
+ * ```typescript
+ * // Uninstall app for clean reinstall
+ * const result = await idbUninstallTool({
+ *   bundleId: 'com.example.MyApp'
+ * });
+ *
+ * // Uninstall from specific device
+ * await idbUninstallTool({
+ *   bundleId: 'com.example.MyApp',
+ *   udid: 'DEVICE-UDID-123'
+ * });
+ * ```
+ *
+ * **Full documentation:** See idb/uninstall.md for detailed parameters and behavior
+ *
+ * @param args Tool arguments with bundle ID and optional target UDID
+ * @returns Tool result with uninstallation status and guidance
  */
 export async function idbUninstallTool(args: IdbUninstallArgs) {
   const { udid, bundleId } = args;

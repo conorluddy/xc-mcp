@@ -9,15 +9,39 @@ interface SimctlEraseToolArgs {
 }
 
 /**
- * Erase an iOS simulator device to factory settings
+ * Reset iOS simulator devices to factory settings
  *
- * Resets simulator to clean state without deleting the device.
- * All apps and data will be removed, but the simulator device persists.
- * This is useful for testing fresh app installations and clean states.
+ * **What it does:**
+ * Resets a simulator to clean factory state without deleting the device itself. All apps
+ * and data are removed, but the simulator persists and can be immediately reused.
  *
- * Example:
- * - Erase device: deviceId: "ABC123-DEF456-GHI789"
- * - Find UDIDs with: simctl-list
+ * **Why you'd use it:**
+ * - Clean state for fresh app installation testing without recreating simulators
+ * - Data removal clears all apps, preferences, and user data
+ * - Testing workflows benefit from repeatable clean states
+ * - Device preserved means simulator remains available for immediate reuse
+ *
+ * **Parameters:**
+ * - `deviceId` (string): Device UDID to erase (from simctl-list)
+ * - `force` (boolean, optional): Force erase even if device is booted (default: false)
+ *
+ * **Returns:**
+ * Erase status with device information and confirmation that device persists
+ *
+ * **Example:**
+ * ```typescript
+ * // Erase simulator to clean state
+ * await simctlEraseTool({ deviceId: 'ABC-123-DEF' })
+ *
+ * // Force erase booted device
+ * await simctlEraseTool({ deviceId: 'ABC-123-DEF', force: true })
+ * ```
+ *
+ * **Full documentation:** See simctl/erase.md for clean state testing patterns
+ *
+ * @param args Erase configuration (requires deviceId)
+ * @returns Tool result with erase status and guidance
+ * @throws McpError for invalid device ID or erase failure
  */
 export async function simctlEraseTool(args: any) {
   const { deviceId, force = false } = args as SimctlEraseToolArgs;

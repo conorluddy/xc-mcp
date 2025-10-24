@@ -7,6 +7,43 @@ interface VersionToolArgs {
   outputFormat?: OutputFormat;
 }
 
+/**
+ * Get Xcode and SDK version information with structured output
+ *
+ * **What it does:**
+ * Retrieves comprehensive version information about your Xcode installation and available SDKs.
+ * Returns structured JSON data that's easy to parse and validate, eliminating the need to parse
+ * raw command-line output. Validates Xcode installation before execution to provide clear
+ * error messages if Xcode is not properly configured.
+ *
+ * **Why you'd use it:**
+ * - Validate environment before running builds or tests (CI/CD validation)
+ * - Check SDK availability for specific platform versions
+ * - Ensure consistent Xcode versions across team or build environments
+ * - Get structured version data for automated tooling and scripts
+ *
+ * **Parameters:**
+ * - sdk (string, optional): Query specific SDK version (e.g., "iphoneos", "iphonesimulator")
+ * - outputFormat (string, optional): "json" (default) or "text" output format
+ *
+ * **Returns:**
+ * Structured JSON response containing Xcode version, build number, and SDK information.
+ * Falls back gracefully to text format for older Xcode versions that don't support JSON output.
+ *
+ * **Example:**
+ * ```typescript
+ * // Get Xcode version as JSON
+ * const result = await xcodebuildVersionTool({ outputFormat: "json" });
+ *
+ * // Query specific SDK
+ * const sdkInfo = await xcodebuildVersionTool({ sdk: "iphoneos" });
+ * ```
+ *
+ * **Full documentation:** See src/tools/xcodebuild/version.md for detailed parameters
+ *
+ * @param args Tool arguments containing sdk and outputFormat
+ * @returns Tool result with version information
+ */
 export async function xcodebuildVersionTool(args: any) {
   const { sdk, outputFormat = 'json' } = args as VersionToolArgs;
 

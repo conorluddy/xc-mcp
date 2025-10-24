@@ -15,6 +15,57 @@ interface BuildToolArgs {
   derivedDataPath?: string;
 }
 
+/**
+ * Build Xcode projects with intelligent defaults and performance tracking
+ *
+ * **What it does:**
+ * Builds Xcode projects and workspaces with advanced learning capabilities that remember
+ * successful configurations and suggest optimal simulators per project. Uses progressive
+ * disclosure to provide concise summaries by default, with full build logs available on demand.
+ * Tracks build performance metrics (duration, errors, warnings) and learns from successful
+ * builds to improve future build suggestions.
+ *
+ * **Why you'd use it:**
+ * - Automatic smart defaults: remembers which simulator and config worked last time
+ * - Progressive disclosure: concise summaries prevent token overflow, full logs on demand
+ * - Performance tracking: measures build times and provides optimization insights
+ * - Structured errors: clear error messages instead of raw CLI stderr
+ *
+ * **Parameters:**
+ * - projectPath (string, required): Path to .xcodeproj or .xcworkspace file
+ * - scheme (string, required): Build scheme name (use xcodebuild-list to discover)
+ * - configuration (string, optional): Build configuration (Debug/Release, defaults to cached or "Debug")
+ * - destination (string, optional): Build destination (e.g., "platform=iOS Simulator,id=<UDID>")
+ * - sdk (string, optional): SDK to build against (e.g., "iphonesimulator", "iphoneos")
+ * - derivedDataPath (string, optional): Custom derived data path for build artifacts
+ *
+ * **Returns:**
+ * Structured JSON response with buildId (for progressive disclosure), success status, build
+ * summary (errors, warnings, duration), and intelligence metadata showing which smart defaults
+ * were applied. Use xcodebuild-get-details with buildId to retrieve full logs.
+ *
+ * **Example:**
+ * ```typescript
+ * // Minimal build with smart defaults
+ * const result = await xcodebuildBuildTool({
+ *   projectPath: "/path/to/MyApp.xcodeproj",
+ *   scheme: "MyApp"
+ * });
+ *
+ * // Explicit configuration
+ * const release = await xcodebuildBuildTool({
+ *   projectPath: "/path/to/MyApp.xcworkspace",
+ *   scheme: "MyApp",
+ *   configuration: "Release",
+ *   destination: "platform=iOS Simulator,id=ABC-123"
+ * });
+ * ```
+ *
+ * **Full documentation:** See src/tools/xcodebuild/build.md for detailed parameters
+ *
+ * @param args Tool arguments containing projectPath, scheme, and optional build configuration
+ * @returns Tool result with build summary and buildId for progressive disclosure
+ */
 export async function xcodebuildBuildTool(args: any) {
   const {
     projectPath,

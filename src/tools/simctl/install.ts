@@ -8,13 +8,39 @@ interface SimctlInstallToolArgs {
 }
 
 /**
- * Install an iOS app to a simulator
+ * Install iOS apps to simulators for testing
  *
- * Examples:
- * - Install built app: udid: "device-123", appPath: "/path/to/MyApp.app"
- * - Install from Xcode build: udid: "device-123", appPath: "/Users/conor/Library/Developer/Xcode/DerivedData/MyApp-xxx/Build/Products/Debug-iphonesimulator/MyApp.app"
+ * **What it does:**
+ * Installs a built .app bundle to a simulator device, making it available for launching
+ * and testing. Validates the app bundle format and simulator state before installation.
  *
- * The app path should be the .app bundle directory (not the executable within it)
+ * **Why you'd use it:**
+ * - Deploy built apps directly from Xcode DerivedData to any simulator
+ * - Fast installation completes in seconds for quick test iterations
+ * - Validation checks ensure app bundle and simulator are valid before attempting install
+ * - Testing workflows integrate app installation into automated test pipelines
+ *
+ * **Parameters:**
+ * - `udid` (string): Simulator UDID (from simctl-list)
+ * - `appPath` (string): Path to .app bundle (e.g., /path/to/MyApp.app)
+ *
+ * **Returns:**
+ * Installation status with app name, simulator info, and guidance for next steps
+ *
+ * **Example:**
+ * ```typescript
+ * // Install from Xcode build output
+ * await simctlInstallTool({
+ *   udid: 'ABC-123-DEF',
+ *   appPath: '/Users/dev/Library/Developer/Xcode/DerivedData/MyApp-xxx/Build/Products/Debug-iphonesimulator/MyApp.app'
+ * })
+ * ```
+ *
+ * **Full documentation:** See simctl/install.md for app installation patterns
+ *
+ * @param args Installation configuration (requires udid and appPath)
+ * @returns Tool result with installation status and guidance
+ * @throws McpError for invalid app path, simulator not found, or installation failure
  */
 export async function simctlInstallTool(args: any) {
   const { udid, appPath } = args as SimctlInstallToolArgs;

@@ -11,21 +11,50 @@ interface IdbTargetsArgs {
 }
 
 /**
- * Query and manage iOS targets (simulators + devices)
+ * Query and manage iOS targets - discover simulators and physical devices available for testing
  *
- * Examples:
- * - List all targets: operation: "list"
- * - List booted only: operation: "list", state: "Booted"
- * - List simulators: operation: "list", type: "simulator"
- * - Get target details: operation: "describe", udid: "ABC-123"
- * - Focus simulator window: operation: "focus", udid: "ABC-123"
+ * **What it does:**
+ * Provides discovery and management for all iOS targets (simulators and devices) connected via IDB.
+ * Lists available targets with filtering by state (booted/shutdown) and type (device/simulator), retrieves
+ * detailed target metadata including screen dimensions for coordinate validation, and focuses simulator
+ * windows for interactive testing. Uses intelligent caching (IDBTargetCache) to avoid expensive IDB calls.
  *
- * Operations:
- * - list: Show available targets with filters
- * - describe: Get detailed target information
- * - focus: Bring simulator window to foreground (macOS only)
+ * **Why you'd use it:**
+ * - Discover available targets before starting automation workflows - no manual UDID lookup required
+ * - Filter booted targets for immediate testing vs. shutdown targets that need activation
+ * - Get screen dimensions for coordinate transformation and tap validation in UI automation
+ * - Focus simulator windows programmatically during multi-target test execution
  *
- * Returns structured target information from IDBTargetCache
+ * **Parameters:**
+ * - operation (required): "list" | "describe" | "focus"
+ * - udid (required for describe/focus): Target identifier
+ * - state (optional, list only): "Booted" | "Shutdown" - filter by target state
+ * - type (optional, list only): "device" | "simulator" - filter by target type
+ *
+ * **Returns:**
+ * Structured target data with success status, summary counts, target arrays (booted/shutdown),
+ * usage statistics (last used time, successful operations count), cache diagnostics, and
+ * actionable guidance for next steps in automation workflow.
+ *
+ * **Example:**
+ * ```typescript
+ * // List all booted targets ready for testing
+ * const result = await idbTargetsTool({
+ *   operation: 'list',
+ *   state: 'Booted'
+ * });
+ *
+ * // Get detailed target info with screen dimensions
+ * const details = await idbTargetsTool({
+ *   operation: 'describe',
+ *   udid: 'ABC-123-DEF'
+ * });
+ * ```
+ *
+ * **Full documentation:** See idb/targets.md for detailed parameters and operations
+ *
+ * @param args Tool arguments with operation type and optional filters
+ * @returns Tool result with structured target information and guidance
  */
 export async function idbTargetsTool(args: IdbTargetsArgs) {
   const { operation, udid, state, type } = args;

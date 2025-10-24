@@ -9,13 +9,39 @@ interface SimctlRenameToolArgs {
 }
 
 /**
- * Rename an iOS simulator device
+ * Rename iOS simulator devices for better organization
  *
- * Changes the display name of a simulator without affecting its UDID or data.
+ * **What it does:**
+ * Changes the display name of a simulator without affecting its UDID or any data.
+ * Useful for organizing and identifying simulators with descriptive names.
  *
- * Example:
- * - Rename device: deviceId: "ABC123-DEF456", newName: "TestDevice-Updated"
- * - Find UDIDs with: simctl-list
+ * **Why you'd use it:**
+ * - Organization helps better manage and identify simulators in lists
+ * - Easy identification enables use of descriptive names for test devices
+ * - Data preserved means renaming does not affect UDID or stored data
+ * - Quick operation completes instantly with no side effects
+ *
+ * **Parameters:**
+ * - `deviceId` (string): Device UDID to rename (from simctl-list)
+ * - `newName` (string): New display name for the simulator
+ *
+ * **Returns:**
+ * Rename status showing old name, new name, and confirmation that UDID is unchanged
+ *
+ * **Example:**
+ * ```typescript
+ * // Rename simulator for clarity
+ * await simctlRenameTool({
+ *   deviceId: 'ABC-123-DEF',
+ *   newName: 'Production Test Device'
+ * })
+ * ```
+ *
+ * **Full documentation:** See simctl/rename.md for naming conventions and best practices
+ *
+ * @param args Rename configuration (requires deviceId and newName)
+ * @returns Tool result with rename status and guidance
+ * @throws McpError for invalid device ID, duplicate name, or rename failure
  */
 export async function simctlRenameTool(args: any) {
   const { deviceId, newName } = args as SimctlRenameToolArgs;

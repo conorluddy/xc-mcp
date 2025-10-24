@@ -10,6 +10,47 @@ interface SimctlBootToolArgs {
   openGui?: boolean;
 }
 
+/**
+ * Boot iOS simulator device with intelligent performance tracking and learning
+ *
+ * **What it does:**
+ * Boots an iOS simulator device and optionally waits for complete boot. Tracks performance
+ * metrics and learns from successful configurations for future recommendations.
+ *
+ * **Why you'd use it:**
+ * - 📊 Performance tracking - Records boot times for optimization insights
+ * - 🧠 Learning system - Remembers which devices are fastest
+ * - 🎯 Smart recommendations - Future boots suggest fastest devices
+ * - 🛡️ Better error handling - Clear feedback vs cryptic xcrun errors
+ * - ⏱️ Wait management - Intelligent waiting vs guessing when boot is done
+ *
+ * **Parameters:**
+ * - `deviceId` (string): Device UDID from simctl-list, "booted" for current, or "all"
+ * - `waitForBoot` (boolean, default: true): Wait for device to finish booting completely
+ * - `openGui` (boolean, default: true): Open Simulator.app GUI (visual feedback)
+ *
+ * **Returns:**
+ * Boot status with device info, boot time metrics, and next step guidance
+ *
+ * **Example:**
+ * ```typescript
+ * // Boot with defaults (wait + GUI)
+ * await simctlBootTool({ deviceId: 'ABC-123-DEF' })
+ *
+ * // Quick boot without GUI
+ * await simctlBootTool({ deviceId: 'ABC-123-DEF', waitForBoot: false, openGui: false })
+ * ```
+ *
+ * **Device Support:**
+ * - Simulators: Full support ✅
+ * - Physical devices: N/A
+ *
+ * **Full documentation:** See simctl/boot.md for detailed parameters and examples
+ *
+ * @param args Boot configuration (requires deviceId)
+ * @returns Boot result with status, metrics, and guidance
+ * @throws McpError for invalid device ID or boot failure
+ */
 export async function simctlBootTool(args: any) {
   const { deviceId, waitForBoot = true, openGui = true } = args as SimctlBootToolArgs;
 

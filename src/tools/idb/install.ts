@@ -9,27 +9,47 @@ interface IdbInstallArgs {
 }
 
 /**
- * Install application to iOS target
+ * Install application to iOS target - deploy .app bundles or .ipa archives for testing
  *
- * Examples:
- * - Install .app: appPath: "/path/to/MyApp.app"
- * - Install .ipa: appPath: "/path/to/MyApp.ipa"
- * - Auto-detect target: appPath: "/path/to/App.app"
- * - Specific target: appPath: "/path/to/App.app", udid: "ABC-123"
+ * **What it does:**
+ * Transfers and registers application bundles (.app) or archives (.ipa) to iOS targets. Validates
+ * app path format before transfer, handles installation process (transfer, registration, signature
+ * validation), extracts bundle ID from output for launching, and provides detailed error guidance
+ * for common failures (code signing, architecture mismatch, already installed).
  *
- * Supported formats:
- * - .app bundles (from Xcode build)
- * - .ipa archives (signed/unsigned)
+ * **Why you'd use it:**
+ * - Deploy fresh builds to simulators and devices for automated testing - no Xcode required
+ * - Install multiple app versions for A/B testing or regression validation
+ * - Automated CI/CD integration for deploying test builds to device farms
+ * - Troubleshoot installation failures with architecture-specific and signing-specific guidance
  *
- * Installation process:
- * - Validates app exists and is correct format
- * - Transfers to target device/simulator
- * - Registers app with system
- * - Returns bundle ID for launching
+ * **Parameters:**
+ * - appPath (required): Absolute path to .app bundle or .ipa archive
+ * - udid (optional): Target identifier - auto-detects if omitted
  *
- * Device Support:
- * - Simulators: Full support ✅
- * - Physical Devices: Requires USB + idb_companion ✅
+ * **Returns:**
+ * Installation status with success indicator, app path, extracted bundle ID (if available),
+ * installation output, and context-specific troubleshooting guidance (code signing issues,
+ * architecture mismatches, already installed, file not found).
+ *
+ * **Example:**
+ * ```typescript
+ * // Install simulator build
+ * const result = await idbInstallTool({
+ *   appPath: '/path/to/DerivedData/Build/Products/Debug-iphonesimulator/MyApp.app'
+ * });
+ *
+ * // Install signed IPA to physical device
+ * await idbInstallTool({
+ *   appPath: '/path/to/MyApp.ipa',
+ *   udid: 'DEVICE-UDID-123'
+ * });
+ * ```
+ *
+ * **Full documentation:** See idb/install.md for detailed parameters and troubleshooting
+ *
+ * @param args Tool arguments with app path and optional target UDID
+ * @returns Tool result with installation status and bundle ID
  */
 export async function idbInstallTool(args: IdbInstallArgs) {
   const { udid, appPath } = args;

@@ -6,15 +6,32 @@ import { simulatorCache } from '../../state/simulator-cache.js';
 /**
  * Comprehensive iOS simulator environment health check
  *
- * Validates:
- * - Xcode Command Line Tools installation
- * - simctl availability
- * - Available simulators
- * - Booted simulators
- * - Simulator runtime versions
- * - Disk space for simulators
+ * **What it does:**
+ * Performs a complete diagnostic check of your iOS development environment, validating
+ * Xcode tools, simulators, runtimes, and disk space. Returns actionable recommendations
+ * for any issues found.
  *
- * Returns detailed diagnostics for troubleshooting environment issues.
+ * **Why you'd use it:**
+ * - Troubleshooting validates entire toolchain when operations fail unexpectedly
+ * - Actionable guidance provides specific steps to fix each identified issue
+ * - Comprehensive diagnostics check 6 critical areas in seconds
+ * - CI/CD validation ensures environment health before running test suites
+ *
+ * **Parameters:**
+ * None - performs complete environment check automatically
+ *
+ * **Returns:**
+ * Health report with pass/fail status for each check and specific guidance for failures
+ *
+ * **Example:**
+ * ```typescript
+ * // Run complete health check
+ * await simctlHealthCheckTool()
+ * ```
+ *
+ * **Full documentation:** See simctl/health-check.md for diagnostic details
+ *
+ * @returns Tool result with comprehensive health status and guidance
  */
 export async function simctlHealthCheckTool() {
   try {

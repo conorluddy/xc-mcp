@@ -59,6 +59,67 @@ interface TestMetrics {
 // PUBLIC API
 // ============================================================================
 
+/**
+ * Run Xcode tests with intelligent defaults and progressive disclosure
+ *
+ * **What it does:**
+ * Executes unit and UI tests for Xcode projects with advanced learning that remembers successful
+ * test configurations and suggests optimal simulators per project. Provides detailed test metrics
+ * (passed/failed/skipped) with progressive disclosure to prevent token overflow. Supports test
+ * filtering (-only-testing, -skip-testing), test plans, and test-without-building mode for faster
+ * iteration. Learns from successful test runs to improve future suggestions.
+ *
+ * **Why you'd use it:**
+ * - Automatic smart defaults: remembers which simulator and config worked for tests
+ * - Detailed test metrics: structured pass/fail/skip counts instead of raw output
+ * - Progressive disclosure: concise summaries with full logs available via testId
+ * - Test filtering: run specific tests or skip problematic ones with -only-testing/-skip-testing
+ *
+ * **Parameters:**
+ * - projectPath (string, required): Path to .xcodeproj or .xcworkspace file
+ * - scheme (string, required): Test scheme name (use xcodebuild-list to discover)
+ * - configuration (string, optional): Build configuration (Debug/Release, defaults to cached or "Debug")
+ * - destination (string, optional): Test destination (e.g., "platform=iOS Simulator,id=<UDID>")
+ * - sdk (string, optional): SDK to test against (e.g., "iphonesimulator")
+ * - derivedDataPath (string, optional): Custom derived data path
+ * - testPlan (string, optional): Test plan name to execute
+ * - onlyTesting (string[], optional): Array of test identifiers to run exclusively
+ * - skipTesting (string[], optional): Array of test identifiers to skip
+ * - testWithoutBuilding (boolean, optional): Run tests without building (requires prior build)
+ *
+ * **Returns:**
+ * Structured JSON with testId (for progressive disclosure), success status, test summary
+ * (total/passed/failed/skipped counts), failure details (first 3 failures), and cache metadata
+ * showing which smart defaults were applied. Use xcodebuild-get-details with testId for full logs.
+ *
+ * **Example:**
+ * ```typescript
+ * // Run all tests with smart defaults
+ * const result = await xcodebuildTestTool({
+ *   projectPath: "/path/to/MyApp.xcodeproj",
+ *   scheme: "MyApp"
+ * });
+ *
+ * // Run specific tests only
+ * const filtered = await xcodebuildTestTool({
+ *   projectPath: "/path/to/MyApp.xcworkspace",
+ *   scheme: "MyApp",
+ *   onlyTesting: ["MyAppTests/testLogin", "MyAppTests/testLogout"]
+ * });
+ *
+ * // Fast iteration with test-without-building
+ * const quick = await xcodebuildTestTool({
+ *   projectPath: "/path/to/MyApp.xcodeproj",
+ *   scheme: "MyApp",
+ *   testWithoutBuilding: true
+ * });
+ * ```
+ *
+ * **Full documentation:** See src/tools/xcodebuild/test.md for detailed parameters
+ *
+ * @param args Tool arguments containing projectPath, scheme, and optional test configuration
+ * @returns Tool result with test metrics and testId for progressive disclosure
+ */
 export async function xcodebuildTestTool(args: any) {
   try {
     const config = await assembleTestConfiguration(args);

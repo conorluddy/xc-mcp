@@ -9,18 +9,47 @@ interface IdbConnectArgs {
 }
 
 /**
- * Manage IDB companion connections for persistent target access
+ * Manage IDB companion connections - establish persistent gRPC connections to iOS targets
  *
- * Examples:
- * - Connect to target: udid: "ABC-123"
- * - Auto-detect and connect: (no parameters)
- * - Disconnect: udid: "ABC-123", operation: "disconnect"
+ * **What it does:**
+ * Manages persistent gRPC connections between IDB and iOS targets (simulators and physical devices).
+ * Establishes companion connections for faster subsequent operations, verifies connectivity, and
+ * cleanly disconnects when testing is complete. Auto-detects targets when UDID not provided and
+ * validates device readiness for physical devices (USB connection, trust status, companion service).
  *
- * Why: IDB maintains persistent gRPC connections to targets.
- * Connecting registers the companion for faster subsequent operations.
+ * **Why you'd use it:**
+ * - Warm up connections before automation workflows to reduce first-operation latency
+ * - Troubleshoot connectivity issues between IDB and physical devices over USB/WiFi
+ * - Explicitly manage connection lifecycle for multi-target test orchestration
+ * - Verify companion registration and gRPC channel establishment before critical operations
  *
- * Note: IDB CLI auto-connects when needed, so explicit connect is optional.
- * Useful for warming up connections or troubleshooting connectivity.
+ * **Parameters:**
+ * - udid (optional): Target identifier - auto-detects if omitted
+ * - operation (optional): "connect" | "disconnect" - defaults to "connect"
+ *
+ * **Returns:**
+ * Connection status with success indicator, target metadata (name, type, connection type),
+ * companion output, error details if failed, and troubleshooting guidance specific to
+ * simulators vs. physical devices.
+ *
+ * **Example:**
+ * ```typescript
+ * // Auto-detect and connect to booted target
+ * const result = await idbConnectTool({
+ *   operation: 'connect'
+ * });
+ *
+ * // Connect to specific physical device
+ * const deviceConnect = await idbConnectTool({
+ *   udid: 'DEVICE-UDID-123',
+ *   operation: 'connect'
+ * });
+ * ```
+ *
+ * **Full documentation:** See idb/connect.md for detailed parameters and operations
+ *
+ * @param args Tool arguments with optional UDID and operation type
+ * @returns Tool result with connection status and troubleshooting guidance
  */
 export async function idbConnectTool(args: IdbConnectArgs) {
   const { udid, operation = 'connect' } = args;

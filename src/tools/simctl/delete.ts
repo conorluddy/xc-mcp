@@ -8,14 +8,35 @@ interface SimctlDeleteToolArgs {
 }
 
 /**
- * Delete an iOS simulator device
+ * Permanently delete iOS simulator devices
  *
- * Permanently removes a simulator and all its data.
- * This action cannot be undone.
+ * **What it does:**
+ * Permanently removes a simulator device and all its data from the system. This action
+ * cannot be undone. The simulator must be shut down before deletion.
  *
- * Example:
- * - Delete device by UDID: deviceId: "ABC123-DEF456-GHI789"
- * - Find UDIDs with: simctl-list
+ * **Why you'd use it:**
+ * - Clean up unused simulators to save disk space (simulators can be 5-10GB each)
+ * - Quick operation for fast permanent deletion
+ * - Safety checks prevent accidental deletion of booted devices
+ * - Automated cleanup workflows for CI/CD environments
+ *
+ * **Parameters:**
+ * - `deviceId` (string): Device UDID to delete (from simctl-list)
+ *
+ * **Returns:**
+ * Deletion status with device information and confirmation that action is permanent
+ *
+ * **Example:**
+ * ```typescript
+ * // Delete specific simulator
+ * await simctlDeleteTool({ deviceId: 'ABC-123-DEF' })
+ * ```
+ *
+ * **Full documentation:** See simctl/delete.md for safety considerations and best practices
+ *
+ * @param args Deletion configuration (requires deviceId)
+ * @returns Tool result with deletion status and guidance
+ * @throws McpError for invalid device ID, booted device, or deletion failure
  */
 export async function simctlDeleteTool(args: any) {
   const { deviceId } = args as SimctlDeleteToolArgs;

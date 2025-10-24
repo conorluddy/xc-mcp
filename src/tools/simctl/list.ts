@@ -15,6 +15,48 @@ interface SimctlListArgs {
   concise?: boolean;
 }
 
+/**
+ * List iOS simulators with intelligent progressive disclosure and caching
+ *
+ * **What it does:**
+ * Retrieves comprehensive simulator information including devices, runtimes, and device types.
+ * Returns concise summaries by default with cache IDs for progressive access to full details,
+ * preventing token overflow while maintaining complete functionality.
+ *
+ * **Why you'd use it:**
+ * - Prevents token overflow with 10k+ device lists via progressive disclosure
+ * - Shows booted devices and recently used simulators first for faster workflows
+ * - 1-hour intelligent caching eliminates redundant queries
+ * - Provides smart filtering by device type, runtime, and availability
+ *
+ * **Parameters:**
+ * - `deviceType` (string, optional): Filter by device type (e.g., "iPhone", "iPad")
+ * - `runtime` (string, optional): Filter by iOS runtime version (e.g., "17", "iOS 17.0")
+ * - `availability` (string, optional): Filter by availability ("available", "unavailable", "all")
+ * - `outputFormat` (string, optional): Output format ("json" or "text")
+ * - `concise` (boolean, optional): Return concise summary with cache ID (default: true)
+ *
+ * **Returns:**
+ * - Concise mode: Summary with cacheId for detailed retrieval via simctl-get-details
+ * - Full mode: Complete simulator list with all device information
+ *
+ * **Example:**
+ * ```typescript
+ * // Get concise summary (default - prevents token overflow)
+ * await simctlListTool({})
+ *
+ * // Get full list for iPhone devices
+ * await simctlListTool({ deviceType: "iPhone", concise: false })
+ *
+ * // Filter by iOS version
+ * await simctlListTool({ runtime: "17.0" })
+ * ```
+ *
+ * **Full documentation:** See simctl/list.md for detailed parameters and progressive disclosure
+ *
+ * @param args Tool arguments including optional filters and format
+ * @returns Tool result with simulator list or summary with cache ID
+ */
 export async function simctlListTool(args: any) {
   const {
     deviceType,

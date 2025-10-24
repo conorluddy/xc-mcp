@@ -18,25 +18,50 @@ interface IdbUiDescribeArgs {
 }
 
 /**
- * Query UI accessibility tree for element discovery
+ * Query UI accessibility tree - discover tappable elements and text fields for precise automation
  *
- * Examples:
- * - Full UI tree: operation: "all"
- * - Element at point: operation: "point", x: 200, y: 400
- * - With context: operation: "all", screenContext: "LoginScreen", purposeDescription: "Find email field"
+ * **What it does:**
+ * Queries iOS accessibility tree to discover UI elements, their properties (type, label, enabled state),
+ * and screen locations. Provides full tree with progressive disclosure (summary + cache ID for full data),
+ * element-at-point queries for tap validation, and data quality assessment (rich/moderate/minimal) to guide
+ * automation strategy. Automatically caches large outputs to prevent token overflow.
  *
- * Operations:
- * - all: Get full accessibility tree (uses progressive disclosure)
- * - point: Get element at specific coordinates
+ * **Why you'd use it:**
+ * - Discover tappable elements without visual screenshots - buttons, cells, links identified by accessibility data
+ * - Assess data quality before choosing automation approach - rich data enables precise targeting, minimal data requires screenshots
+ * - Validate tap coordinates by querying elements at specific points before execution
+ * - Progressive disclosure prevents token overflow on complex UIs - get summary first, full tree on demand
  *
- * Progressive Disclosure:
- * - 'all' operation returns summary + cache ID
- * - Use idb-ui-get-details with uiTreeId for full tree
- * - Prevents token overflow for complex UIs
+ * **Parameters:**
+ * - operation (required): "all" | "point"
+ * - x, y (required for point operation): Coordinates to query element at specific location
+ * - udid (optional): Target identifier - auto-detects if omitted
+ * - screenContext, purposeDescription (optional): Semantic tracking for element discovery context
  *
- * Device Support:
- * - Simulators: Full support ✅
- * - Physical Devices: Requires USB + idb_companion ✅
+ * **Returns:**
+ * For "all": UI tree summary with element counts (total, tappable, text fields), data quality assessment
+ * (rich/moderate/minimal), top 20 interactive elements preview, uiTreeId for full tree retrieval, and
+ * guidance on automation strategy based on data richness.
+ *
+ * For "point": Element details at coordinates including type, label, value, enabled state, and tappability.
+ *
+ * **Example:**
+ * ```typescript
+ * // Query full UI tree with data quality assessment
+ * const result = await idbUiDescribeTool({
+ *   operation: 'all',
+ *   screenContext: 'LoginScreen',
+ *   purposeDescription: 'Find email and password fields'
+ * });
+ *
+ * // Validate element at tap coordinates
+ * await idbUiDescribeTool({ operation: 'point', x: 200, y: 400 });
+ * ```
+ *
+ * **Full documentation:** See idb/ui-describe.md for detailed parameters and progressive disclosure
+ *
+ * @param args Tool arguments with operation type and optional coordinates
+ * @returns Tool result with UI tree data or element details
  */
 export async function idbUiDescribeTool(args: IdbUiDescribeArgs) {
   const { udid, operation, x, y, screenContext, purposeDescription } = args;

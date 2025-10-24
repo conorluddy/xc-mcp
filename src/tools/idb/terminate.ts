@@ -9,26 +9,47 @@ interface IdbTerminateArgs {
 }
 
 /**
- * Terminate (kill) running application on iOS target
+ * Terminate running application - force-quit apps for clean state testing and debugging
  *
- * Examples:
- * - Terminate app: bundleId: "com.example.MyApp"
- * - Auto-detect target: bundleId: "com.example.MyApp"
- * - Specific target: bundleId: "com.example.MyApp", udid: "ABC-123"
+ * **What it does:**
+ * Force-terminates running applications by bundle ID with immediate stop (no graceful shutdown).
+ * Idempotent operation that succeeds even if app not running. Detects whether app was actually
+ * running from output parsing to provide accurate status. Essential for resetting app state between
+ * test runs and preparing for reinstallation.
  *
- * Behavior:
- * - Immediately stops the running app
- * - Equivalent to force-quitting the app
- * - App state is not saved (no graceful shutdown)
- * - Use before reinstalling or debugging
+ * **Why you'd use it:**
+ * - Reset app state between test runs for clean-slate testing without full reinstallation
+ * - Stop apps before uninstall/reinstall workflows to avoid "app in use" errors
+ * - Force-quit frozen or unresponsive apps during debugging sessions
+ * - Idempotent operation safe to call multiple times - no error if app already stopped
  *
- * If app not running:
- * - Command succeeds (no error)
- * - Idempotent operation
+ * **Parameters:**
+ * - bundleId (required): App bundle identifier to terminate
+ * - udid (optional): Target identifier - auto-detects if omitted
  *
- * Device Support:
- * - Simulators: Full support ✅
- * - Physical Devices: Requires USB + idb_companion ✅
+ * **Returns:**
+ * Termination status with success indicator, bundle ID, wasRunning flag (parsed from output
+ * to distinguish actual termination from no-op), command output, error details if failed,
+ * and next steps guidance (relaunch, reinstall, verification).
+ *
+ * **Example:**
+ * ```typescript
+ * // Force-quit app before reinstall
+ * const result = await idbTerminateTool({
+ *   bundleId: 'com.example.MyApp'
+ * });
+ *
+ * // Stop app on specific device
+ * await idbTerminateTool({
+ *   bundleId: 'com.example.MyApp',
+ *   udid: 'DEVICE-UDID-123'
+ * });
+ * ```
+ *
+ * **Full documentation:** See idb/terminate.md for detailed parameters and behavior
+ *
+ * @param args Tool arguments with bundle ID and optional target UDID
+ * @returns Tool result with termination status and wasRunning indicator
  */
 export async function idbTerminateTool(args: IdbTerminateArgs) {
   const { udid, bundleId } = args;

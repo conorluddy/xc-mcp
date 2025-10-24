@@ -9,14 +9,39 @@ interface SimctlCloneToolArgs {
 }
 
 /**
- * Clone an iOS simulator device
+ * Clone iOS simulator devices with complete state preservation
  *
- * Creates a duplicate of an existing simulator with all its settings and state.
- * Useful for creating test snapshots or having multiple variants of the same device.
+ * **What it does:**
+ * Creates an exact duplicate of an existing simulator including all settings, installed apps,
+ * and current state. The cloned simulator gets a new UDID but preserves all configuration.
  *
- * Example:
- * - Clone device: deviceId: "ABC123-DEF456", newName: "MyDevice-TestSnapshot"
- * - Find UDIDs with: simctl-list
+ * **Why you'd use it:**
+ * - Snapshots create backups of configured simulators for safe experimentation
+ * - Testing variants enable multiple versions for different test scenarios
+ * - State preservation includes all apps, data, and configuration
+ * - Quick setup duplicates existing configuration instead of manual recreation
+ *
+ * **Parameters:**
+ * - `deviceId` (string): Source device UDID to clone (from simctl-list)
+ * - `newName` (string): Display name for the cloned simulator
+ *
+ * **Returns:**
+ * Clone status with both source and new device information, including new UDID
+ *
+ * **Example:**
+ * ```typescript
+ * // Clone simulator for testing
+ * await simctlCloneTool({
+ *   deviceId: 'ABC-123-DEF',
+ *   newName: 'TestDevice-Snapshot'
+ * })
+ * ```
+ *
+ * **Full documentation:** See simctl/clone.md for cloning strategies and use cases
+ *
+ * @param args Clone configuration (requires deviceId and newName)
+ * @returns Tool result with clone status, new UDID, and guidance
+ * @throws McpError for invalid device ID, duplicate name, or clone failure
  */
 export async function simctlCloneTool(args: any) {
   const { deviceId, newName } = args as SimctlCloneToolArgs;

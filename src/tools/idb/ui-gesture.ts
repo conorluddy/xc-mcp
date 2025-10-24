@@ -25,32 +25,51 @@ interface IdbUiGestureArgs {
 }
 
 /**
- * Perform gestures and hardware button presses
+ * Perform gestures and hardware button presses - swipes, scrolls, and device controls for navigation
  *
- * Examples:
- * - Swipe up: operation: "swipe", direction: "up"
- * - Swipe left: operation: "swipe", direction: "left", duration: 300
- * - Custom swipe: operation: "swipe", startX: 100, startY: 500, endX: 100, endY: 100
- * - Home button: operation: "button", buttonType: "HOME"
- * - Lock device: operation: "button", buttonType: "LOCK"
- * - Screenshot: operation: "button", buttonType: "SCREENSHOT"
+ * **What it does:**
+ * Executes swipe gestures (directional or custom paths) and hardware button presses on iOS targets.
+ * Supports standard swipe directions (up, down, left, right) with automatic screen-relative path calculation,
+ * custom swipe paths with precise start/end coordinates, and hardware button simulation (HOME, LOCK, SIRI,
+ * SCREENSHOT, APP_SWITCH). Validates coordinates against device bounds and provides semantic action tracking.
  *
- * Operations:
- * - swipe: Swipe gesture in direction or custom path
- * - button: Press hardware button (HOME, LOCK, SIRI, etc.)
+ * **Why you'd use it:**
+ * - Automate scroll and navigation gestures - swipe to reveal content, dismiss modals, page through carousels
+ * - Test hardware button interactions without physical device access - home button, lock, app switching
+ * - Execute precise custom swipe paths for complex gesture-based UIs (drawing, map navigation)
+ * - Track gesture-based test scenarios with semantic metadata (actionName, expectedOutcome)
  *
- * Swipe Directions:
- * - up: Swipe from bottom to top
- * - down: Swipe from top to bottom
- * - left: Swipe from right to left
- * - right: Swipe from left to right
+ * **Parameters:**
+ * - operation (required): "swipe" | "button"
+ * - direction (for swipe): "up" | "down" | "left" | "right" - auto-calculates screen-relative path
+ * - startX, startY, endX, endY (for custom swipe): Precise pixel coordinates for swipe path
+ * - duration (optional, for swipe): Swipe duration in milliseconds - default 500ms
+ * - buttonType (for button): "HOME" | "LOCK" | "SIDE_BUTTON" | "APPLE_PAY" | "SIRI" | "SCREENSHOT" | "APP_SWITCH"
+ * - udid (optional): Target identifier - auto-detects if omitted
+ * - actionName, expectedOutcome (optional): Semantic tracking for test documentation
  *
- * Hardware Buttons:
- * HOME, LOCK, SIDE_BUTTON, APPLE_PAY, SIRI, SCREENSHOT, APP_SWITCH
+ * **Returns:**
+ * Gesture execution status with operation details (direction/button, path coordinates for swipes),
+ * duration, gesture context metadata, error details if failed, and verification guidance.
  *
- * Device Support:
- * - Simulators: Full support ✅
- * - Physical Devices: Requires USB + idb_companion ✅
+ * **Example:**
+ * ```typescript
+ * // Swipe up to scroll content
+ * const result = await idbUiGestureTool({
+ *   operation: 'swipe',
+ *   direction: 'up',
+ *   actionName: 'Scroll to Bottom',
+ *   expectedOutcome: 'Reveal footer content'
+ * });
+ *
+ * // Press home button to background app
+ * await idbUiGestureTool({ operation: 'button', buttonType: 'HOME' });
+ * ```
+ *
+ * **Full documentation:** See idb/ui-gesture.md for detailed parameters and button types
+ *
+ * @param args Tool arguments with operation type and gesture/button details
+ * @returns Tool result with gesture status and path information
  */
 export async function idbUiGestureTool(args: IdbUiGestureArgs) {
   const {

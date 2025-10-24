@@ -9,17 +9,48 @@ interface SimctlGetAppContainerToolArgs {
 }
 
 /**
- * Get the file system path to an app's container on a simulator
+ * Access iOS app file system containers for inspection
  *
- * Examples:
- * - Get app data container: udid: "device-123", bundleId: "com.example.MyApp"
- * - Get bundle container: udid: "device-123", bundleId: "com.example.MyApp", containerType: "bundle"
- * - Get app groups container: udid: "device-123", bundleId: "com.example.MyApp", containerType: "group"
+ * **What it does:**
+ * Retrieves the file system path to an app's container directories on a simulator,
+ * enabling direct access to app bundle, data directories, and shared group containers
+ * for debugging and testing.
  *
- * Container types:
- * - bundle: The app's bundle (.app directory)
- * - data: The app's Documents and Library directories
- * - group: App groups container (for shared data)
+ * **Why you'd use it:**
+ * - Debug data access enables inspection of app Documents and Library folders
+ * - File inspection allows viewing database files, preferences, and cached data
+ * - Testing validation confirms app writes data to correct locations
+ * - Container types support bundle (app binary), data (Documents/Library), and group (shared) access
+ *
+ * **Parameters:**
+ * - `udid` (string): Simulator UDID (from simctl-list)
+ * - `bundleId` (string): App bundle ID (e.g., com.example.MyApp)
+ * - `containerType` (string, optional): Container type - bundle, data, or group (default: data)
+ *
+ * **Returns:**
+ * Container path with type information and guidance for accessing files
+ *
+ * **Example:**
+ * ```typescript
+ * // Get app data container path
+ * await simctlGetAppContainerTool({
+ *   udid: 'ABC-123-DEF',
+ *   bundleId: 'com.example.MyApp'
+ * })
+ *
+ * // Get app bundle path
+ * await simctlGetAppContainerTool({
+ *   udid: 'ABC-123-DEF',
+ *   bundleId: 'com.example.MyApp',
+ *   containerType: 'bundle'
+ * })
+ * ```
+ *
+ * **Full documentation:** See simctl/get-app-container.md for container types and debugging
+ *
+ * @param args Container query configuration (requires udid and bundleId)
+ * @returns Tool result with container path and file access guidance
+ * @throws McpError for app not installed or container access failure
  */
 export async function simctlGetAppContainerTool(args: any) {
   const { udid, bundleId, containerType } = args as SimctlGetAppContainerToolArgs;

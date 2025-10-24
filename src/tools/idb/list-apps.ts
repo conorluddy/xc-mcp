@@ -10,23 +10,45 @@ interface IdbListAppsArgs {
 }
 
 /**
- * List installed applications on iOS target
+ * List installed applications - discover apps available for testing with bundle IDs and running status
  *
- * Examples:
- * - List all apps: (no parameters needed)
- * - List user apps only: filterType: "user"
- * - List running apps: runningOnly: true
- * - List running user apps: filterType: "user", runningOnly: true
+ * **What it does:**
+ * Enumerates all installed applications on iOS targets with structured metadata including bundle ID,
+ * app name, install type (system/user/internal), running status, debuggability, and architecture.
+ * Filters apps by install type or running status to focus on user apps or active processes. Parses
+ * IDB's pipe-separated output into structured JSON for easy programmatic access.
  *
- * Output includes:
- * - Bundle ID, app name, install type
- * - Running status (which app is active)
- * - Debuggable status (can attach LLDB)
- * - Architecture (arm64, x86_64, universal)
+ * **Why you'd use it:**
+ * - Discover bundle IDs for launching, terminating, or uninstalling apps - no manual lookup required
+ * - Filter user-installed apps to focus on test targets vs. system apps
+ * - Identify running apps for UI automation or determine if app launch is needed
+ * - Check debuggability status before attaching debugger or collecting crash logs
  *
- * Device Support:
- * - Simulators: Full support ✅
- * - Physical Devices: Requires USB + idb_companion ✅
+ * **Parameters:**
+ * - udid (optional): Target identifier - auto-detects if omitted
+ * - filterType (optional): "system" | "user" | "internal" - filter by install type
+ * - runningOnly (optional): Boolean - show only currently running apps
+ *
+ * **Returns:**
+ * Structured app list with summary counts (total, running, debuggable, by install type),
+ * separate arrays for running vs. installed apps, applied filter details, and actionable
+ * guidance for launching, terminating, installing, or debugging apps.
+ *
+ * **Example:**
+ * ```typescript
+ * // List user-installed apps to find test target
+ * const result = await idbListAppsTool({
+ *   filterType: 'user'
+ * });
+ *
+ * // Find running app for UI automation
+ * const running = await idbListAppsTool({ runningOnly: true });
+ * ```
+ *
+ * **Full documentation:** See idb/list-apps.md for detailed parameters and output format
+ *
+ * @param args Tool arguments with optional filters
+ * @returns Tool result with structured app list and metadata
  */
 export async function idbListAppsTool(args: IdbListAppsArgs) {
   const { udid, filterType, runningOnly } = args;
