@@ -118,12 +118,24 @@ export async function simctlTapTool(args: any) {
             `Use simctl-get-interaction-details to view command output`,
             `Verify result: screenshot`,
           ].filter(Boolean)
-        : [
-            `❌ Failed to tap at {${x}, ${y}}`,
-            simulator.state !== 'Booted'
-              ? `Simulator is not booted. Boot it first or use simctl-boot with auto-detection`
-              : `Check coordinates are on screen`,
-          ],
+        : simulator.state !== 'Booted'
+          ? [
+              `❌ Failed to tap at {${x}, ${y}}`,
+              `Simulator is not booted. Boot it first or use simctl-boot with auto-detection`,
+            ]
+          : [
+              `❌ Failed to tap at {${x}, ${y}}`,
+              `Coordinate validation failed. Possible reasons:`,
+              `1. Coordinates out of bounds - verify screen dimensions`,
+              `2. Tapping off-screen area - use simctl-query-ui to find element positions`,
+              `3. App not in foreground - verify app is running and visible`,
+              `4. Accessibility server not responding - try again or restart simulator`,
+              ``,
+              `Next steps:`,
+              `• Use 'screenshot' tool to see current screen`,
+              `• Use 'simctl-query-ui' with element predicates to find coordinates programmatically`,
+              `• Check stderr output for detailed error: use 'simctl-get-interaction-details'`,
+            ],
     };
 
     const responseText = JSON.stringify(responseData, null, 2);

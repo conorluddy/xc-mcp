@@ -111,16 +111,25 @@ export async function simctlQueryUiTool(args: any) {
       guidance: success
         ? [
             `✅ Query matched ${lines.length} UI element(s)`,
-            `Use simctl-get-interaction-details to view full element list`,
             captureLocation
-              ? `Element locations captured for interaction`
-              : `Re-run with captureLocation: true to get coordinates`,
-            `Next: Interact with element using simctl-tap, simctl-type-text, etc.`,
+              ? `📍 Element locations captured - elements include coordinate information`
+              : `⚠️ Re-run with captureLocation: true to capture element coordinates for tapping`,
+            `Use simctl-get-interaction-details to view full element list with positions`,
+            `Next: Use element coordinates with simctl-tap for reliable interaction`,
           ]
         : [
             `❌ Failed to query UI: ${result.stderr?.split('\n')[0] || 'Unknown error'}`,
-            `Check predicate syntax: ${predicate}`,
-            `Verify app is running on the booted simulator`,
+            `Troubleshooting:`,
+            `• Check predicate syntax: ${predicate}`,
+            `• Verify app bundle ID is correct: ${bundleId}`,
+            `• Ensure app is running and visible on booted simulator`,
+            `• Try simctl-screenshot to verify app is in foreground`,
+            ``,
+            `Common predicate examples:`,
+            `  - type == "XCUIElementTypeButton"`,
+            `  - label == "Initialize Database"`,
+            `  - identifier == "button_id"`,
+            `  - type == "XCUIElementTypeButton" AND enabled == true`,
           ],
     };
 

@@ -141,6 +141,13 @@ export async function simctlScreenshotInlineTool(args: any) {
         `Compression: ${compressionRatio}% reduction from original PNG`,
         `Size: ${optimizedStats.size} bytes`,
         appName && screenName && state ? `Screen: ${appName}/${screenName} (${state})` : undefined,
+        ``,
+        `Next steps to interact with UI:`,
+        `1. Use simctl-query-ui to find element coordinates by predicate`,
+        `   Example: predicate = 'type == "XCUIElementTypeButton"' or 'label == "Initialize Database"'`,
+        `   IMPORTANT: Use captureLocation: true to get coordinate information`,
+        `2. Use simctl-tap with returned coordinates to interact reliably`,
+        `3. Use simctl-type-text for text input`,
       ].filter(Boolean),
     };
 
