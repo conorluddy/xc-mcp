@@ -14,6 +14,48 @@
 ![gh-social](https://github.com/user-attachments/assets/dd23b1e5-ed8c-40c0-b44d-7c92f3b5d5aa)
 
 
+## Overview
+
+**XC-MCP is a production-grade MCP server that makes Xcode and iOS simulator tooling accessible to AI agents through intelligent context engineering.**
+
+The repository implements **51 specialized tools** across 8 categories, solving the fundamental problem that raw Xcode CLI output (50,000+ tokens) exceeds MCP protocol limits. Through progressive disclosure, intelligent caching, and agent-optimized patterns, XC-MCP achieves **96% token reduction** while maintaining complete functionality.
+
+### Clever Optimizations
+
+**Progressive Disclosure Architecture**
+- Returns 2,000-token summaries instead of 50,000+ raw output
+- Cache IDs enable on-demand access to full details
+- Prevents token overflow while preserving all information
+- Smart filtering returns only relevant data upfront
+
+**Vision-Optimized Screenshots**
+- Inline base64 screenshots with intelligent sizing (max 800px)
+- Automatic format selection (PNG for UI, JPEG for photos)
+- Semantic naming: `{appName}_{screenName}_{state}_{timestamp}.png`
+- Enables agents to reason about screen context without file I/O
+
+**Auto-UDID Detection**
+- Automatically finds booted simulators or selects optimal device
+- Eliminates manual UDID lookups in 90% of operations
+- Falls back gracefully with clear guidance when needed
+
+**Coordinate Transformation**
+- Converts IDB percentages (0-100) to simctl pixels automatically
+- Handles device resolution differences transparently
+- Enables consistent tap/gesture coordinates across devices
+
+**Learning & Intelligence**
+- Tracks successful build configurations per project
+- Records simulator boot performance and usage patterns
+- Suggests optimal devices based on history
+- Improves recommendations over time
+
+**Build Settings Cache**
+- Auto-discovers bundle IDs, deployment targets, capabilities
+- Extracts Info.plist permissions and entitlements
+- Enables permission validation and auto-configuration
+- 1-hour retention prevents repeated expensive operations
+
 ## Quick Start
 
 ```bash
@@ -203,7 +245,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-## Tool Reference (28+ Tools)
+## Tool Reference (51 Tools)
 
 ### Project Discovery (3 tools)
 | Tool | Description |
@@ -212,18 +254,19 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 | `xcodebuild-showsdks` | Discover available SDKs for iOS, macOS, watchOS, tvOS |
 | `xcodebuild-version` | Get Xcode and SDK version information |
 
-### Build Operations (3 tools)
+### Build Operations (4 tools)
 | Tool | Description |
 |------|-------------|
-| `xcodebuild-build` | Build with smart defaults, progressive disclosure via buildId |
+| `xcodebuild-build` | Build with smart defaults, progressive disclosure via buildId, optional auto-install |
 | `xcodebuild-clean` | Clean build artifacts |
+| `xcodebuild-test` | Run tests with smart defaults, test plan support, filtering |
 | `xcodebuild-get-details` | Access cached build logs and error details |
 
-### Test Operations (2 tools)
+### Project Inspection (2 tools)
 | Tool | Description |
 |------|-------------|
-| `xcodebuild-test` | Run tests with smart defaults, test plan support, filtering |
-| `xcodebuild-test-without-building` | Run tests without rebuilding |
+| `xcodebuild-inspect-scheme` | Parse and inspect Xcode scheme configurations (build/launch/test actions) |
+| `xcodebuild-validate-capabilities` | Validate app capabilities and generate permission grant commands |
 
 ### Simulator Lifecycle (6 tools)
 | Tool | Description |
@@ -235,7 +278,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 | `simctl-rename` | Rename simulator |
 | `simctl-health-check` | Validate Xcode, simulators, and environment |
 
-### Simulator Control (4 tools)
+### Simulator Control (5 tools)
 | Tool | Description |
 |------|-------------|
 | `simctl-list` | List simulators with 96% token reduction via caching |
@@ -264,22 +307,39 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 | `simctl-io` | Capture screenshots and record videos with semantic naming |
 | `simctl-addmedia` | Add images and videos to simulator photo library |
 
-### Advanced Testing (4 tools)
+### Advanced Testing (5 tools)
 | Tool | Description |
 |------|-------------|
 | `simctl-privacy` | Manage app privacy permissions with audit trails |
 | `simctl-push` | Send simulated push notifications with delivery tracking |
 | `simctl-pbcopy` | Copy text to simulator clipboard (UIPasteboard) |
 | `simctl-status-bar` | Override status bar (time, network, battery) |
+| `simctl-stream-logs` | Real-time console log streaming with bundle ID filtering |
 
-### UI Automation (5 tools) - Phase 4
+### Workflow Orchestration (1 tool)
 | Tool | Description |
 |------|-------------|
-| `simctl-query-ui` | Find UI elements using XCUITest predicates |
-| `simctl-tap` | Tap screen (single, double, long press) |
-| `simctl-type-text` | Type text into focused fields with keyboard support |
-| `simctl-scroll` | Scroll content in any direction |
-| `simctl-gesture` | Perform complex gestures (swipe, pinch, rotate, multi-touch) |
+| `workflow-build-and-run` | Complete workflow: build → select simulator → boot → install → launch → screenshot |
+
+### Monitoring & Screenshots (1 tool)
+| Tool | Description |
+|------|-------------|
+| `simctl-screenshot-inline` | Vision-optimized base64 screenshots with automatic sizing (max 800px) |
+
+### IDB UI Automation (11 tools)
+| Tool | Description |
+|------|-------------|
+| `idb-targets` | List available IDB targets (physical devices and simulators) |
+| `idb-connect` | Connect to IDB target for UI automation |
+| `idb-ui-describe` | Describe UI element hierarchy with accessibility tree |
+| `idb-ui-tap` | Tap UI elements by coordinates (percentage-based, auto-converted) |
+| `idb-ui-input` | Input text into focused fields |
+| `idb-ui-gesture` | Perform gestures (swipe, pinch, rotate) with coordinate transformation |
+| `idb-list-apps` | List installed apps on IDB target |
+| `idb-install` | Install app bundle to IDB target |
+| `idb-launch` | Launch app on IDB target with arguments |
+| `idb-terminate` | Terminate running app on IDB target |
+| `idb-uninstall` | Uninstall app from IDB target |
 
 ### Cache Management (5 tools)
 | Tool | Description |
@@ -289,6 +349,13 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 | `cache-get-config` | Get current cache configuration |
 | `cache-clear` | Clear cache (simulator, project, response) |
 | `list-cached-responses` | View recent cached build/test results |
+
+### Persistence Management (3 tools)
+| Tool | Description |
+|------|-------------|
+| `persistence-enable` | Enable file-based cache persistence across server restarts |
+| `persistence-disable` | Disable persistence and optionally clear cache files |
+| `persistence-status` | View persistence status, disk usage, and health metrics |
 
 ## Advanced Features
 

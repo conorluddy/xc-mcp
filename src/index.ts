@@ -69,9 +69,10 @@ class XcodeCLIMCPServer {
         version: '1.0.5',
         description:
           'Intelligent iOS development MCP server providing advanced Xcode and simulator control. ' +
-          'Features 50 focused tools across 8 categories: build management, testing, simulator lifecycle, ' +
-          'device discovery, app management, IDB UI automation, and progressive disclosure caching. ' +
-          'Optimized for agent workflows with auto-UDID detection, coordinate transformation, semantic naming, and vision-friendly inline screenshots.',
+          'Features 51 specialized tools across 8 categories: build management, testing, simulator lifecycle, ' +
+          'device discovery, app management, IDB UI automation, workflow orchestration, and progressive disclosure caching. ' +
+          'Optimized for agent workflows with auto-UDID detection, coordinate transformation, semantic naming, vision-friendly inline screenshots, ' +
+          'and build settings auto-discovery.',
       },
       {
         capabilities: {
