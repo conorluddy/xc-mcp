@@ -288,6 +288,38 @@ export async function simctlScreenshotInlineTool(args: ScreenshotInlineToolArgs)
       screenDimensions: screenDimensions || undefined,
       // Coordinate transform for mapping screenshot coordinates to device coordinates
       coordinateTransform: coordinateTransform || undefined,
+      // Agent-friendly helper for automatic coordinate transformation
+      coordinateTransformHelper: coordinateTransform
+        ? {
+            enabled: true,
+            method: 'applyScreenshotScale parameter in idb-ui-tap',
+            usage:
+              'When calling idb-ui-tap, pass: { x: screenshotX, y: screenshotY, applyScreenshotScale: true, screenshotScaleX: ' +
+              coordinateTransform.scaleX.toFixed(2) +
+              ', screenshotScaleY: ' +
+              coordinateTransform.scaleY.toFixed(2) +
+              ' }',
+            example: {
+              screenshotCoordinates: {
+                description: 'Coordinates you identify visually from this screenshot',
+                x: 256,
+                y: 512,
+              },
+              idbUiTapCall: {
+                x: 256,
+                y: 512,
+                applyScreenshotScale: true,
+                screenshotScaleX: coordinateTransform.scaleX,
+                screenshotScaleY: coordinateTransform.scaleY,
+                expectedOutcome: 'Automatic transformation will convert to device coordinates',
+              },
+              automaticResult: {
+                deviceX: Math.round(256 * coordinateTransform.scaleX),
+                deviceY: Math.round(512 * coordinateTransform.scaleY),
+              },
+            },
+          }
+        : undefined,
       // LLM optimization: semantic metadata when provided
       semanticMetadata:
         appName || screenName || state
@@ -335,11 +367,28 @@ export async function simctlScreenshotInlineTool(args: ScreenshotInlineToolArgs)
           ? `📍 ${interactiveElements.length} interactive element(s) detected`
           : undefined,
         coordinateTransform
-          ? `⚖️ Coordinate transform: scale by ${coordinateTransform.scaleX}× (X) and ${coordinateTransform.scaleY}× (Y)`
+          ? `⚖️ Coordinate transform: scale by ${coordinateTransform.scaleX.toFixed(2)}× (X) and ${coordinateTransform.scaleY.toFixed(2)}× (Y)`
           : undefined,
         ``,
+        coordinateTransform ? `✅ AUTOMATIC COORDINATE TRANSFORMATION ENABLED` : undefined,
         coordinateTransform
-          ? `⚠️ Screenshot is resized - multiply coordinates by scale factors before tapping:`
+          ? `When tapping elements from this resized screenshot, use idb-ui-tap with automatic transformation:`
+          : undefined,
+        coordinateTransform
+          ? `  1. Identify element coordinates visually or use idb-ui-describe point`
+          : undefined,
+        coordinateTransform ? `  2. Call idb-ui-tap with these parameters:` : undefined,
+        coordinateTransform ? `     - x: <screenshot coordinate>` : undefined,
+        coordinateTransform ? `     - y: <screenshot coordinate>` : undefined,
+        coordinateTransform ? `     - applyScreenshotScale: true` : undefined,
+        coordinateTransform
+          ? `     - screenshotScaleX: ${coordinateTransform.scaleX.toFixed(2)}`
+          : undefined,
+        coordinateTransform
+          ? `     - screenshotScaleY: ${coordinateTransform.scaleY.toFixed(2)}`
+          : undefined,
+        coordinateTransform
+          ? `  3. The tool automatically transforms coordinates to device space`
           : undefined,
         coordinateTransform ? `  ${coordinateTransform.guidance}` : undefined,
         ``,
@@ -348,15 +397,18 @@ export async function simctlScreenshotInlineTool(args: ScreenshotInlineToolArgs)
           ? [
               `✅ Elements detected - use coordinates from interactiveElements in response`,
               `  Example: tap at {${interactiveElements[0]?.bounds?.x}, ${interactiveElements[0]?.bounds?.y}} for first element`,
-              `  Or use simctl-query-ui for more specific element queries`,
+              `  Or use idb-ui-describe point for precise element location`,
             ]
           : [
-              `1. Use simctl-query-ui to find element coordinates by predicate`,
-              `   Example: predicate = 'type == "XCUIElementTypeButton"' or 'label == "Initialize Database"'`,
-              `   IMPORTANT: Use captureLocation: true to get coordinate information`,
+              `1. Use idb-ui-describe operation to find element coordinates by analysis`,
+              `   Query the accessibility tree for the element you want to tap`,
+              `   Use point operation to find exact coordinates: idb-ui-describe point --x 100 --y 200`,
             ],
-        `2. Use simctl-tap with coordinates to interact reliably`,
-        `3. Use simctl-type-text for text input`,
+        `2. Use idb-ui-tap with coordinates to interact reliably`,
+        coordinateTransform
+          ? `   Include applyScreenshotScale: true with scale factors from above`
+          : `   Use device coordinates (not screenshot coordinates)`,
+        `3. Use idb-ui-input for text entry`,
       ]
         .flat()
         .filter(Boolean),
@@ -517,12 +569,35 @@ include those with bounds and hittable status.
 
 ## Coordinate Transform
 
-When screenshots are resized (size ≠ 'full'), provides coordinate transform:
+When screenshots are resized (size ≠ 'full'), provides automatic coordinate transformation:
+
+### Automatic Transformation (Recommended for Agents)
+
+Use the **coordinateTransformHelper** field in the response with **idb-ui-tap**:
+1. Identify element coordinates visually from the screenshot
+2. Call idb-ui-tap with **applyScreenshotScale: true** plus scale factors
+3. The tool automatically transforms screenshot coordinates to device coordinates
+
+Example:
+\`\`\`
+idb-ui-tap {
+  x: 256,              // Screenshot coordinate
+  y: 512,              // Screenshot coordinate
+  applyScreenshotScale: true,
+  screenshotScaleX: 1.67,
+  screenshotScaleY: 1.66
+}
+// Tool automatically calculates: deviceX = 256 * 1.67, deviceY = 512 * 1.66
+\`\`\`
+
+### Manual Transformation (For Reference)
+
+If not using automatic transformation:
 - **scaleX**: Multiply screenshot X coordinates by this to get device coordinates
 - **scaleY**: Multiply screenshot Y coordinates by this to get device coordinates
-- **guidance**: Human-readable instructions for coordinate mapping
+- **coordinateTransform.guidance**: Human-readable instructions
 
-This enables accurate element tapping even with optimized screenshots.
+**Important**: Most agents should use the automatic transformation via idb-ui-tap's applyScreenshotScale parameter. Manual calculation is provided for reference only.
 
 ## View Fingerprinting (Opt-in)
 
