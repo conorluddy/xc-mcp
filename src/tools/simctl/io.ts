@@ -1,10 +1,11 @@
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
 import { simulatorCache } from '../../state/simulator-cache.js';
+import { resolveDeviceId } from '../../utils/device-detection.js';
 import { promises as fs } from 'fs';
 
 interface SimctlIoToolArgs {
-  udid: string;
+  udid?: string;
   operation: 'screenshot' | 'video';
   outputPath?: string;
   codec?: string;
@@ -39,10 +40,8 @@ export async function simctlIoTool(args: any) {
     args as SimctlIoToolArgs;
 
   try {
-    // Validate inputs
-    if (!udid || udid.trim().length === 0) {
-      throw new McpError(ErrorCode.InvalidRequest, 'UDID is required and cannot be empty');
-    }
+    // Resolve device ID (auto-detect if not provided)
+    const resolvedUdid = await resolveDeviceId(udid);
 
     if (!operation || !['screenshot', 'video'].includes(operation)) {
       throw new McpError(
@@ -52,11 +51,11 @@ export async function simctlIoTool(args: any) {
     }
 
     // Validate simulator exists
-    const simulator = await simulatorCache.findSimulatorByUdid(udid);
+    const simulator = await simulatorCache.findSimulatorByUdid(resolvedUdid);
     if (!simulator) {
       throw new McpError(
         ErrorCode.InvalidRequest,
-        `Simulator with UDID "${udid}" not found. Use simctl-list to see available simulators.`
+        `Simulator with UDID "${resolvedUdid}" not found. Use simctl-list to see available simulators.`
       );
     }
 
@@ -78,9 +77,9 @@ export async function simctlIoTool(args: any) {
     }
 
     // Build command
-    let command = `xcrun simctl io "${udid}" ${operation} "${finalOutputPath}"`;
+    let command = `xcrun simctl io "${resolvedUdid}" ${operation} "${finalOutputPath}"`;
     if (operation === 'video' && codec) {
-      command = `xcrun simctl io "${udid}" ${operation} --codec="${codec}" "${finalOutputPath}"`;
+      command = `xcrun simctl io "${resolvedUdid}" ${operation} --codec="${codec}" "${finalOutputPath}"`;
     }
 
     console.error(`[simctl-io] Executing: ${command}`);
@@ -135,7 +134,7 @@ export async function simctlIoTool(args: any) {
       guidanceMessages.push(
         `❌ Failed to ${operation}: ${result.stderr || 'Unknown error'}`,
         simulator.state !== 'Booted'
-          ? `Simulator is not booted. Boot it first: simctl-boot ${udid}`
+          ? `Simulator is not booted. Boot it first: simctl-boot`
           : `Check file path permissions: ${finalOutputPath}`,
         `Check simulator health: simctl-health-check`
       );
@@ -144,7 +143,7 @@ export async function simctlIoTool(args: any) {
     // Add warnings for simulator state regardless of success
     if (simulator.state !== 'Booted') {
       guidanceMessages.push(
-        `⚠️ Warning: Simulator is in ${simulator.state} state. Boot the simulator for optimal functionality: simctl-boot ${udid}`
+        `⚠️ Warning: Simulator is in ${simulator.state} state. Boot the simulator for optimal functionality: simctl-boot`
       );
     }
     if (simulator.isAvailable === false) {
@@ -155,7 +154,7 @@ export async function simctlIoTool(args: any) {
 
     const responseData = {
       success,
-      udid,
+      udid: resolvedUdid,
       operation,
       filePath: finalOutputPath,
       outputPath: finalOutputPath,

@@ -1,10 +1,11 @@
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
+import { resolveDeviceId } from '../../utils/device-detection.js';
 import { simulatorCache } from '../../state/simulator-cache.js';
 import { responseCache } from '../../utils/response-cache.js';
 
 interface SimctlQueryUiToolArgs {
-  udid: string;
+  udid?: string;
   bundleId: string;
   predicate: string;
   captureLocation?: boolean;
@@ -29,11 +30,10 @@ export async function simctlQueryUiTool(args: any) {
   const { udid, bundleId, predicate, captureLocation } = args as SimctlQueryUiToolArgs;
 
   try {
-    // Validate inputs
-    if (!udid || udid.trim().length === 0) {
-      throw new McpError(ErrorCode.InvalidRequest, 'UDID is required and cannot be empty');
-    }
+    // Resolve device UDID (auto-detect if not provided)
+    const resolvedUdid = await resolveDeviceId(udid);
 
+    // Validate inputs
     if (!bundleId || bundleId.trim().length === 0) {
       throw new McpError(ErrorCode.InvalidRequest, 'Bundle ID is required and cannot be empty');
     }
@@ -50,16 +50,16 @@ export async function simctlQueryUiTool(args: any) {
     }
 
     // Validate simulator exists
-    const simulator = await simulatorCache.findSimulatorByUdid(udid);
+    const simulator = await simulatorCache.findSimulatorByUdid(resolvedUdid);
     if (!simulator) {
       throw new McpError(
         ErrorCode.InvalidRequest,
-        `Simulator with UDID "${udid}" not found. Use simctl-list to see available simulators.`
+        `Simulator with UDID "${resolvedUdid}" not found. Use simctl-list to see available simulators.`
       );
     }
 
     // Build query command
-    const command = `xcrun simctl query "${udid}" "${bundleId}" "${predicate}"${
+    const command = `xcrun simctl query "${resolvedUdid}" "${bundleId}" "${predicate}"${
       captureLocation ? ' --locations' : ''
     }`;
     console.error(`[simctl-query-ui] Executing query: ${command}`);
@@ -79,7 +79,7 @@ export async function simctlQueryUiTool(args: any) {
       exitCode: result.code,
       command,
       metadata: {
-        udid,
+        udid: resolvedUdid,
         bundleId,
         predicate,
         captureLocation: captureLocation ? 'true' : 'false',
@@ -90,7 +90,7 @@ export async function simctlQueryUiTool(args: any) {
     // Create summary response with caching
     const responseData = {
       success,
-      udid,
+      udid: resolvedUdid,
       bundleId,
       predicate,
       simulatorInfo: {
@@ -120,7 +120,7 @@ export async function simctlQueryUiTool(args: any) {
         : [
             `❌ Failed to query UI: ${result.stderr?.split('\n')[0] || 'Unknown error'}`,
             `Check predicate syntax: ${predicate}`,
-            `Verify app is running: simctl-launch ${udid} ${bundleId}`,
+            `Verify app is running on the booted simulator`,
           ],
     };
 

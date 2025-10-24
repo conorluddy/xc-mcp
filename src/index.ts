@@ -1158,7 +1158,7 @@ Returns: Status bar modification status and guidance for verification.`,
       {
         description: `🔍 **Query UI Elements** - Find elements on app screen using XCUITest predicates.
 
-Query UI elements with powerful predicate syntax for element discovery.
+Query UI elements with powerful predicate syntax for element discovery. UDID is optional and auto-detects booted simulator if not provided.
 
 Predicates enable:
 • Element type matching: Button, TextField, Switch, Table, Cell, etc.
@@ -1168,7 +1168,7 @@ Predicates enable:
 
 Returns: Elements found and their properties for interaction.`,
         inputSchema: {
-          udid: z.string().describe('Simulator UDID'),
+          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
           bundleId: z.string().describe('App bundle ID (e.g., com.example.MyApp)'),
           predicate: z
             .string()
@@ -1200,11 +1200,11 @@ Returns: Elements found and their properties for interaction.`,
       {
         description: `👆 **Tap Screen** - Simulate tap interactions on simulator screen.
 
-Perform single tap, double tap, or long press at specified coordinates.
+Perform single tap, double tap, or long press at specified coordinates. UDID is optional and auto-detects booted simulator if not provided. Also available as 'tap' alias for shorter invocations.
 
 Returns: Tap status and guidance for verification.`,
         inputSchema: {
-          udid: z.string().describe('Simulator UDID'),
+          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
           x: z.number().describe('X coordinate in pixels'),
           y: z.number().describe('Y coordinate in pixels'),
           numberOfTaps: z.number().optional().describe('Number of taps (default: 1)'),
@@ -1234,11 +1234,11 @@ Returns: Tap status and guidance for verification.`,
       {
         description: `⌨️ **Type Text** - Enter text into focused text field.
 
-Type text, passwords, or multi-line input. Supports keyboard actions like return, tab, backspace.
+Type text, passwords, or multi-line input. Supports keyboard actions like return, tab, backspace. UDID is optional and auto-detects booted simulator if not provided. Also available as 'type' alias for shorter invocations.
 
 Returns: Text entry status and guidance for verification.`,
         inputSchema: {
-          udid: z.string().describe('Simulator UDID'),
+          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
           text: z.string().describe('Text to type'),
           isSensitive: z
             .boolean()
@@ -1273,11 +1273,11 @@ Returns: Text entry status and guidance for verification.`,
       {
         description: `📜 **Scroll Content** - Scroll in direction on simulator screen.
 
-Scroll views, tables, and lists in any direction with configurable velocity.
+Scroll views, tables, and lists in any direction with configurable velocity. UDID is optional and auto-detects booted simulator if not provided. Also available as 'scroll' alias for shorter invocations.
 
 Returns: Scroll status and guidance for verification.`,
         inputSchema: {
-          udid: z.string().describe('Simulator UDID'),
+          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
           direction: z.enum(['up', 'down', 'left', 'right']).describe('Scroll direction'),
           x: z.number().optional().describe('X coordinate (default: screen center)'),
           y: z.number().optional().describe('Y coordinate (default: screen center)'),
@@ -1307,13 +1307,13 @@ Returns: Scroll status and guidance for verification.`,
       {
         description: `✋ **Perform Gestures** - Execute complex gestures (swipe, pinch, rotate, multi-touch).
 
-Advanced gesture support for swipes, pinch zoom, rotation, and multi-touch interactions.
+Advanced gesture support for swipes, pinch zoom, rotation, and multi-touch interactions. UDID is optional and auto-detects booted simulator if not provided. Also available as 'swipe', 'pinch', 'rotate' aliases for shorter invocations.
 
 Gestures: swipe, pinch, rotate, multitouch
 
 Returns: Gesture status and guidance for verification.`,
         inputSchema: {
-          udid: z.string().describe('Simulator UDID'),
+          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
           type: z.enum(['swipe', 'pinch', 'rotate', 'multitouch']).describe('Gesture type'),
           direction: z
             .enum(['up', 'down', 'left', 'right'])
@@ -1675,6 +1675,282 @@ Essential for:
         try {
           await validateXcodeInstallation();
           return (await persistenceStatusTool(args)) as any;
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    // Short-name aliases for Phase 4 UI Automation Tools
+    // Register same handlers under shorter names for agent-friendly invocations
+    this.server.registerTool(
+      'query',
+      {
+        description: 'Short alias for simctl-query-ui - Query UI elements with XCUITest predicates',
+        inputSchema: {
+          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
+          bundleId: z.string().describe('App bundle ID (e.g., com.example.MyApp)'),
+          predicate: z
+            .string()
+            .describe(
+              'XCUITest predicate (e.g., \'type == "XCUIElementTypeButton" AND label == "Login"\')'
+            ),
+          captureLocation: z
+            .boolean()
+            .optional()
+            .describe('Capture element locations for interaction'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlQueryUiTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'tap',
+      {
+        description: 'Short alias for simctl-tap - Tap screen at coordinates',
+        inputSchema: {
+          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
+          x: z.number().describe('X coordinate in pixels'),
+          y: z.number().describe('Y coordinate in pixels'),
+          numberOfTaps: z.number().optional().describe('Number of taps (default: 1)'),
+          duration: z.number().optional().describe('Duration in seconds for long press'),
+          actionName: z
+            .string()
+            .optional()
+            .describe('Action description for tracking (e.g., "Login Button Tap")'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlTapTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'type',
+      {
+        description: 'Short alias for simctl-type-text - Type text into focused field',
+        inputSchema: {
+          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
+          text: z.string().describe('Text to type'),
+          isSensitive: z
+            .boolean()
+            .optional()
+            .describe('Mark as sensitive (output will be redacted)'),
+          keyboardActions: z
+            .array(z.string())
+            .optional()
+            .describe('Keyboard actions after text (e.g., ["return", "tab"])'),
+          actionName: z
+            .string()
+            .optional()
+            .describe('Action description for tracking (e.g., "Enter email address")'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlTypeTextTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'scroll',
+      {
+        description: 'Short alias for simctl-scroll - Scroll in direction on screen',
+        inputSchema: {
+          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
+          direction: z.enum(['up', 'down', 'left', 'right']).describe('Scroll direction'),
+          x: z.number().optional().describe('X coordinate (default: screen center)'),
+          y: z.number().optional().describe('Y coordinate (default: screen center)'),
+          velocity: z.number().optional().describe('Scroll velocity 1-10 (default: 3)'),
+          actionName: z
+            .string()
+            .optional()
+            .describe('Action description for tracking (e.g., "Scroll to bottom")'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlScrollTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    // Gesture aliases
+    this.server.registerTool(
+      'swipe',
+      {
+        description: 'Short alias for simctl-gesture (type: swipe) - Swipe gesture',
+        inputSchema: {
+          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
+          type: z.enum(['swipe', 'pinch', 'rotate', 'multitouch']).describe('Gesture type'),
+          direction: z
+            .enum(['up', 'down', 'left', 'right'])
+            .optional()
+            .describe('Direction (for swipe)'),
+          scale: z.number().optional().describe('Scale factor (for pinch)'),
+          angle: z.number().optional().describe('Rotation angle in degrees (for rotate)'),
+          startX: z.number().optional().describe('Starting X coordinate (for swipe)'),
+          startY: z.number().optional().describe('Starting Y coordinate (for swipe)'),
+          centerX: z.number().optional().describe('Center X coordinate (for pinch/rotate)'),
+          centerY: z.number().optional().describe('Center Y coordinate (for pinch/rotate)'),
+          fingers: z.number().optional().describe('Number of fingers (for multitouch)'),
+          action: z.string().optional().describe('Action type (for multitouch, e.g., "tap")'),
+          actionName: z.string().optional().describe('Action description for tracking'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlGestureTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'pinch',
+      {
+        description: 'Short alias for simctl-gesture (type: pinch) - Pinch zoom gesture',
+        inputSchema: {
+          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
+          type: z.enum(['swipe', 'pinch', 'rotate', 'multitouch']).describe('Gesture type'),
+          direction: z
+            .enum(['up', 'down', 'left', 'right'])
+            .optional()
+            .describe('Direction (for swipe)'),
+          scale: z.number().optional().describe('Scale factor (for pinch)'),
+          angle: z.number().optional().describe('Rotation angle in degrees (for rotate)'),
+          startX: z.number().optional().describe('Starting X coordinate (for swipe)'),
+          startY: z.number().optional().describe('Starting Y coordinate (for swipe)'),
+          centerX: z.number().optional().describe('Center X coordinate (for pinch/rotate)'),
+          centerY: z.number().optional().describe('Center Y coordinate (for pinch/rotate)'),
+          fingers: z.number().optional().describe('Number of fingers (for multitouch)'),
+          action: z.string().optional().describe('Action type (for multitouch, e.g., "tap")'),
+          actionName: z.string().optional().describe('Action description for tracking'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlGestureTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'rotate',
+      {
+        description: 'Short alias for simctl-gesture (type: rotate) - Rotation gesture',
+        inputSchema: {
+          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
+          type: z.enum(['swipe', 'pinch', 'rotate', 'multitouch']).describe('Gesture type'),
+          direction: z
+            .enum(['up', 'down', 'left', 'right'])
+            .optional()
+            .describe('Direction (for swipe)'),
+          scale: z.number().optional().describe('Scale factor (for pinch)'),
+          angle: z.number().optional().describe('Rotation angle in degrees (for rotate)'),
+          startX: z.number().optional().describe('Starting X coordinate (for swipe)'),
+          startY: z.number().optional().describe('Starting Y coordinate (for swipe)'),
+          centerX: z.number().optional().describe('Center X coordinate (for pinch/rotate)'),
+          centerY: z.number().optional().describe('Center Y coordinate (for pinch/rotate)'),
+          fingers: z.number().optional().describe('Number of fingers (for multitouch)'),
+          action: z.string().optional().describe('Action type (for multitouch, e.g., "tap")'),
+          actionName: z.string().optional().describe('Action description for tracking'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlGestureTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    // Screenshot alias
+    this.server.registerTool(
+      'screenshot',
+      {
+        description: 'Short alias for simctl-io (operation: screenshot) - Capture screenshot',
+        inputSchema: {
+          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
+          operation: z.enum(['screenshot', 'video']).describe('Operation: screenshot or video'),
+          appName: z.string().optional().describe('App name for semantic naming (e.g., "MyApp")'),
+          screenName: z
+            .string()
+            .optional()
+            .describe('Screen/view name for semantic naming (e.g., "LoginScreen")'),
+          state: z
+            .string()
+            .optional()
+            .describe('UI state for semantic naming (e.g., "Empty", "Filled", "Loading")'),
+          outputPath: z.string().optional().describe('Custom output file path'),
+          codec: z
+            .enum(['h264', 'hevc', 'prores'])
+            .optional()
+            .describe('Video codec (for video operation)'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlIoTool(args);
         } catch (error) {
           if (error instanceof McpError) throw error;
           throw new McpError(

@@ -2,12 +2,13 @@ import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
 import { simulatorCache } from '../../state/simulator-cache.js';
 import { responseCache } from '../../utils/response-cache.js';
+import { resolveDeviceId } from '../../utils/device-detection.js';
 
 type GestureType = 'swipe' | 'pinch' | 'rotate' | 'multitouch';
 type GestureDirection = 'up' | 'down' | 'left' | 'right';
 
 interface SimctlGestureToolArgs {
-  udid: string;
+  udid?: string;
   type: GestureType;
   direction?: GestureDirection;
   scale?: number;
@@ -57,10 +58,8 @@ export async function simctlGestureTool(args: any) {
   } = args as SimctlGestureToolArgs;
 
   try {
-    // Validate inputs
-    if (!udid || udid.trim().length === 0) {
-      throw new McpError(ErrorCode.InvalidRequest, 'UDID is required and cannot be empty');
-    }
+    // Resolve device ID (auto-detect if not provided)
+    const resolvedUdid = await resolveDeviceId(udid);
 
     const validGestureTypes: GestureType[] = ['swipe', 'pinch', 'rotate', 'multitouch'];
     if (!type || !validGestureTypes.includes(type)) {
@@ -71,11 +70,11 @@ export async function simctlGestureTool(args: any) {
     }
 
     // Validate simulator exists
-    const simulator = await simulatorCache.findSimulatorByUdid(udid);
+    const simulator = await simulatorCache.findSimulatorByUdid(resolvedUdid);
     if (!simulator) {
       throw new McpError(
         ErrorCode.InvalidRequest,
-        `Simulator with UDID "${udid}" not found. Use simctl-list to see available simulators.`
+        `Simulator with UDID "${resolvedUdid}" not found. Use simctl-list to see available simulators.`
       );
     }
 
@@ -91,7 +90,7 @@ export async function simctlGestureTool(args: any) {
       const x = startX || 375;
       const y = startY || 667;
 
-      command = `xcrun simctl io "${udid}" swipe ${x} ${y} ${direction}`;
+      command = `xcrun simctl io "${resolvedUdid}" swipe ${x} ${y} ${direction}`;
       gestureDetails = { direction, startX: x, startY: y };
     } else if (type === 'pinch') {
       if (scale === undefined) {
@@ -101,7 +100,7 @@ export async function simctlGestureTool(args: any) {
       const cx = centerX || 375;
       const cy = centerY || 667;
 
-      command = `xcrun simctl io "${udid}" pinch ${cx} ${cy} ${scale}`;
+      command = `xcrun simctl io "${resolvedUdid}" pinch ${cx} ${cy} ${scale}`;
       gestureDetails = { scale, centerX: cx, centerY: cy };
     } else if (type === 'rotate') {
       if (angle === undefined) {
@@ -111,7 +110,7 @@ export async function simctlGestureTool(args: any) {
       const cx = centerX || 375;
       const cy = centerY || 667;
 
-      command = `xcrun simctl io "${udid}" rotate ${cx} ${cy} ${angle}`;
+      command = `xcrun simctl io "${resolvedUdid}" rotate ${cx} ${cy} ${angle}`;
       gestureDetails = { angle, centerX: cx, centerY: cy };
     } else if (type === 'multitouch') {
       if (!fingers || fingers < 2) {
@@ -124,7 +123,7 @@ export async function simctlGestureTool(args: any) {
       const x = startX || 375;
       const y = startY || 667;
 
-      command = `xcrun simctl io "${udid}" multitouch ${fingers} ${action || 'tap'} ${x} ${y}`;
+      command = `xcrun simctl io "${resolvedUdid}" multitouch ${fingers} ${action || 'tap'} ${x} ${y}`;
       gestureDetails = { fingers, action: action || 'tap', x, y };
     }
 
@@ -145,7 +144,7 @@ export async function simctlGestureTool(args: any) {
       exitCode: result.code,
       command,
       metadata: {
-        udid,
+        udid: resolvedUdid,
         gestureType: type,
         direction: direction || 'none',
         scale: scale ? String(scale) : 'none',
@@ -163,14 +162,14 @@ export async function simctlGestureTool(args: any) {
         `✅ Gesture executed: ${type}`,
         actionName ? `Action: ${actionName}` : undefined,
         `Use simctl-get-interaction-details to view command output`,
-        `Verify gesture result: simctl-io ${udid} screenshot`,
-        `Query for changes: simctl-query-ui ${udid} ...`
+        `Verify gesture result: Take screenshot to confirm visual changes`,
+        `Query for changes: Use simctl-query-ui to verify UI state changes`
       );
     } else {
       guidanceMessages.push(
         `❌ Failed to perform ${type} gesture`,
         simulator.state !== 'Booted'
-          ? `Simulator is not booted: simctl-boot ${udid}`
+          ? `Simulator is not booted. Boot the simulator first`
           : `Check gesture parameters`
       );
     }
@@ -178,7 +177,7 @@ export async function simctlGestureTool(args: any) {
     // Add warnings for simulator state regardless of success
     if (simulator.state !== 'Booted') {
       guidanceMessages.push(
-        `⚠️ Warning: Simulator is in ${simulator.state} state. Boot the simulator for optimal functionality: simctl-boot ${udid}`
+        `⚠️ Warning: Simulator is in ${simulator.state} state. Boot the simulator for optimal functionality`
       );
     }
     if (simulator.isAvailable === false) {
@@ -190,7 +189,7 @@ export async function simctlGestureTool(args: any) {
     // Create summary response with caching
     const responseData = {
       success,
-      udid,
+      udid: resolvedUdid,
       // Progressive disclosure: summary + cacheId
       gestureInfo: {
         type,

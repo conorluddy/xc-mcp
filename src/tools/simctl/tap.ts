@@ -2,9 +2,10 @@ import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
 import { simulatorCache } from '../../state/simulator-cache.js';
 import { responseCache } from '../../utils/response-cache.js';
+import { resolveDeviceId } from '../../utils/device-detection.js';
 
 interface SimctlTapToolArgs {
-  udid: string;
+  udid?: string;
   x: number;
   y: number;
   numberOfTaps?: number;
@@ -30,8 +31,11 @@ export async function simctlTapTool(args: any) {
   const { udid, x, y, numberOfTaps = 1, duration, actionName } = args as SimctlTapToolArgs;
 
   try {
+    // Resolve device ID (auto-detect if not provided)
+    const resolvedUdid = await resolveDeviceId(udid);
+
     // Validate inputs
-    if (!udid || udid.trim().length === 0) {
+    if (!resolvedUdid || resolvedUdid.trim().length === 0) {
       throw new McpError(ErrorCode.InvalidRequest, 'UDID is required and cannot be empty');
     }
 
@@ -44,23 +48,23 @@ export async function simctlTapTool(args: any) {
     }
 
     // Validate simulator exists
-    const simulator = await simulatorCache.findSimulatorByUdid(udid);
+    const simulator = await simulatorCache.findSimulatorByUdid(resolvedUdid);
     if (!simulator) {
       throw new McpError(
         ErrorCode.InvalidRequest,
-        `Simulator with UDID "${udid}" not found. Use simctl-list to see available simulators.`
+        `Simulator with UDID "${resolvedUdid}" not found. Use simctl-list to see available simulators.`
       );
     }
 
     // Build tap command
-    let command = `xcrun simctl io "${udid}" tap ${x} ${y}`;
+    let command = `xcrun simctl io "${resolvedUdid}" tap ${x} ${y}`;
 
     if (numberOfTaps > 1) {
-      command = `xcrun simctl io "${udid}" tap --count ${numberOfTaps} ${x} ${y}`;
+      command = `xcrun simctl io "${resolvedUdid}" tap --count ${numberOfTaps} ${x} ${y}`;
     }
 
     if (duration && duration > 0) {
-      command = `xcrun simctl io "${udid}" tap --duration ${duration} ${x} ${y}`;
+      command = `xcrun simctl io "${resolvedUdid}" tap --duration ${duration} ${x} ${y}`;
     }
 
     console.error(`[simctl-tap] Executing: ${command}`);
@@ -80,7 +84,7 @@ export async function simctlTapTool(args: any) {
       exitCode: result.code,
       command,
       metadata: {
-        udid,
+        udid: resolvedUdid,
         x: String(x),
         y: String(y),
         numberOfTaps: String(numberOfTaps),
@@ -93,7 +97,7 @@ export async function simctlTapTool(args: any) {
     // Create summary response with caching
     const responseData = {
       success,
-      udid,
+      udid: resolvedUdid,
       coordinates: { x, y },
       // Progressive disclosure: summary + cacheId
       tapInfo: {
@@ -112,12 +116,12 @@ export async function simctlTapTool(args: any) {
             `✅ Tap executed at {${x}, ${y}}`,
             actionName ? `Action: ${actionName}` : undefined,
             `Use simctl-get-interaction-details to view command output`,
-            `Verify result: simctl-io ${udid} screenshot`,
+            `Verify result: screenshot`,
           ].filter(Boolean)
         : [
             `❌ Failed to tap at {${x}, ${y}}`,
             simulator.state !== 'Booted'
-              ? `Simulator is not booted. Boot it first: simctl-boot ${udid}`
+              ? `Simulator is not booted. Boot it first or use simctl-boot with auto-detection`
               : `Check coordinates are on screen`,
           ],
     };
