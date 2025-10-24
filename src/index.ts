@@ -43,6 +43,7 @@ import { simctlTypeTextTool } from './tools/simctl/type-text.js';
 import { simctlScrollTool } from './tools/simctl/scroll.js';
 import { simctlGestureTool } from './tools/simctl/gesture.js';
 import { simctlGetInteractionDetailsTool } from './tools/simctl/get-interaction-details.js';
+import { simctlScreenshotInlineTool } from './tools/simctl/screenshot-inline.js';
 import { listCachedResponsesTool } from './tools/cache/list-cached.js';
 import {
   getCacheStatsTool,
@@ -66,6 +67,11 @@ class XcodeCLIMCPServer {
       {
         name: 'xc-mcp',
         version: '1.0.5',
+        description:
+          'Intelligent iOS development MCP server providing advanced Xcode and simulator control. ' +
+          'Features 44 focused tools across 7 categories: build management, testing, simulator lifecycle, ' +
+          'device discovery, app management, and Phase 4 UI automation with progressive disclosure caching. ' +
+          'Optimized for agent workflows with auto-UDID detection, semantic naming, and vision-friendly inline screenshots.',
       },
       {
         capabilities: {
@@ -1146,7 +1152,7 @@ Returns: Status bar modification status and guidance for verification.`,
       }
     );
 
-    // Phase 4: UI Automation Tools (5 total)
+    // Phase 4: UI Automation Tools (6 total)
     this.server.registerTool(
       'simctl-query-ui',
       {
@@ -1369,6 +1375,48 @@ Returns: Detailed operation results with optional log limiting.`,
       async args => {
         try {
           return await simctlGetInteractionDetailsTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'screenshot',
+      {
+        description: `📸 **Capture Screenshot** - Take an optimized screenshot and return as base64 image data (inline).
+
+Automatically optimizes screenshots for token efficiency:
+• Converts to WebP format (60% quality) - ~30-50% smaller than JPEG
+• 1:1 pixel dimensions (no resizing artifacts)
+• Falls back to JPEG if WebP unavailable
+• Returns image inline with metadata
+
+With semantic naming, generates filenames like: MyApp_LoginScreen_Empty_2025-01-23.png`,
+        inputSchema: {
+          udid: z
+            .string()
+            .optional()
+            .describe('Simulator UDID (optional - auto-detects booted simulator if not provided)'),
+          appName: z.string().optional().describe('App name for semantic naming (e.g., "MyApp")'),
+          screenName: z
+            .string()
+            .optional()
+            .describe('Screen/view name for semantic naming (e.g., "LoginScreen")'),
+          state: z
+            .string()
+            .optional()
+            .describe('UI state for semantic naming (e.g., "Empty", "Filled", "Loading")'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await simctlScreenshotInlineTool(args);
         } catch (error) {
           if (error instanceof McpError) throw error;
           throw new McpError(
