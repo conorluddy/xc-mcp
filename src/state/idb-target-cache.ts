@@ -276,11 +276,22 @@ class IDBTargetCacheManager {
 
       // Parse IDB NDJSON output (newline-delimited JSON)
       // IDB returns one JSON object per line, not a JSON array
-      const targets: any[] = result.stdout
+      interface IDBTarget {
+        udid: string;
+        name: string;
+        state?: string;
+        type?: string;
+        os_version?: string;
+        architecture?: string;
+        screen_dimensions?: { width: number; height: number };
+        connection_type?: string;
+        companion_info?: { port: number };
+      }
+      const targets: IDBTarget[] = result.stdout
         .trim()
         .split('\n')
         .filter(line => line.trim())
-        .map(line => JSON.parse(line));
+        .map(line => JSON.parse(line) as IDBTarget);
 
       this.cache.targets.clear();
       for (const target of targets) {
@@ -298,7 +309,10 @@ class IDBTargetCacheManager {
             width: target.screen_dimensions?.width || 0,
             height: target.screen_dimensions?.height || 0,
           },
-          connectionType: target.connection_type,
+          connectionType:
+            target.connection_type === 'usb' || target.connection_type === 'wifi'
+              ? target.connection_type
+              : undefined,
           companionPort: target.companion_info?.port,
           // Preserve usage tracking
           lastUsed: existing?.lastUsed,

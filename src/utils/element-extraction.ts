@@ -155,7 +155,7 @@ export async function getScreenDimensions(
         // For now, return common dimensions - can be enhanced with actual device info
         for (const runtime in data.devices) {
           const devices = data.devices[runtime];
-          const device = devices.find((d: any) => d.udid === udid);
+          const device = devices.find((d: { udid: string }) => d.udid === udid);
           if (device) {
             // Return common iPhone dimensions
             // In reality, this would be retrieved from device capabilities

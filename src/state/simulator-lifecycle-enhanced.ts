@@ -167,7 +167,15 @@ export class EnhancedSimulatorLifecycle {
   /**
    * Get lifecycle summary
    */
-  getSummary(udid: string): any {
+  getSummary(udid: string): {
+    udid: string;
+    currentState: SimulatorState | undefined;
+    transitionCount: number;
+    lastTransition: SimulatorStateTransition | undefined;
+    pendingOperations: number;
+    operations: PendingOperation[];
+    isLocked: boolean;
+  } {
     const state = this.simulatorStates.get(udid);
     const transitions = this.stateTransitions.get(udid) || [];
     const pendingOps = this.operationQueues.get(udid) || [];
@@ -179,6 +187,7 @@ export class EnhancedSimulatorLifecycle {
       lastTransition: transitions[transitions.length - 1],
       pendingOperations: pendingOps.length,
       operations: pendingOps,
+      isLocked: this.transitionLocks.has(udid),
     };
   }
 }

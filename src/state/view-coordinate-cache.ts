@@ -485,8 +485,22 @@ export class ViewCoordinateCache {
         return;
       }
 
+      interface SerializedMapping {
+        cacheKey: string;
+        fingerprint: {
+          hash: string;
+          elementCount: number;
+          timestamp: string | Date;
+        };
+        bundleId: string;
+        appVersion?: string;
+        coordinates: Array<[string, unknown]> | Map<string, unknown>;
+        createdAt: string | Date;
+        lastAccessed: string | Date;
+        hitCount: number;
+      }
       const serialized = data as {
-        cache: Array<{ key: string; mapping: any }>;
+        cache: Array<{ key: string; mapping: SerializedMapping }>;
         hitCount: number;
         missCount: number;
         totalQueries: number;
@@ -497,14 +511,14 @@ export class ViewCoordinateCache {
       for (const { key, mapping } of serialized.cache || []) {
         this.cache.set(key, {
           ...mapping,
-          coordinates: new Map(mapping.coordinates),
+          coordinates: new Map(mapping.coordinates) as Map<string, CachedCoordinate>,
           createdAt: new Date(mapping.createdAt),
           lastAccessed: new Date(mapping.lastAccessed),
           fingerprint: {
-            ...mapping.fingerprint,
+            ...(mapping.fingerprint as unknown as ViewFingerprint),
             timestamp: new Date(mapping.fingerprint.timestamp),
-          },
-        });
+          } as ViewFingerprint,
+        } as ViewCoordinateMapping);
       }
 
       this.hitCount = serialized.hitCount || 0;

@@ -28,10 +28,13 @@ export async function getBootedDevice(): Promise<BootedDevice> {
 
     // Search through all runtime device lists for a booted device
     for (const devices of Object.values(deviceList.devices)) {
-      const deviceArray = devices as any[];
-      const bootedDevice = deviceArray.find(
-        (d: any) => d.state === 'Booted' && d.isAvailable !== false
-      );
+      const deviceArray = devices as Array<{
+        state: string;
+        isAvailable?: boolean;
+        name: string;
+        udid: string;
+      }>;
+      const bootedDevice = deviceArray.find(d => d.state === 'Booted' && d.isAvailable !== false);
 
       if (bootedDevice) {
         return {

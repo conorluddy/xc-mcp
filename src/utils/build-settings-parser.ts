@@ -23,7 +23,7 @@ import { BuildSettings } from '../state/build-settings-cache.js';
  * ]
  */
 export function parseBuildSettingsJson(jsonOutput: string): BuildSettings {
-  let data: any;
+  let data: unknown;
 
   try {
     data = JSON.parse(jsonOutput);

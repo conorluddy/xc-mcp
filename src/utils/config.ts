@@ -55,8 +55,9 @@ export class ConfigManager {
    */
   async getProjectConfig(projectPath: string): Promise<ProjectConfig> {
     // Load from cache if available
-    if (this.projectConfigs.has(projectPath)) {
-      return this.projectConfigs.get(projectPath)!;
+    const cached = this.projectConfigs.get(projectPath);
+    if (cached) {
+      return cached;
     }
 
     // Try to load from disk
@@ -65,8 +66,9 @@ export class ConfigManager {
       const configMap = new Map(diskConfig.projectConfigs as Array<[string, ProjectConfig]>);
       this.projectConfigs = configMap;
 
-      if (configMap.has(projectPath)) {
-        return configMap.get(projectPath)!;
+      const diskConfigValue = configMap.get(projectPath);
+      if (diskConfigValue) {
+        return diskConfigValue;
       }
     }
 
@@ -138,11 +140,14 @@ export class ConfigManager {
   /**
    * Load entire config from disk
    */
-  private async loadConfigFromDisk(): Promise<any> {
+  private async loadConfigFromDisk(): Promise<{
+    version: string;
+    projectConfigs?: unknown;
+  } | null> {
     try {
       const configPath = this.getConfigPath();
       const content = await fs.readFile(configPath, 'utf8');
-      const parsed = JSON.parse(content);
+      const parsed = JSON.parse(content) as { version: string; projectConfigs?: unknown };
 
       // Validate schema version
       if (parsed.version !== this.schemaVersion) {
@@ -153,7 +158,11 @@ export class ConfigManager {
       return parsed;
     } catch (error) {
       // File doesn't exist or is corrupted - return null for graceful degradation
-      if (error instanceof Error && 'code' in error && (error as any).code === 'ENOENT') {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        (error as NodeJS.ErrnoException).code === 'ENOENT'
+      ) {
         return null; // File doesn't exist yet
       }
       // JSON parse errors or other corruption - gracefully degrade
@@ -199,7 +208,11 @@ export class ConfigManager {
       await fs.unlink(configPath);
     } catch (error) {
       // File doesn't exist, that's fine - only log other errors
-      if (error instanceof Error && 'code' in error && (error as any).code !== 'ENOENT') {
+      if (
+        error instanceof Error &&
+        'code' in error &&
+        (error as NodeJS.ErrnoException).code !== 'ENOENT'
+      ) {
         console.warn('Failed to delete config file:', error);
       }
     }

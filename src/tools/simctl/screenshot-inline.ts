@@ -258,11 +258,11 @@ export async function simctlScreenshotInlineTool(args: ScreenshotInlineToolArgs)
         cacheableView = isViewCacheable(allElements);
 
         if (cacheableView) {
-          viewFingerprint = computeViewFingerprint(
-            allElements,
-            screenDimensions,
-            'portrait' // TODO: Detect actual orientation from device
-          );
+          // Note: Orientation is hardcoded to 'portrait' for fingerprinting
+          // Actual orientation detection requires additional simctl calls (status-bar query)
+          // and adds complexity. Portrait assumption works for most iOS apps.
+          // Future enhancement: Parse orientation from device status or screenshot dimensions
+          viewFingerprint = computeViewFingerprint(allElements, screenDimensions, 'portrait');
         }
       } catch (error) {
         // Fingerprint computation is optional
@@ -587,4 +587,3 @@ Token counts are estimates based on Claude's image processing (170 tokens per 51
 | Use case | MCP responses | File storage |
 | Token usage | Optimized | Depends on size |
 `;
-
