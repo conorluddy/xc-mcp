@@ -85,16 +85,44 @@ function formatFullList(
   filters: { deviceType?: string; runtime?: string; maxDevices?: number }
 ): any {
   const filtered = applyFilters(fullList, filters);
+
+  // Apply maxDevices limit across all runtimes
+  const paginatedDevices: { [key: string]: any[] } = {};
+  let totalShowing = 0;
+  const maxDevices = filters.maxDevices || 20;
+
+  for (const [runtimeKey, devices] of Object.entries(filtered.devices)) {
+    if (totalShowing >= maxDevices) break;
+
+    const availableSlots = maxDevices - totalShowing;
+    paginatedDevices[runtimeKey] = devices.slice(0, availableSlots);
+    totalShowing += paginatedDevices[runtimeKey].length;
+  }
+
   return {
     summary: {
       totalDevices: Object.values(filtered.devices).flat().length,
+      showing: totalShowing,
       lastUpdated: filtered.lastUpdated,
       runtimeCount: Object.keys(filtered.devices).length,
       deviceTypeCount: filtered.devicetypes.length,
+      filters: Object.keys(filters).length > 0 ? filters : undefined,
+      _hint:
+        totalShowing < Object.values(filtered.devices).flat().length
+          ? `Showing ${totalShowing} of ${Object.values(filtered.devices).flat().length} devices. Use maxDevices > ${maxDevices} for more.`
+          : undefined,
     },
-    devices: filtered.devices,
-    runtimes: filtered.runtimes,
-    devicetypes: filtered.devicetypes,
+    devices: paginatedDevices,
+    runtimes: filtered.runtimes.map(rt => ({
+      identifier: rt.identifier,
+      name: rt.name,
+      version: rt.version,
+      isAvailable: rt.isAvailable,
+    })),
+    devicetypes: filtered.devicetypes.map(dt => ({
+      name: dt.name,
+      identifier: dt.identifier,
+    })),
   };
 }
 
@@ -124,6 +152,8 @@ function formatRuntimesOnly(fullList: CachedSimulatorList): any {
     summary: {
       totalRuntimes: fullList.runtimes.length,
       lastUpdated: fullList.lastUpdated,
+      _hint:
+        'Use detailType: "available-only" with runtime filter to see devices for specific iOS version',
     },
     runtimes: fullList.runtimes.map(runtime => ({
       name: runtime.name,
