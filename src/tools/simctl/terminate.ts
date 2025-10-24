@@ -15,6 +15,8 @@ interface SimctlTerminateToolArgs {
  *
  * Gracefully terminates the specified app. If the app is not running,
  * returns an error but can be safely ignored.
+ *
+ * **Full documentation:** See simctl/terminate.md for detailed parameters and examples
  */
 export async function simctlTerminateTool(args: any) {
   const { udid, bundleId } = args as SimctlTerminateToolArgs;
@@ -22,17 +24,11 @@ export async function simctlTerminateTool(args: any) {
   try {
     // Validate inputs
     if (!udid || udid.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'UDID is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'UDID is required and cannot be empty');
     }
 
     if (!bundleId || bundleId.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'Bundle ID is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'Bundle ID is required and cannot be empty');
     }
 
     // Validate bundle ID format

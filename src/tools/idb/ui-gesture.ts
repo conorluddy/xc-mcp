@@ -16,12 +16,12 @@ interface IdbUiGestureArgs {
 
   // For 'swipe' operation
   direction?: 'up' | 'down' | 'left' | 'right';
-  startX?: number; // Optional custom start point
+  startX?: number; // Optional custom start point (in POINTS, not pixels)
   startY?: number;
-  endX?: number; // Optional custom end point
+  endX?: number; // Optional custom end point (in POINTS, not pixels)
   endY?: number;
-  duration?: number; // Swipe duration in milliseconds (default from profile, 250ms for 'swipe' profile)
-  profile?: 'flick' | 'swipe' | 'drag'; // Swipe profile (default: 'swipe')
+  duration?: number; // Swipe duration in seconds (e.g., 0.20 for 200ms, default from profile)
+  profile?: 'standard' | 'flick' | 'gentle'; // Swipe profile (default: 'standard')
 
   // For 'button' operation
   buttonType?: 'HOME' | 'LOCK' | 'SIDE_BUTTON' | 'APPLE_PAY' | 'SIRI' | 'SCREENSHOT' | 'APP_SWITCH';
@@ -49,17 +49,20 @@ interface IdbUiGestureArgs {
  * - Execute precise custom swipe paths for complex gesture-based UIs (drawing, map navigation)
  * - Track gesture-based test scenarios with semantic metadata (actionName, expectedOutcome)
  *
- * **Swipe Profiles (new in Phase 1):**
- * - "flick": Fast page changes (50% distance, 150ms, 13k px/sec) - use for carousel navigation
- * - "swipe": Standard scrolling (85% distance, 250ms, 11k px/sec) - default, use for list scrolling
- * - "drag": Slow controlled interactions (90% distance, 800ms, 6.5k px/sec) - use for custom interactions
+ * **Swipe Profiles (Empirically Tested):**
+ * - "standard": Default balance (75% distance, 200ms, 1475 points/sec) - perfect for general navigation
+ * - "flick": Fast page changes (85% distance, 120ms, 2775 points/sec) - use for carousel/rapid navigation
+ * - "gentle": Slow scrolling (50% distance, 300ms, 653 points/sec) - reliable but near-minimum threshold
+ *
+ * All coordinates in POINT space (393×852 for iPhone 16 Pro), NOT pixel space (1179×2556).
+ * All profiles tested and verified working on iOS 18.5 home screen.
  *
  * **Parameters:**
  * - operation (required): "swipe" | "button"
  * - direction (for swipe): "up" | "down" | "left" | "right" - auto-calculates screen-relative path
- * - profile (for swipe): "flick" | "swipe" | "drag" - gesture profile (default: "swipe")
- * - startX, startY, endX, endY (for custom swipe): Precise pixel coordinates for swipe path
- * - duration (optional, for swipe): Swipe duration in milliseconds - uses profile default if omitted
+ * - profile (for swipe): "standard" | "flick" | "gentle" - gesture profile (default: "standard")
+ * - startX, startY, endX, endY (for custom swipe): Precise POINT coordinates for swipe path
+ * - duration (optional, for swipe): Swipe duration in SECONDS (e.g., 0.20 for 200ms) - uses profile default if omitted
  * - buttonType (for button): "HOME" | "LOCK" | "SIDE_BUTTON" | "APPLE_PAY" | "SIRI" | "SCREENSHOT" | "APP_SWITCH"
  * - udid (optional): Target identifier - auto-detects if omitted
  * - actionName, expectedOutcome (optional): Semantic tracking for test documentation
@@ -70,7 +73,7 @@ interface IdbUiGestureArgs {
  *
  * **Example:**
  * ```typescript
- * // Standard swipe up to scroll content
+ * // Standard swipe up (default profile, 1475 pts/sec)
  * const result = await idbUiGestureTool({
  *   operation: 'swipe',
  *   direction: 'up',
@@ -78,12 +81,21 @@ interface IdbUiGestureArgs {
  *   expectedOutcome: 'Reveal footer content'
  * });
  *
- * // Fast flick for page navigation
+ * // Flick swipe for fast page navigation (2775 pts/sec)
  * await idbUiGestureTool({
  *   operation: 'swipe',
  *   direction: 'left',
  *   profile: 'flick',
  *   actionName: 'Go to Next Page'
+ * });
+ *
+ * // Gentle swipe for reliable slow scrolling (653 pts/sec)
+ * await idbUiGestureTool({
+ *   operation: 'swipe',
+ *   direction: 'down',
+ *   profile: 'gentle',
+ *   actionName: 'Slow Scroll',
+ *   expectedOutcome: 'Smooth scrolling without jumps'
  * });
  *
  * // Press home button to background app
@@ -105,7 +117,7 @@ export async function idbUiGestureTool(args: IdbUiGestureArgs) {
     endX,
     endY,
     duration,
-    profile = 'swipe',
+    profile,
     buttonType,
     actionName,
     expectedOutcome,
@@ -183,6 +195,7 @@ export async function idbUiGestureTool(args: IdbUiGestureArgs) {
     const durationMs = Date.now() - startTime;
 
     const swipeResult = operation === 'swipe' ? (result as any) : null;
+    const finalProfile = (profile || 'standard') as 'standard' | 'flick' | 'gentle';
     const responseData = {
       success: result.success,
       udid: resolvedUdid,
@@ -192,7 +205,7 @@ export async function idbUiGestureTool(args: IdbUiGestureArgs) {
         operation === 'swipe'
           ? {
               direction: direction || 'custom',
-              profile: direction ? profile : undefined,
+              profile: direction ? finalProfile : undefined,
               path: swipeResult?.path,
               duration: swipeResult?.duration || duration,
               velocity: swipeResult?.velocity,
@@ -219,7 +232,7 @@ export async function idbUiGestureTool(args: IdbUiGestureArgs) {
         actionName,
         expectedOutcome,
         resolvedUdid,
-        profile,
+        profile: finalProfile,
         velocityWarning: swipeResult?.velocityWarning,
       }),
     };
@@ -253,7 +266,8 @@ export async function idbUiGestureTool(args: IdbUiGestureArgs) {
  *
  * Why: Sends swipe event for navigation, scrolling, etc.
  * Supports directional swipes with profiles and custom paths.
- * Validates velocity to ensure iOS recognizes gesture as swipe (>6000 px/sec).
+ * CRITICAL: All coordinates in POINT space (393×852), duration in seconds.
+ * Validates velocity to ensure iOS recognizes gesture as swipe (>650 points/sec).
  */
 interface SwipeCommandResult {
   success: boolean;
@@ -273,29 +287,30 @@ async function executeSwipeCommand(
     startY?: number;
     endX?: number;
     endY?: number;
-    duration?: number;
-    profile?: 'flick' | 'swipe' | 'drag';
+    duration?: number; // In SECONDS (e.g., 0.20 for 200ms)
+    profile?: 'standard' | 'flick' | 'gentle';
   }
 ): Promise<SwipeCommandResult> {
-  const { direction, startX, startY, endX, endY, duration, profile = 'swipe' } = params;
+  const { direction, startX, startY, endX, endY, duration, profile = 'standard' } = params;
 
   let command: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let swipePath: any;
-  let finalDuration = duration;
-  let distance = 0;
+  let finalDuration = duration; // In seconds
+  let distance = 0; // In points
 
   if (direction) {
     // Directional swipe: Convert direction to integer coordinates with optional profile
     // Why: IDB CLI requires integers, not floats like "964.8000000000001"
-    const screenW = target.screenDimensions.width;
-    const screenH = target.screenDimensions.height;
+    // CRITICAL: screenDimensions are in POINTS (393×852), not pixels!
+    const screenW = target.screenDimensions.width; // In POINTS (393 for iPhone 16 Pro)
+    const screenH = target.screenDimensions.height; // In POINTS (852 for iPhone 16 Pro)
 
     const coords = calculateSwipeCoordinates(
       direction as 'up' | 'down' | 'left' | 'right',
       screenW,
       screenH,
-      profile
+      profile as 'standard' | 'flick' | 'gentle'
     );
     const x1 = coords.start.x;
     const y1 = coords.start.y;
@@ -306,7 +321,7 @@ async function executeSwipeCommand(
 
     // Use profile duration if not explicitly provided
     if (finalDuration === undefined) {
-      finalDuration = SWIPE_PROFILES[profile].duration;
+      finalDuration = SWIPE_PROFILES[profile as 'standard' | 'flick' | 'gentle'].durationSeconds;
     }
 
     // Calculate distance for velocity validation
@@ -314,14 +329,13 @@ async function executeSwipeCommand(
     const dy = y2 - y1;
     distance = Math.sqrt(dx * dx + dy * dy);
 
-    // Build IDB command with integer coordinates
+    // Build IDB command with integer coordinates and duration in seconds
     command = `idb ui swipe --udid "${udid}" ${x1} ${y1} ${x2} ${y2}`;
-    if (finalDuration !== 500) {
-      // Add if different from iOS default (500ms)
+    if (finalDuration !== undefined) {
       command += ` --duration ${finalDuration}`;
     }
   } else {
-    // Custom path swipe: Ensure integers for coordinates
+    // Custom path swipe: Ensure integers for coordinates (in POINT space)
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const x1 = toInt(startX!);
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -335,7 +349,7 @@ async function executeSwipeCommand(
 
     // Use default if not provided (custom swipes don't follow profiles)
     if (finalDuration === undefined) {
-      finalDuration = 500;
+      finalDuration = 0.2; // Default to standard profile duration (200ms)
     }
 
     // Calculate distance for velocity validation
@@ -344,17 +358,24 @@ async function executeSwipeCommand(
     distance = Math.sqrt(dx * dx + dy * dy);
 
     command = `idb ui swipe --udid "${udid}" ${x1} ${y1} ${x2} ${y2}`;
-    if (finalDuration !== 500) {
+    if (finalDuration !== undefined) {
       command += ` --duration ${finalDuration}`;
     }
   }
 
   // Calculate velocity and validate
-  const velocity = calculateSwipeVelocity(distance, finalDuration);
-  const velocityValidation = validateSwipeVelocity(velocity, SWIPE_PROFILES[profile]);
+  // Duration is in seconds, convert to milliseconds for velocity calculation
+  const durationMs = finalDuration * 1000;
+  const velocity = calculateSwipeVelocity(distance, durationMs);
+  const selectedProfile = profile
+    ? SWIPE_PROFILES[profile as 'standard' | 'flick' | 'gentle']
+    : SWIPE_PROFILES.standard;
+  const velocityValidation = validateSwipeVelocity(velocity, selectedProfile);
 
   console.error(`[idb-ui-gesture] Executing: ${command}`);
-  console.error(`[idb-ui-gesture] Velocity: ${velocity.toFixed(0)} px/sec (profile: ${profile})`);
+  console.error(
+    `[idb-ui-gesture] Velocity: ${velocity.toFixed(0)} points/sec (profile: ${profile})`
+  );
 
   const result = await executeCommand(command, { timeout: 15000 });
 
@@ -406,7 +427,7 @@ function formatGuidance(
     actionName?: string;
     expectedOutcome?: string;
     resolvedUdid: string;
-    profile?: 'flick' | 'swipe' | 'drag';
+    profile?: 'standard' | 'flick' | 'gentle';
     velocityWarning?: string;
   }
 ): string[] {
@@ -424,7 +445,7 @@ function formatGuidance(
   if (success) {
     const gestureDesc =
       operation === 'swipe'
-        ? `swiped ${direction || 'custom path'} (${profile || 'standard'})`
+        ? `swiped ${direction || 'custom path'} (${profile || 'standard'} profile)`
         : `pressed ${buttonType} button`;
 
     return [
@@ -434,7 +455,7 @@ function formatGuidance(
       velocityWarning ? `⚠️ Warning: ${velocityWarning}` : undefined,
       ``,
       `Next steps to verify gesture:`,
-      `• Take screenshot: simctl-screenshot-inline --udid ${resolvedUdid}`,
+      `• Take screenshot: screenshot --udid ${resolvedUdid}`,
       expectedOutcome
         ? `• Verify outcome: Check if ${expectedOutcome}`
         : `• Check UI state: Verify screen changed as expected`,
@@ -452,9 +473,10 @@ function formatGuidance(
     operation === 'swipe'
       ? [
           `• Verify swipe direction: ${direction || `custom path`}`,
-          `• Check screen dimensions: ${target.screenDimensions.width}×${target.screenDimensions.height}`,
-          `• Try shorter duration: Some UIs need faster swipes`,
+          `• Check screen dimensions: ${target.screenDimensions.width}×${target.screenDimensions.height} (in POINTS, not pixels)`,
+          `• Try different profile: Use 'flick' for faster swipes, 'gentle' for slower ones`,
           `• Ensure UI is scrollable: Some views don't accept swipe gestures`,
+          `• Verify coordinates: Custom swipes should use POINT coordinates (393×852 for iPhone 16 Pro)`,
         ]
       : [
           `• Verify button type: ${buttonType}`,

@@ -20,6 +20,8 @@ interface SimctlOpenUrlToolArgs {
  * - HTTP/HTTPS URLs
  * - Custom scheme deep links (myapp://)
  * - Special URLs (mailto:, tel:, sms:, etc.)
+ *
+ * **Full documentation:** See simctl/openurl.md for detailed parameters and examples
  */
 export async function simctlOpenUrlTool(args: any) {
   const { udid, url } = args as SimctlOpenUrlToolArgs;

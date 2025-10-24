@@ -23,6 +23,8 @@ interface SimctlSuggestToolArgs {
  * - iOS version: 30 points (newer = higher)
  * - Popular model: 20 points (iPhone 16 Pro > iPhone 16, etc.)
  * - Boot performance: 10 points (faster = higher)
+ *
+ * **Full documentation:** See simctl/suggest.md for detailed parameters and examples
  */
 export async function simctlSuggestTool(args: any) {
   const {
@@ -45,19 +47,23 @@ export async function simctlSuggestTool(args: any) {
         content: [
           {
             type: 'text' as const,
-            text: JSON.stringify({
-              success: false,
-              message: 'No available simulators found',
-              criteria: {
-                projectPath: projectPath || 'not specified',
-                deviceType: deviceType || 'any',
+            text: JSON.stringify(
+              {
+                success: false,
+                message: 'No available simulators found',
+                criteria: {
+                  projectPath: projectPath || 'not specified',
+                  deviceType: deviceType || 'any',
+                },
+                guidance: [
+                  'Create a new simulator using: simctl-create',
+                  'Check simulator health using: simctl-health-check',
+                  'List all simulators using: simctl-list',
+                ],
               },
-              guidance: [
-                'Create a new simulator using: simctl-create',
-                'Check simulator health using: simctl-health-check',
-                'List all simulators using: simctl-list',
-              ],
-            }, null, 2),
+              null,
+              2
+            ),
           },
         ],
         isError: true,
@@ -68,9 +74,7 @@ export async function simctlSuggestTool(args: any) {
     if (autoBootTopSuggestion && suggestions.length > 0) {
       try {
         const topSuggestion = suggestions[0].simulator;
-        const { executeCommand, buildSimctlCommand } = await import(
-          '../../utils/command.js'
-        );
+        const { executeCommand, buildSimctlCommand } = await import('../../utils/command.js');
 
         const bootCommand = buildSimctlCommand('boot', {
           deviceId: topSuggestion.udid,

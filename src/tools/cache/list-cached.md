@@ -1,10 +1,15 @@
 # list-cached-responses
 
-List cached build and test results with progressive disclosure
-
-## Description
+📋 **List cached build and test results with progressive disclosure** - View recent operations.
 
 Retrieve recent cached build/test results with ability to drill down into full logs via progressive disclosure pattern.
+
+## Advantages
+
+• Access recent build and test results without re-running operations
+• Drill down into full logs using returned cache IDs
+• Filter by specific tool to find relevant operations
+• Understand cache age and expiry information
 
 ## Parameters
 

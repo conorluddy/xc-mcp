@@ -28,6 +28,8 @@ interface SimctlPrivacyToolArgs {
  * LLM Optimization:
  * Include scenario and step for structured permission audit trail tracking. Enables agents to track
  * permission changes across test scenarios and verify state at each step.
+ *
+ * **Full documentation:** See simctl/privacy.md for detailed parameters and examples
  */
 export async function simctlPrivacyTool(args: any) {
   const { udid, bundleId, action, service, scenario, step } = args as SimctlPrivacyToolArgs;

@@ -26,6 +26,8 @@ interface SimctlStatusBarToolArgs {
  * - wifiMode: active, searching, failed
  * - batteryState: charging, charged, discharging
  * - batteryLevel: 0-100
+ *
+ * **Full documentation:** See simctl/status-bar.md for detailed parameters and examples
  */
 export async function simctlStatusBarTool(args: any) {
   const { udid, operation, time, dataNetwork, wifiMode, batteryState, batteryLevel } =

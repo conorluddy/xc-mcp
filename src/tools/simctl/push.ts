@@ -25,6 +25,8 @@ interface SimctlPushToolArgs {
  * LLM Optimization:
  * Include testName and expectedBehavior for structured test tracking. Enables agents to verify
  * push delivery and validate app behavior against expectations.
+ *
+ * **Full documentation:** See simctl/push.md for detailed parameters and examples
  */
 export async function simctlPushTool(args: any) {
   const { udid, bundleId, payload, testName, expectedBehavior } = args as SimctlPushToolArgs;

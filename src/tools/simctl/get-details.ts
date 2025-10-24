@@ -10,6 +10,11 @@ interface SimctlGetDetailsArgs {
   maxDevices?: number;
 }
 
+/**
+ * Get detailed simulator information from cached simctl-list results with progressive disclosure
+ *
+ * **Full documentation:** See simctl/get-details.md for detailed parameters and examples
+ */
 export async function simctlGetDetailsTool(args: any) {
   const {
     cacheId,

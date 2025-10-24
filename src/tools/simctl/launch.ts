@@ -18,6 +18,8 @@ interface SimctlLaunchToolArgs {
  * - Launch with environment: udid: "device-123", bundleId: "com.example.MyApp", environment: { "DEBUG": "1" }
  *
  * Returns the process ID of the launched app
+ *
+ * **Full documentation:** See simctl/launch.md for detailed parameters and examples
  */
 export async function simctlLaunchTool(args: any) {
   const {

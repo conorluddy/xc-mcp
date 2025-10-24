@@ -56,6 +56,8 @@ interface ListCachedArgs {
  * // }
  * ```
  *
+ * **Full documentation:** See cache/list-cached.md for detailed parameters and examples
+ *
  * @param args Tool arguments with optional tool filter and limit
  * @returns Tool result with cached response listings
  */

@@ -16,6 +16,8 @@ interface SimctlAddmediaToolArgs {
  *
  * Supported image formats: jpg, jpeg, png, heic, gif, bmp
  * Supported video formats: mp4, mov, avi, mkv
+ *
+ * **Full documentation:** See simctl/addmedia.md for detailed parameters and examples
  */
 export async function simctlAddmediaTool(args: any) {
   const { udid, mediaPath } = args as SimctlAddmediaToolArgs;

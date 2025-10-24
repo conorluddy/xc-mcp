@@ -22,6 +22,12 @@ import path from 'path';
 import os from 'os';
 import { resolveDeviceId } from '../../utils/device-detection.js';
 
+/**
+ * Capture screenshot and return as inline base64-encoded data for direct response transmission
+ *
+ * **Full documentation:** See simctl/screenshot-inline.md for detailed parameters and examples
+ */
+
 interface ScreenshotInlineToolArgs {
   udid?: string;
   // Screenshot size optimization (opt-out approach)

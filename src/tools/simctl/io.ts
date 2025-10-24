@@ -53,6 +53,8 @@ interface SimctlIoToolArgs {
  * LLM Optimization:
  * For semantic naming, provide appName, screenName, and state to generate filenames like:
  * MyApp_LoginScreen_Empty_2025-01-23.png (enables agents to reason about screens)
+ *
+ * **Full documentation:** See simctl/io.md for detailed parameters and examples
  */
 export async function simctlIoTool(args: SimctlIoToolArgs) {
   const { udid, operation, outputPath, codec, size, appName, screenName, state } = args;

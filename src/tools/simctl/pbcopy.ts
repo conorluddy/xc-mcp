@@ -17,6 +17,8 @@ interface SimctlPbcopyToolArgs {
  *
  * This simulates the pasteboard in the simulator, allowing apps to access
  * the pasted content via UIPasteboard.general.string
+ *
+ * **Full documentation:** See simctl/pbcopy.md for detailed parameters and examples
  */
 export async function simctlPbcopyTool(args: any) {
   const { udid, text } = args as SimctlPbcopyToolArgs;
