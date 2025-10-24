@@ -22,15 +22,24 @@ interface IdbUiDescribeArgs {
  *
  * **What it does:**
  * Queries iOS accessibility tree to discover UI elements, their properties (type, label, enabled state),
- * and screen locations. Provides full tree with progressive disclosure (summary + cache ID for full data),
- * element-at-point queries for tap validation, and data quality assessment (rich/moderate/minimal) to guide
- * automation strategy. Automatically caches large outputs to prevent token overflow.
+ * coordinates (frame, centerX, centerY), and accessibility identifiers. Returns full tree with progressive
+ * disclosure (summary + cache ID for full data), element-at-point queries for tap validation, and data
+ * quality assessment (rich/moderate/minimal) to guide automation strategy. Automatically parses NDJSON output
+ * to extract all elements (not just first), includes AXFrame coordinate parsing for precise tapping, and
+ * caches large outputs to prevent token overflow.
  *
  * **Why you'd use it:**
- * - Discover tappable elements without visual screenshots - buttons, cells, links identified by accessibility data
+ * - Discover all tappable elements from accessibility tree - buttons, cells, links identified by JSON element objects
+ * - Get precise tap coordinates (centerX, centerY) for elements without needing screenshots
  * - Assess data quality before choosing automation approach - rich data enables precise targeting, minimal data requires screenshots
  * - Validate tap coordinates by querying elements at specific points before execution
  * - Progressive disclosure prevents token overflow on complex UIs - get summary first, full tree on demand
+ *
+ * **Improvements (Phase 2):**
+ * - Fixed NDJSON parsing: Now returns all elements, not just first line
+ * - AXFrame coordinate extraction: Parses "{{x, y}, {width, height}}" to get x, y, width, height, centerX, centerY
+ * - Proper JSON parsing: Each line parsed as separate JSON object representing one element
+ * - Coordinate-ready: All interactive elements include tap-ready centerX/centerY coordinates
  *
  * **Parameters:**
  * - operation (required): "all" | "point"
@@ -40,22 +49,25 @@ interface IdbUiDescribeArgs {
  *
  * **Returns:**
  * For "all": UI tree summary with element counts (total, tappable, text fields), data quality assessment
- * (rich/moderate/minimal), top 20 interactive elements preview, uiTreeId for full tree retrieval, and
- * guidance on automation strategy based on data richness.
+ * (rich/moderate/minimal), top 20 interactive elements preview with centerX/centerY coordinates,
+ * uiTreeId for full tree retrieval, and guidance on automation strategy based on data richness.
  *
- * For "point": Element details at coordinates including type, label, value, enabled state, and tappability.
+ * For "point": Element details at coordinates including type, label, value, identifier, frame coordinates
+ * (x, y, centerX, centerY), enabled state, and tappability.
  *
  * **Example:**
  * ```typescript
- * // Query full UI tree with data quality assessment
+ * // Query full UI tree with coordinate data
  * const result = await idbUiDescribeTool({
  *   operation: 'all',
  *   screenContext: 'LoginScreen',
  *   purposeDescription: 'Find email and password fields'
  * });
+ * // Result includes elements with centerX, centerY for direct tapping
  *
  * // Validate element at tap coordinates
- * await idbUiDescribeTool({ operation: 'point', x: 200, y: 400 });
+ * const element = await idbUiDescribeTool({ operation: 'point', x: 200, y: 400 });
+ * // Element includes frame coordinates if available
  * ```
  *
  * **Full documentation:** See idb/ui-describe.md for detailed parameters and progressive disclosure
@@ -101,7 +113,8 @@ export async function idbUiDescribeTool(args: IdbUiDescribeArgs) {
             screenContext,
             purposeDescription,
           })
-        : await executeDescribePointOperation(resolvedUdid, x!, y!);
+        : // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          await executeDescribePointOperation(resolvedUdid, x!, y!);
 
     // Record successful query
     if (result.success) {
@@ -184,9 +197,9 @@ async function executeDescribeAllOperation(
     };
   }
 
-  // Parse UI tree output
+  // Parse UI tree output (NDJSON format)
   const uiTreeText = result.stdout;
-  const lines = uiTreeText.split('\n');
+  const elements = parseNdJson(uiTreeText);
 
   // Cache full UI tree for later retrieval (progressive disclosure)
   const uiTreeId = responseCache.store({
@@ -198,15 +211,15 @@ async function executeDescribeAllOperation(
     metadata: {
       udid,
       targetName: target.name,
-      lineCount: lines.length,
+      elementCount: elements.length,
       screenContext: context.screenContext,
       purposeDescription: context.purposeDescription,
       timestamp: new Date().toISOString(),
     },
   });
 
-  // Extract summary information
-  const summary = extractUiTreeSummary(lines);
+  // Extract summary information from parsed elements
+  const summary = extractUiTreeSummary(elements);
 
   // Assess data richness for hybrid approach
   const isRichData = summary.tappableCount > 3 || summary.textFieldCount > 0;
@@ -219,7 +232,6 @@ async function executeDescribeAllOperation(
     targetName: target.name,
     summary: {
       totalElements: summary.elementCount,
-      totalLines: lines.length,
       elementTypes: summary.elementTypes,
       tappableElements: summary.tappableCount,
       textFields: summary.textFieldCount,
@@ -354,54 +366,166 @@ async function executeDescribePointOperation(udid: string, x: number, y: number)
 // ============================================================================
 
 /**
- * Extract summary from UI tree
+ * Parse AXFrame string format to coordinates
+ *
+ * Why: IDB returns frame as "{{x, y}, {width, height}}"
+ * Need to extract individual values and calculate center coordinates.
+ *
+ * Example: "{{100, 200}, {50, 100}}" -> { x: 100, y: 200, width: 50, height: 100, centerX: 125, centerY: 250 }
+ */
+function parseAXFrame(frameStr: string | undefined): {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  centerX: number;
+  centerY: number;
+} | null {
+  if (!frameStr) {
+    return null;
+  }
+
+  // Parse "{{x, y}, {width, height}}"
+  const match = frameStr.match(/\{\{([^}]+)\},\s*\{([^}]+)\}\}/);
+  if (!match) {
+    return null;
+  }
+
+  const coords = match[1].split(',').map((v: string) => parseInt(v.trim(), 10));
+  const size = match[2].split(',').map((v: string) => parseInt(v.trim(), 10));
+
+  if (coords.length !== 2 || size.length !== 2 || coords.some(isNaN) || size.some(isNaN)) {
+    return null;
+  }
+
+  const x = coords[0];
+  const y = coords[1];
+  const width = size[0];
+  const height = size[1];
+
+  return {
+    x,
+    y,
+    width,
+    height,
+    centerX: x + width / 2,
+    centerY: y + height / 2,
+  };
+}
+
+/**
+ * Parse NDJSON output from idb ui describe-all
+ *
+ * Why: Output is newline-delimited JSON where each line is a separate element object.
+ * Previous implementation only processed lines as text, missing all but first element.
+ * This correctly parses each line as JSON.
+ *
+ * @param ndjsonText Raw NDJSON output
+ * @returns Array of parsed elements
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseNdJson(ndjsonText: string): any[] {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const elements: any[] = [];
+  const lines = ndjsonText.split('\n');
+
+  for (const line of lines) {
+    // Skip empty lines
+    if (!line.trim()) {
+      continue;
+    }
+
+    try {
+      const element = JSON.parse(line);
+      elements.push(element);
+    } catch {
+      // Skip malformed JSON lines
+      console.error(`[idb-ui-describe] Failed to parse NDJSON line: ${line}`);
+    }
+  }
+
+  return elements;
+}
+
+/**
+ * Extract summary from parsed UI elements
  *
  * Why: Provide quick overview without loading full tree into tokens.
+ * Processes parsed JSON elements instead of raw text lines.
  */
-function extractUiTreeSummary(lines: string[]): {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractUiTreeSummary(elements: any[]): {
   elementCount: number;
   tappableCount: number;
   textFieldCount: number;
   elementTypes: Record<string, number>;
-  interactiveElements: Array<{ type: string; label?: string; x?: number; y?: number }>;
+  interactiveElements: Array<{
+    type: string;
+    label?: string;
+    identifier?: string;
+    x?: number;
+    y?: number;
+    centerX?: number;
+    centerY?: number;
+  }>;
 } {
   const elementTypes: Record<string, number> = {};
-  const interactiveElements: Array<{ type: string; label?: string; x?: number; y?: number }> = [];
+  const interactiveElements: Array<{
+    type: string;
+    label?: string;
+    identifier?: string;
+    x?: number;
+    y?: number;
+    centerX?: number;
+    centerY?: number;
+  }> = [];
   let tappableCount = 0;
   let textFieldCount = 0;
 
-  for (const line of lines) {
-    // Parse element type (simplified - actual parsing would be more robust)
-    const typeMatch = line.match(/type[=:]?\s*["']?(\w+)["']?/i);
-    if (typeMatch) {
-      const type = typeMatch[1];
-      elementTypes[type] = (elementTypes[type] || 0) + 1;
+  for (const element of elements) {
+    const type = element.type || 'Unknown';
+    elementTypes[type] = (elementTypes[type] || 0) + 1;
 
-      // Count tappable elements (buttons, cells, etc.)
-      if (
-        type.includes('Button') ||
+    // Check if tappable: enabled && (Button, Cell, Link, Tab, etc.)
+    const isTappable =
+      element.enabled &&
+      (type.includes('Button') ||
         type.includes('Cell') ||
         type.includes('Link') ||
-        type.includes('Tab')
-      ) {
-        tappableCount++;
+        type.includes('Tab') ||
+        type.includes('Image') ||
+        type.includes('PickerWheel') ||
+        type.includes('Switch'));
 
-        // Extract label if present
-        const labelMatch = line.match(/label[=:]?\s*["']([^"']+)["']?/i);
-        const label = labelMatch?.[1];
+    if (isTappable) {
+      tappableCount++;
 
-        interactiveElements.push({ type, label });
-      }
+      // Extract frame and calculate center
+      const frame = parseAXFrame(element.frame);
 
-      // Count text fields
-      if (type.includes('TextField') || type.includes('TextInput')) {
-        textFieldCount++;
-      }
+      interactiveElements.push({
+        type,
+        label: element.label,
+        identifier: element.identifier,
+        x: frame?.x,
+        y: frame?.y,
+        centerX: frame?.centerX,
+        centerY: frame?.centerY,
+      });
+    }
+
+    // Count text fields
+    if (
+      type.includes('TextField') ||
+      type.includes('TextInput') ||
+      type.includes('SecureTextField')
+    ) {
+      textFieldCount++;
     }
   }
 
   return {
-    elementCount: lines.length,
+    elementCount: elements.length,
     tappableCount,
     textFieldCount,
     elementTypes,
@@ -416,17 +540,47 @@ function parseElementInfo(output: string): {
   type?: string;
   label?: string;
   value?: string;
+  identifier?: string;
   enabled: boolean;
+  frame?: {
+    x: number;
+    y: number;
+    centerX: number;
+    centerY: number;
+  };
 } {
+  // Try parsing as JSON first (if output is single JSON object)
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const parsed: any = JSON.parse(output);
+    const frame = parseAXFrame(parsed.frame);
+    return {
+      type: parsed.type,
+      label: parsed.label,
+      value: parsed.value,
+      identifier: parsed.identifier,
+      enabled: parsed.enabled !== false,
+      frame: frame || undefined,
+    };
+  } catch {
+    // Fall back to regex parsing for legacy text output
+  }
+
   const typeMatch = output.match(/type[=:]?\s*["']?(\w+)["']?/i);
   const labelMatch = output.match(/label[=:]?\s*["']([^"']+)["']?/i);
   const valueMatch = output.match(/value[=:]?\s*["']([^"']+)["']?/i);
+  const identifierMatch = output.match(/identifier[=:]?\s*["']([^"']+)["']?/i);
+  const frameMatch = output.match(/frame[=:]?\s*["']?([^"']+)["']?/i);
   const enabledMatch = output.match(/enabled[=:]?\s*(true|false|yes|no|1|0)/i);
+
+  const frame = frameMatch ? parseAXFrame(frameMatch[1]) : null;
 
   return {
     type: typeMatch?.[1],
     label: labelMatch?.[1],
     value: valueMatch?.[1],
+    identifier: identifierMatch?.[1],
     enabled: enabledMatch ? ['true', 'yes', '1'].includes(enabledMatch[1].toLowerCase()) : true,
+    frame: frame || undefined,
   };
 }
