@@ -2,6 +2,7 @@ import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
 import { IDBTargetCache } from '../../state/idb-target-cache.js';
+import { isValidBundleId } from '../../utils/shell-escape.js';
 
 interface IdbTerminateArgs {
   udid?: string;
@@ -128,6 +129,14 @@ export async function idbTerminateTool(args: IdbTerminateArgs) {
  * This is a force-kill operation (not graceful shutdown).
  */
 async function executeTerminateOperation(udid: string, bundleId: string): Promise<any> {
+  // Validate bundle ID to prevent command injection
+  if (!isValidBundleId(bundleId)) {
+    throw new McpError(
+      ErrorCode.InvalidRequest,
+      `Invalid bundle ID format: ${bundleId}. Expected format: com.example.app`
+    );
+  }
+
   const command = `idb terminate ${bundleId} --udid "${udid}"`;
 
   console.error(`[idb-terminate] Executing: ${command}`);

@@ -1,7 +1,8 @@
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
-import { executeCommand } from '../../utils/command.js';
+import { executeCommandWithArgs } from '../../utils/command.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
 import { IDBTargetCache } from '../../state/idb-target-cache.js';
+import { isValidUdid } from '../../utils/shell-escape.js';
 
 interface IdbUiInputArgs {
   udid?: string;
@@ -231,26 +232,45 @@ async function executeInputCommand(
 ): Promise<{ success: boolean; output: string; error?: string }> {
   const { operation, text, key, keySequence } = params;
 
-  let command: string;
+  // Validate UDID to prevent command injection
+  if (!isValidUdid(udid)) {
+    throw new McpError(ErrorCode.InvalidRequest, `Invalid UDID format: ${udid}`);
+  }
+
+  let args: string[];
 
   switch (operation) {
     case 'text': {
-      // Format: idb ui text --udid <UDID> "text to type"
-      // Escape quotes in text
-      const escapedText = text!.replace(/"/g, '\\"');
-      command = `idb ui text --udid "${udid}" "${escapedText}"`;
+      // Format: idb ui text --udid <UDID> <text-to-type>
+      // No escaping needed - spawn passes arguments safely
+      if (!text) {
+        throw new McpError(
+          ErrorCode.InvalidRequest,
+          'text parameter is required for text operation'
+        );
+      }
+      args = ['ui', 'text', '--udid', udid, text];
       break;
     }
 
     case 'key': {
       // Format: idb ui key --udid <UDID> <key-name>
-      command = `idb ui key --udid "${udid}" ${key}`;
+      if (!key) {
+        throw new McpError(ErrorCode.InvalidRequest, 'key parameter is required for key operation');
+      }
+      args = ['ui', 'key', '--udid', udid, key];
       break;
     }
 
     case 'key-sequence': {
       // Format: idb ui key-sequence --udid <UDID> <key1> <key2> ...
-      command = `idb ui key-sequence --udid "${udid}" ${keySequence!.join(' ')}`;
+      if (!keySequence || keySequence.length === 0) {
+        throw new McpError(
+          ErrorCode.InvalidRequest,
+          'keySequence parameter is required for key-sequence operation'
+        );
+      }
+      args = ['ui', 'key-sequence', '--udid', udid, ...keySequence];
       break;
     }
 
@@ -258,9 +278,9 @@ async function executeInputCommand(
       throw new McpError(ErrorCode.InvalidRequest, `Unknown operation: ${operation}`);
   }
 
-  console.error(`[idb-ui-input] Executing: ${command}`);
+  console.error(`[idb-ui-input] Executing: idb ${args.join(' ')}`);
 
-  const result = await executeCommand(command, { timeout: 10000 });
+  const result = await executeCommandWithArgs('idb', args, { timeout: 10000 });
 
   return {
     success: result.code === 0,

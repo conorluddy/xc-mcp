@@ -2,6 +2,7 @@ import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
 import { IDBTargetCache } from '../../state/idb-target-cache.js';
+import { isSafePath } from '../../utils/shell-escape.js';
 
 interface IdbInstallArgs {
   udid?: string;
@@ -139,6 +140,14 @@ export async function idbInstallTool(args: IdbInstallArgs) {
  * Installation can take 10-60 seconds depending on app size.
  */
 async function executeInstallOperation(udid: string, appPath: string, target: any): Promise<any> {
+  // Validate app path to prevent path traversal and command injection
+  if (!isSafePath(appPath)) {
+    throw new McpError(
+      ErrorCode.InvalidRequest,
+      `Invalid or potentially dangerous app path: ${appPath}`
+    );
+  }
+
   const command = `idb install "${appPath}" --udid "${udid}"`;
 
   console.error(`[idb-install] Executing: ${command}`);

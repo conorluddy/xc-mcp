@@ -2,6 +2,7 @@ import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
 import { IDBTargetCache } from '../../state/idb-target-cache.js';
+import { isValidBundleId } from '../../utils/shell-escape.js';
 
 interface IdbUninstallArgs {
   udid?: string;
@@ -127,6 +128,14 @@ export async function idbUninstallTool(args: IdbUninstallArgs) {
  * Automatically terminates app if running.
  */
 async function executeUninstallOperation(udid: string, bundleId: string): Promise<any> {
+  // Validate bundle ID to prevent command injection
+  if (!isValidBundleId(bundleId)) {
+    throw new McpError(
+      ErrorCode.InvalidRequest,
+      `Invalid bundle ID format: ${bundleId}. Expected format: com.example.app`
+    );
+  }
+
   const command = `idb uninstall ${bundleId} --udid "${udid}"`;
 
   console.error(`[idb-uninstall] Executing: ${command}`);

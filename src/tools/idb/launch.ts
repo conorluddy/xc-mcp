@@ -2,6 +2,7 @@ import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
 import { IDBTargetCache } from '../../state/idb-target-cache.js';
+import { isValidBundleId } from '../../utils/shell-escape.js';
 
 interface IdbLaunchArgs {
   udid?: string;
@@ -148,6 +149,14 @@ async function executeLaunchOperation(
     environment?: Record<string, string>;
   }
 ): Promise<any> {
+  // Validate bundle ID to prevent command injection
+  if (!isValidBundleId(bundleId)) {
+    throw new McpError(
+      ErrorCode.InvalidRequest,
+      `Invalid bundle ID format: ${bundleId}. Expected format: com.example.app`
+    );
+  }
+
   // Build command
   let command = `idb launch --udid "${udid}"`;
 
