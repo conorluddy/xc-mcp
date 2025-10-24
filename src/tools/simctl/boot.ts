@@ -7,10 +7,11 @@ import { simulatorCache } from '../../state/simulator-cache.js';
 interface SimctlBootToolArgs {
   deviceId: string;
   waitForBoot?: boolean;
+  openGui?: boolean;
 }
 
 export async function simctlBootTool(args: any) {
-  const { deviceId, waitForBoot = true } = args as SimctlBootToolArgs;
+  const { deviceId, waitForBoot = true, openGui = true } = args as SimctlBootToolArgs;
 
   try {
     // Validate inputs
@@ -66,6 +67,20 @@ export async function simctlBootTool(args: any) {
       simulatorCache.recordBootEvent(deviceId, true, bootStatus.bootTime);
       // Also record usage with current working directory as project path
       simulatorCache.recordSimulatorUsage(deviceId, process.cwd());
+
+      // Open Simulator.app GUI if requested
+      if (openGui) {
+        try {
+          await executeCommand('open -a Simulator', { timeout: 5000 });
+          console.error('[simctl-boot] Opened Simulator.app GUI');
+        } catch (openError) {
+          // Non-fatal - simulator still booted successfully
+          console.warn(
+            '[simctl-boot] Failed to open Simulator GUI:',
+            openError instanceof Error ? openError.message : String(openError)
+          );
+        }
+      }
     }
 
     // Format response

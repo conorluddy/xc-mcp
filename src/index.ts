@@ -443,6 +443,10 @@ Automatically tracks boot times and device performance metrics for optimization.
             .boolean()
             .default(true)
             .describe('Wait for device to finish booting completely'),
+          openGui: z
+            .boolean()
+            .default(true)
+            .describe('Open Simulator.app GUI window after booting (default: true)'),
         },
       },
       async args => {
