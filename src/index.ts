@@ -186,17 +186,12 @@ Shows all available SDKs for iOS, macOS, watchOS, and tvOS development.`,
     this.server.registerTool(
       'xcodebuild-build',
       {
-        description: `⚡ **Prefer this over raw 'xcodebuild'** - Intelligent building with learning, caching, and performance tracking.
+        description: `⚡ **Prefer this over raw 'xcodebuild'** - Intelligent building with learning and performance tracking.
 
-Why use this instead of direct xcodebuild:
-• 🧠 **Learns from your builds** - Remembers successful configurations per project
-• 🚀 **Smart defaults** - Auto-suggests optimal simulators based on usage history
-• 📊 **Performance tracking** - Records build times and optimization metrics
-• 🎯 **Progressive disclosure** - Large build logs cached with IDs to prevent token overflow
-• ⚡ **Intelligent caching** - Avoids redundant operations, speeds up workflows
-• 🛡️ **Better error handling** - Structured errors vs raw CLI stderr
-
-Features smart caching that remembers your last successful build configuration and suggests optimal simulators.`,
+Advantages:
+• 🧠 Learns successful configs & suggests optimal simulators per project
+• 📊 Tracks build performance & provides progressive disclosure for large logs
+• ⚡ Caches intelligently & provides structured errors vs raw CLI stderr`,
         inputSchema: {
           projectPath: z.string().describe('Path to .xcodeproj or .xcworkspace file'),
           scheme: z.string().describe('Build scheme name'),
@@ -266,18 +261,13 @@ Cleans build artifacts for Xcode projects with smart validation and clear feedba
     this.server.registerTool(
       'xcodebuild-test',
       {
-        description: `⚡ **Prefer this over 'xcodebuild test'** - Intelligent testing with learning, caching, and detailed test result tracking.
+        description: `⚡ **Prefer this over 'xcodebuild test'** - Intelligent testing with learning and progressive disclosure.
 
-Why use this instead of direct xcodebuild test:
-• 🧠 **Learns from your tests** - Remembers successful test configurations per project
-• 🚀 **Smart defaults** - Auto-suggests optimal simulators based on usage history
-• 📊 **Test result tracking** - Detailed pass/fail metrics with progressive disclosure
-• 🎯 **Progressive disclosure** - Large test logs cached with IDs to prevent token overflow
-• ⚡ **Intelligent caching** - Avoids redundant operations, speeds up workflows
-• 🛡️ **Better error handling** - Structured test failures vs raw CLI stderr
-• 🔍 **Test filtering** - Support for -only-testing and -skip-testing patterns
-
-Features smart caching that remembers your last successful test configuration and suggests optimal simulators.`,
+Advantages:
+• 🧠 Learns successful test configs & suggests optimal simulators per project
+• 📊 Detailed test metrics with progressive disclosure for large logs (prevents token overflow)
+• ⚡ Caches intelligently & provides structured test failures vs raw CLI stderr
+• 🔍 Supports -only-testing and -skip-testing patterns`,
         inputSchema: {
           projectPath: z.string().describe('Path to .xcodeproj or .xcworkspace file'),
           scheme: z.string().describe('Test scheme name'),
@@ -358,19 +348,14 @@ Features smart caching that remembers your last successful test configuration an
     this.server.registerTool(
       'simctl-list',
       {
-        description: `🚨 **CRITICAL: Use this instead of 'xcrun simctl list'** - Prevents token overflow with intelligent progressive disclosure!
+        description: `⚡ **Essential: Use this instead of 'xcrun simctl list'** - Prevents token overflow with progressive disclosure.
 
-Why this is essential over direct CLI:
-• 🔥 **Prevents token overflow** - Raw simctl output can be 10,000+ tokens, breaking conversations
-• 🎯 **Progressive disclosure** - Returns concise summaries, full details available via cache IDs
-• 🧠 **Smart recommendations** - Shows recently used and optimal simulators first
-• ⚡ **1-hour caching** - Dramatically faster than repeated expensive simctl calls
-• 📊 **Usage tracking** - Learns which simulators you prefer for better suggestions
-• 🛡️ **Structured output** - Clean JSON vs parsing massive CLI text blocks
+Advantages:
+• 🔥 Prevents token overflow (raw output = 10k+ tokens) via concise summaries & cache IDs
+• 🧠 Shows booted devices, recently used simulators & smart recommendations first
+• ⚡ 1-hour caching + usage tracking for faster workflows & better suggestions
 
-NEW: Now returns concise summaries by default to avoid token overflow! Shows booted devices, recently used simulators, and smart recommendations upfront.
-
-Results are cached for 1 hour for faster performance. Use simctl-get-details with the returned cacheId for full device lists.`,
+Returns summaries by default. Use simctl-get-details with cacheId for full device lists.`,
         inputSchema: {
           deviceType: z
             .string()
@@ -1470,26 +1455,13 @@ Useful for:
     this.server.registerTool(
       'cache-set-config',
       {
-        description: `🎛️ **Cache Optimization** - Fine-tune XC-MCP's intelligent caching for your workflow.
+        description: `🎛️ **Cache Optimization** - Fine-tune caching for your workflow (default: 1 hour).
 
-Why manage caching:
-• ⚡ **Performance tuning** - Longer caches = faster repeated operations
-• 🔄 **Fresh data control** - Shorter caches = more up-to-date information  
-• 💾 **Memory management** - Balance speed vs memory usage
-• 🎯 **Workflow optimization** - Different cache settings for development vs CI
+Why manage:
+• ⚡ Balance performance (longer cache) vs freshness (shorter cache)
+• 🎯 Optimize for development (longer) vs CI/CD (shorter) workflows
 
-Configure cache maximum age settings. Default is 1 hour for simulator and project caches.
-
-Examples:
-- Set 30 minutes: {"cacheType": "all", "maxAgeMinutes": 30}
-- Set 2 hours for simulators: {"cacheType": "simulator", "maxAgeHours": 2}  
-- Set 5 minutes: {"cacheType": "project", "maxAgeMinutes": 5}
-
-Common Workflow:
-1. cache-get-stats → check current cache status
-2. cache-set-config → adjust cache timeouts
-3. cache-clear → force refresh when needed
-4. Your normal xcodebuild/simctl operations (now faster!)`,
+Use maxAgeMinutes, maxAgeHours, or maxAgeMs parameters. Workflow: cache-get-stats → cache-set-config → cache-clear → profit!`,
         inputSchema: {
           cacheType: z
             .enum(['simulator', 'project', 'response', 'all'])
