@@ -66,7 +66,7 @@ class XcodeCLIMCPServer {
     this.server = new McpServer(
       {
         name: 'xc-mcp',
-        version: '1.0.5',
+        version: '1.2.0',
         description:
           'Intelligent iOS development MCP server providing advanced Xcode and simulator control. ' +
           'Features 51 specialized tools across 8 categories: build management, testing, simulator lifecycle, ' +
