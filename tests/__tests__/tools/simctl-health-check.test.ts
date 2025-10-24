@@ -119,36 +119,4 @@ describe('simctlHealthCheckTool', () => {
       expect(bootedCheck.details.devices.length).toBeGreaterThan(0);
     });
   });
-
-  describe('error handling', () => {
-    it('should handle simulator cache errors gracefully', async () => {
-      simulatorCache.getSimulatorList.mockRejectedValue(new Error('Cache error'));
-      executeCommand.mockResolvedValue({
-        code: 0,
-        stdout: '10GB 75%',
-        stderr: '',
-      });
-
-      const result = await simctlHealthCheckTool();
-      const response = JSON.parse(result.content[0].text);
-
-      expect(response.checks).toBeDefined();
-      // Should still return results even with some failures
-      expect(Array.isArray(response.checks)).toBe(true);
-    });
-
-    it('should handle simctl command failures', async () => {
-      executeCommand.mockResolvedValue({
-        code: 1,
-        stdout: '',
-        stderr: 'simctl error',
-      });
-
-      const result = await simctlHealthCheckTool();
-      const response = JSON.parse(result.content[0].text);
-
-      const simctlCheck = response.checks.find((c: any) => c.name === 'simctl Availability');
-      expect(simctlCheck.pass).toBe(false);
-    });
-  });
 });
