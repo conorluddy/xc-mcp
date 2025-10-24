@@ -73,6 +73,9 @@ import { PERSISTENCE_ENABLE_DOCS } from './persistence/enable.js';
 import { PERSISTENCE_DISABLE_DOCS } from './persistence/disable.js';
 import { PERSISTENCE_STATUS_DOCS } from './persistence/status.js';
 
+// Documentation tool documentation
+import { RTFM_DOCS } from './get-tool-docs.js';
+
 /**
  * Map of tool names to their full documentation.
  * Tool names match the MCP tool registration names.
@@ -142,4 +145,7 @@ export const TOOL_DOCS: Record<string, string> = {
   'persistence-enable': PERSISTENCE_ENABLE_DOCS,
   'persistence-disable': PERSISTENCE_DISABLE_DOCS,
   'persistence-status': PERSISTENCE_STATUS_DOCS,
+
+  // Documentation tool
+  rtfm: RTFM_DOCS,
 };

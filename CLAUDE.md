@@ -170,6 +170,7 @@ Tools return structured responses with:
 - **I/O & Media**: `simctl-io` (screenshots/videos), `simctl-addmedia` (photo library)
 - **Advanced Testing**: `simctl-privacy` (permissions), `simctl-push` (notifications), `simctl-pbcopy` (clipboard), `simctl-status-bar` (status bar override)
 - **Cache Management**: `cache-get-stats`, `cache-set-config`, `cache-get-config`, `cache-clear`, `list-cached-responses`
+- **Documentation**: `rtfm` (Read The Manual - progressive disclosure documentation for all 51 tools)
 
 ## LLM Optimization Patterns
 

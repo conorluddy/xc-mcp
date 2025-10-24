@@ -18,7 +18,7 @@
 
 **XC-MCP is a production-grade MCP server that makes Xcode and iOS simulator tooling accessible to AI agents through intelligent context engineering.**
 
-The repository implements **51 specialized tools** across 8 categories, solving the fundamental problem that raw Xcode CLI output (50,000+ tokens) exceeds MCP protocol limits. Through progressive disclosure, intelligent caching, and agent-optimized patterns, XC-MCP achieves **96% token reduction** while maintaining complete functionality.
+The repository implements **52 specialized tools** across 9 categories, solving the fundamental problem that raw Xcode CLI output (50,000+ tokens) exceeds MCP protocol limits. Through progressive disclosure, intelligent caching, and agent-optimized patterns, XC-MCP achieves **96% token reduction** while maintaining complete functionality.
 
 ### Clever Optimizations
 
@@ -245,7 +245,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-## Tool Reference (51 Tools)
+## Tool Reference (52 Tools)
 
 ### Project Discovery (3 tools)
 | Tool | Description |
@@ -356,6 +356,11 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 | `persistence-enable` | Enable file-based cache persistence across server restarts |
 | `persistence-disable` | Disable persistence and optionally clear cache files |
 | `persistence-status` | View persistence status, disk usage, and health metrics |
+
+### Documentation (1 tool)
+| Tool | Description |
+|------|-------------|
+| `rtfm` | Read The Manual - Get comprehensive documentation for any tool with examples and parameter details. Implements progressive disclosure: concise tool descriptions stay under 400 tokens, full docs available on demand. Documentation embedded in compiled JavaScript, works in both development and published npm package. |
 
 ## Advanced Features
 
