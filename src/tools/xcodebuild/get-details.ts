@@ -60,6 +60,8 @@ interface GetDetailsArgs {
  * });
  * ```
  *
+ * **Full documentation:** See xcodebuild/get-details.md for detailed parameters and examples
+ *
  * @param args Tool arguments containing buildId, detailType, and optional maxLines
  * @returns Tool result with requested build or test details
  */
