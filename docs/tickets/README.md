@@ -1,35 +1,40 @@
 # XC-MCP Improvement Tickets
 
-Local improvement tickets based on comparative analysis between `feat/ios-simulator-tooling` branch and main branch.
+Remaining improvement tickets for xc-mcp development. Previously implemented tickets have been archived to keep this README focused on active work.
 
 ## Overview
 
-11 improvement tickets organized by priority and impact. Each ticket includes problem statement, proposed solution with code examples, implementation checklist, and testing requirements.
+6 improvement tickets organized by priority and impact. Each ticket includes problem statement, proposed solution with code examples, implementation checklist, and testing requirements.
 
 ## Status Summary
 
 | Priority | Status | Count | Total Impact |
 |----------|--------|-------|--------------|
-| Priority 1 (Core) | Pending | 5 | High |
-| Priority 2 (Workflow) | Pending | 3 | Medium |
+| Priority 1 (Core) | Pending | 1 | High |
+| Priority 2 (Workflow) | Pending | 2 | Medium |
 | Priority 3 (Future) | Pending | 3 | Low |
+
+## ✅ Recently Completed
+
+The following tickets were implemented and archived:
+
+- ✅ **PRIORITY-1-BUILD-SETTINGS-CACHE** - Auto-discover bundle IDs, app paths, deployment targets
+- ✅ **PRIORITY-1-SMART-SIMULATOR-SELECTION** - Smart device selection with scoring
+- ✅ **PRIORITY-1-PRE-OPERATION-VALIDATION** - Health checks via `simctl-health-check`
+- ✅ **PRIORITY-1-BUNDLE-ID-AUTO-DISCOVERY** - Bundle ID extraction from Info.plist
+- ✅ **PRIORITY-2-TEST-PLAN-DISCOVERY** - Test plan discovery and selection
 
 ## Priority 1: Core Integration (High Impact)
 
-These features address critical gaps in project awareness and simulator management. They significantly improve developer experience and enable better AI agent workflows.
+Critical workflow features that complete the core integration story.
 
-- [ ] [PRIORITY-1-BUILD-SETTINGS-CACHE.md](./PRIORITY-1-BUILD-SETTINGS-CACHE.md) - Auto-discover bundle IDs, app paths, deployment targets
-- [ ] [PRIORITY-1-SMART-SIMULATOR-SELECTION.md](./PRIORITY-1-SMART-SIMULATOR-SELECTION.md) - Consider project deployment targets when suggesting simulators
-- [ ] [PRIORITY-1-PRE-OPERATION-VALIDATION.md](./PRIORITY-1-PRE-OPERATION-VALIDATION.md) - Health checks before simulator operations
 - [ ] [PRIORITY-1-AUTO-INSTALL-AFTER-BUILD.md](./PRIORITY-1-AUTO-INSTALL-AFTER-BUILD.md) - Optional post-build installation to simulator
-- [ ] [PRIORITY-1-BUNDLE-ID-AUTO-DISCOVERY.md](./PRIORITY-1-BUNDLE-ID-AUTO-DISCOVERY.md) - Extract bundle ID from Info.plist automatically
 
 ## Priority 2: Workflow Tools (Developer Experience)
 
 Developer-facing workflow tools that reduce multi-step operations to single commands.
 
 - [ ] [PRIORITY-2-BUILD-AND-RUN-WORKFLOW.md](./PRIORITY-2-BUILD-AND-RUN-WORKFLOW.md) - Single command for build → install → launch
-- [ ] [PRIORITY-2-TEST-PLAN-DISCOVERY.md](./PRIORITY-2-TEST-PLAN-DISCOVERY.md) - List and analyze `.xctestplan` files
 - [ ] [PRIORITY-2-SCHEME-INSPECTOR.md](./PRIORITY-2-SCHEME-INSPECTOR.md) - Parse `.xcscheme` configuration files
 
 ## Priority 3: Advanced Features (Future Enhancements)
@@ -43,21 +48,14 @@ Advanced capabilities for specialized workflows and monitoring.
 ## Dependencies
 
 ```
-PRIORITY-1-BUILD-SETTINGS-CACHE
-  ├── PRIORITY-1-SMART-SIMULATOR-SELECTION
-  ├── PRIORITY-1-AUTO-INSTALL-AFTER-BUILD
-  ├── PRIORITY-1-BUNDLE-ID-AUTO-DISCOVERY
-  └── PRIORITY-2-BUILD-AND-RUN-WORKFLOW
-
-PRIORITY-1-PRE-OPERATION-VALIDATION
-  └── PRIORITY-3-SIMULATOR-LIFECYCLE-STATE
+PRIORITY-1-AUTO-INSTALL-AFTER-BUILD
+  (Foundation: build-settings-cache already implemented)
 
 PRIORITY-2-BUILD-AND-RUN-WORKFLOW
-  ├── PRIORITY-1-BUILD-SETTINGS-CACHE
-  └── PRIORITY-1-SMART-SIMULATOR-SELECTION
+  (Foundation: build-settings-cache and smart-simulator-selection already implemented)
 
 PRIORITY-3-CAPABILITIES-VALIDATOR
-  └── PRIORITY-1-BUILD-SETTINGS-CACHE
+  (Foundation: build-settings-cache already implemented)
 ```
 
 ## How to Use These Tickets
@@ -70,19 +68,14 @@ PRIORITY-3-CAPABILITIES-VALIDATOR
 
 ## Implementation Order
 
-Recommended order for maximum efficiency and value:
+Recommended order for remaining tickets (foundations already implemented):
 
-1. **PRIORITY-1-BUILD-SETTINGS-CACHE** (foundation)
-2. **PRIORITY-1-SMART-SIMULATOR-SELECTION** (uses settings cache)
-3. **PRIORITY-1-PRE-OPERATION-VALIDATION** (stability)
-4. **PRIORITY-1-BUNDLE-ID-AUTO-DISCOVERY** (improves usability)
-5. **PRIORITY-1-AUTO-INSTALL-AFTER-BUILD** (workflow enhancement)
-6. **PRIORITY-2-BUILD-AND-RUN-WORKFLOW** (user-facing feature)
-7. **PRIORITY-2-TEST-PLAN-DISCOVERY** (workflow enhancement)
-8. **PRIORITY-2-SCHEME-INSPECTOR** (workflow enhancement)
-9. **PRIORITY-3-SIMULATOR-LIFECYCLE-STATE** (stability)
-10. **PRIORITY-3-CAPABILITIES-VALIDATOR** (uses settings cache)
-11. **PRIORITY-3-CONSOLE-LOG-STREAMING** (monitoring)
+1. **PRIORITY-1-AUTO-INSTALL-AFTER-BUILD** (completes core integration)
+2. **PRIORITY-2-BUILD-AND-RUN-WORKFLOW** (high-value user-facing feature)
+3. **PRIORITY-2-SCHEME-INSPECTOR** (workflow enhancement)
+4. **PRIORITY-3-CAPABILITIES-VALIDATOR** (uses settings cache for validation)
+5. **PRIORITY-3-SIMULATOR-LIFECYCLE-STATE** (stability improvement)
+6. **PRIORITY-3-CONSOLE-LOG-STREAMING** (monitoring feature)
 
 ## Context
 
