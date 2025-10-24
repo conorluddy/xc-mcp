@@ -351,4 +351,3 @@ rtfm({ toolName: "simctl" })  // Shows simctl-* suggestions
 - Each tool's documentation is independently maintained in its source file
 - The TOOL_DOCS registry is automatically updated when tools are added/removed
 `;
-
