@@ -73,6 +73,11 @@ class IDBTargetCacheManager {
       );
     }
 
+    // If screen dimensions are missing (0x0), fetch them with idb describe
+    if (target.screenDimensions.width === 0 || target.screenDimensions.height === 0) {
+      await this.fetchScreenDimensions(udid, target);
+    }
+
     return target;
   }
 
@@ -193,6 +198,45 @@ class IDBTargetCacheManager {
       lastFetched: this.cache.lastFetched,
       cacheAge: Date.now() - this.cache.lastFetched,
     };
+  }
+
+  /**
+   * Fetch screen dimensions for a target using idb describe
+   *
+   * Why: idb list-targets doesn't include screen_dimensions.
+   * We need to call idb describe to get this information.
+   *
+   * @param udid - Target UDID
+   * @param target - Target object to update
+   */
+  private async fetchScreenDimensions(udid: string, target: IDBTarget): Promise<void> {
+    try {
+      const result = await executeCommand(`idb describe --udid "${udid}" --json`, {
+        timeout: 10000,
+      });
+
+      if (result.code !== 0) {
+        console.warn(
+          `[IDBTargetCache] Failed to fetch screen dimensions for ${udid}: ${result.stderr}`
+        );
+        return;
+      }
+
+      // Parse describe output - it's regular JSON (not NDJSON)
+      const description = JSON.parse(result.stdout);
+
+      // Update screen dimensions if available
+      if (description.screen_dimensions) {
+        target.screenDimensions = {
+          width: description.screen_dimensions.width || 0,
+          height: description.screen_dimensions.height || 0,
+        };
+      }
+    } catch (error) {
+      console.warn(
+        `[IDBTargetCache] Failed to parse screen dimensions for ${udid}: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
   }
 
   /**
