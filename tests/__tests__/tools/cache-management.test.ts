@@ -1,10 +1,8 @@
 import { jest } from '@jest/globals';
-import {
-  getCacheStatsTool,
-  setCacheConfigTool,
-  clearCacheTool,
-  getCacheConfigTool,
-} from '../../../src/tools/cache/cache-management.js';
+import { getCacheStatsTool } from '../../../src/tools/cache/get-stats.js';
+import { setCacheConfigTool } from '../../../src/tools/cache/set-config.js';
+import { clearCacheTool } from '../../../src/tools/cache/clear.js';
+import { getCacheConfigTool } from '../../../src/tools/cache/get-config.js';
 import { simulatorCache } from '../../../src/state/simulator-cache.js';
 import { projectCache } from '../../../src/state/project-cache.js';
 import { responseCache } from '../../../src/utils/response-cache.js';

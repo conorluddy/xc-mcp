@@ -46,18 +46,20 @@ XC-MCP is a Model Context Protocol (MCP) server that provides intelligent access
 - **src/state/** - Intelligent caching system:
   - `simulator-cache.ts` - Simulator state with usage tracking and performance metrics
   - `project-cache.ts` - Project configuration memory and build history
+  - `build-settings-cache.ts` - Xcode build settings with auto-discovery of bundle IDs, deployment targets, and capabilities
 - **src/utils/** - Shared utilities for command execution and validation
 - **src/types/** - TypeScript definitions for Xcode data structures
 
 ### Key Architectural Features
 - **Progressive Disclosure**: Returns concise summaries by default, full details on demand via cache IDs
-- **Intelligent Caching**: 3-layer cache system (simulator, project, response) with smart invalidation
+- **Intelligent Caching**: 4-layer cache system (simulator, project, build settings, response) with smart invalidation
 - **Performance Tracking**: Boot times, build metrics, and usage patterns for optimization
 - **Smart Defaults**: Learns from successful builds and suggests optimal configurations
 
 ### Cache System Design
 - **SimulatorCache**: 1-hour default retention, tracks device usage and boot performance
 - **ProjectCache**: Remembers successful build configurations per project
+- **BuildSettingsCache**: 1-hour default retention, auto-discovers bundle IDs, deployment targets, device families, and app capabilities from project build settings
 - **ResponseCache**: 30-minute retention for progressive disclosure of large outputs
 - All caches support configurable timeouts and selective clearing
 
@@ -160,5 +162,57 @@ Tools return structured responses with:
 - **Project Discovery**: `xcodebuild-list`, `xcodebuild-showsdks`, `xcodebuild-version`
 - **Build Operations**: `xcodebuild-build`, `xcodebuild-clean`, `xcodebuild-get-details`
 - **Test Operations**: `xcodebuild-test` (with support for test plans, filtering, and test-without-building)
-- **Simulator Management**: `simctl-list`, `simctl-get-details`, `simctl-boot`, `simctl-shutdown`
+- **Simulator Discovery**: `simctl-list`, `simctl-get-details`, `simctl-suggest`
+- **Simulator Lifecycle**: `simctl-create`, `simctl-delete`, `simctl-erase`, `simctl-clone`, `simctl-rename`, `simctl-health-check`
+- **Simulator Control**: `simctl-boot`, `simctl-shutdown`
+- **App Management**: `simctl-install`, `simctl-uninstall`, `simctl-get-app-container`
+- **App Control**: `simctl-launch`, `simctl-terminate`, `simctl-openurl`
+- **I/O & Media**: `simctl-io` (screenshots/videos), `simctl-addmedia` (photo library)
+- **Advanced Testing**: `simctl-privacy` (permissions), `simctl-push` (notifications), `simctl-pbcopy` (clipboard), `simctl-status-bar` (status bar override)
 - **Cache Management**: `cache-get-stats`, `cache-set-config`, `cache-get-config`, `cache-clear`, `list-cached-responses`
+- **Documentation**: `rtfm` (Read The Manual - progressive disclosure documentation for all 51 tools)
+
+## LLM Optimization Patterns
+
+XC-MCP implements context engineering patterns specifically optimized for LLM/AI agent usage. These patterns enable agents to reason effectively about simulator state and testing workflows.
+
+### Implemented Patterns
+
+#### 1. Semantic Screenshot Naming (simctl-io)
+Screenshots can be named semantically to help agents understand screen context:
+- **Parameters**: `appName`, `screenName`, `state`
+- **Generated filename**: `{appName}_{screenName}_{state}_{date}.png`
+- **Example**: `MyApp_LoginScreen_Empty_2025-01-23.png`
+- **Agent benefit**: Agents can reason about which screen was captured and track state progression
+
+#### 2. Structured Test Context (simctl-push)
+Push notifications include structured test tracking:
+- **Parameters**: `testName`, `expectedBehavior`
+- **Response includes**: `deliveryInfo` (sent/sentAt) and `testContext` (testName, expectedBehavior, actualBehavior, passed)
+- **Agent benefit**: Agents can verify push delivery and validate app behavior matches expectations
+
+#### 3. Permission Audit Trails (simctl-privacy)
+Permission changes are tracked with audit context:
+- **Parameters**: `scenario`, `step`
+- **Response includes**: `auditEntry` with timestamp, action, service, success, and test context
+- **Agent benefit**: Agents can track permission state changes across test scenarios and verify permissions at each step
+
+### Design Principles
+
+All tools follow these LLM optimization principles:
+
+1. **Semantic Metadata**: Include descriptive parameters that help agents reason about operations (e.g., appName, screenName, state)
+2. **Structured Context**: Responses include context objects (semanticMetadata, deliveryInfo, auditEntry, testContext) for agent reasoning
+3. **Progressive Disclosure**: Large outputs use cache IDs; summaries provide upfront value
+4. **Verification Guidance**: Responses suggest next steps for agents to verify outcomes (e.g., "Take screenshot to confirm visual delivery")
+5. **Consistent Naming**: Tool parameters and response fields follow consistent patterns for agent predictability
+
+### Future Optimization Areas
+
+See `docs/LLM_OPTIMIZATION.md` for comprehensive patterns including:
+- Session logging with artifact indexing for workflow reconstruction
+- Video recording with scene markers and metadata
+- Test result summaries with structured comparison
+- Media library with semantic indexing
+- Status bar before/after snapshots
+- Operation chaining with explicit dependencies

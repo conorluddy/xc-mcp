@@ -4,6 +4,7 @@ import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { responseCache, extractBuildSummary } from '../../utils/response-cache.js';
 import { projectCache, type BuildConfig } from '../../state/project-cache.js';
 import { simulatorCache } from '../../state/simulator-cache.js';
+import { createConfigManager } from '../../utils/config.js';
 
 interface BuildToolArgs {
   projectPath: string;
@@ -12,8 +13,63 @@ interface BuildToolArgs {
   destination?: string;
   sdk?: string;
   derivedDataPath?: string;
+  // Auto-install options
+  autoInstall?: boolean;
+  simulatorUdid?: string;
+  bootSimulator?: boolean;
 }
 
+/**
+ * Build Xcode projects with intelligent defaults and performance tracking
+ *
+ * **What it does:**
+ * Builds Xcode projects and workspaces with advanced learning capabilities that remember
+ * successful configurations and suggest optimal simulators per project. Uses progressive
+ * disclosure to provide concise summaries by default, with full build logs available on demand.
+ * Tracks build performance metrics (duration, errors, warnings) and learns from successful
+ * builds to improve future build suggestions.
+ *
+ * **Why you'd use it:**
+ * - Automatic smart defaults: remembers which simulator and config worked last time
+ * - Progressive disclosure: concise summaries prevent token overflow, full logs on demand
+ * - Performance tracking: measures build times and provides optimization insights
+ * - Structured errors: clear error messages instead of raw CLI stderr
+ *
+ * **Parameters:**
+ * - projectPath (string, required): Path to .xcodeproj or .xcworkspace file
+ * - scheme (string, required): Build scheme name (use xcodebuild-list to discover)
+ * - configuration (string, optional): Build configuration (Debug/Release, defaults to cached or "Debug")
+ * - destination (string, optional): Build destination (e.g., "platform=iOS Simulator,id=<UDID>")
+ * - sdk (string, optional): SDK to build against (e.g., "iphonesimulator", "iphoneos")
+ * - derivedDataPath (string, optional): Custom derived data path for build artifacts
+ *
+ * **Returns:**
+ * Structured JSON response with buildId (for progressive disclosure), success status, build
+ * summary (errors, warnings, duration), and intelligence metadata showing which smart defaults
+ * were applied. Use xcodebuild-get-details with buildId to retrieve full logs.
+ *
+ * **Example:**
+ * ```typescript
+ * // Minimal build with smart defaults
+ * const result = await xcodebuildBuildTool({
+ *   projectPath: "/path/to/MyApp.xcodeproj",
+ *   scheme: "MyApp"
+ * });
+ *
+ * // Explicit configuration
+ * const release = await xcodebuildBuildTool({
+ *   projectPath: "/path/to/MyApp.xcworkspace",
+ *   scheme: "MyApp",
+ *   configuration: "Release",
+ *   destination: "platform=iOS Simulator,id=ABC-123"
+ * });
+ * ```
+ *
+ * **Full documentation:** See src/tools/xcodebuild/build.md for detailed parameters
+ *
+ * @param args Tool arguments containing projectPath, scheme, and optional build configuration
+ * @returns Tool result with build summary and buildId for progressive disclosure
+ */
 export async function xcodebuildBuildTool(args: any) {
   const {
     projectPath,
@@ -22,6 +78,9 @@ export async function xcodebuildBuildTool(args: any) {
     destination,
     sdk,
     derivedDataPath,
+    autoInstall = false,
+    simulatorUdid,
+    bootSimulator = true,
   } = args as BuildToolArgs;
 
   try {
@@ -74,6 +133,18 @@ export async function xcodebuildBuildTool(args: any) {
       const udidMatch = finalConfig.destination.match(/id=([A-F0-9-]+)/);
       if (udidMatch) {
         simulatorCache.recordSimulatorUsage(udidMatch[1], projectPath);
+
+        // Save simulator preference to project config if build succeeded
+        if (summary.success) {
+          try {
+            const configManager = createConfigManager(projectPath);
+            const simulator = await simulatorCache.findSimulatorByUdid(udidMatch[1]);
+            await configManager.recordSuccessfulBuild(projectPath, udidMatch[1], simulator?.name);
+          } catch (configError) {
+            console.warn('Failed to save simulator preference:', configError);
+            // Continue - config is optional
+          }
+        }
       }
     }
 
@@ -104,6 +175,27 @@ export async function xcodebuildBuildTool(args: any) {
     const usedSmartConfiguration = !configuration && finalConfig.configuration !== 'Debug';
     const hasPreferredConfig = !!preferredConfig;
 
+    // Handle auto-install if enabled and build succeeded
+    let autoInstallResult = undefined;
+    if (autoInstall && summary.success) {
+      try {
+        console.error('[xcodebuild-build] Starting auto-install...');
+        autoInstallResult = await performAutoInstall({
+          projectPath,
+          scheme,
+          configuration: finalConfig.configuration,
+          simulatorUdid,
+          bootSimulator,
+        });
+      } catch (installError) {
+        console.error('[xcodebuild-build] Auto-install failed:', installError);
+        autoInstallResult = {
+          success: false,
+          error: installError instanceof Error ? installError.message : String(installError),
+        };
+      }
+    }
+
     const responseData = {
       buildId: cacheId,
       success: summary.success,
@@ -114,6 +206,7 @@ export async function xcodebuildBuildTool(args: any) {
         destination: finalConfig.destination,
         duration,
       },
+      autoInstall: autoInstallResult,
       intelligence: {
         usedSmartDestination,
         usedSmartConfiguration,
@@ -122,6 +215,7 @@ export async function xcodebuildBuildTool(args: any) {
           finalConfig.destination && finalConfig.destination.includes('Simulator')
         ),
         configurationLearned: summary.success, // Successful builds get remembered
+        autoInstallAttempted: autoInstall && summary.success,
       },
       guidance: summary.success
         ? [
@@ -130,6 +224,13 @@ export async function xcodebuildBuildTool(args: any) {
             ...(hasPreferredConfig ? [`Applied cached project preferences`] : []),
             `Use 'xcodebuild-get-details' with buildId '${cacheId}' for full logs`,
             `Successful configuration cached for future builds`,
+            ...(autoInstall
+              ? [
+                  autoInstallResult?.success
+                    ? `✅ Auto-install succeeded. App ready to launch with: simctl-launch udid="${autoInstallResult.udid}" bundleId="${autoInstallResult.bundleId}"`
+                    : `❌ Auto-install failed: ${autoInstallResult?.error}. Try manual install with simctl-install.`,
+                ]
+              : []),
           ]
         : [
             `Build failed with ${summary.errorCount} errors, ${summary.warningCount} warnings`,
@@ -187,3 +288,117 @@ async function getSmartDestination(
   // Return undefined to let xcodebuild use its own defaults
   return undefined;
 }
+
+interface AutoInstallArgs {
+  projectPath: string;
+  scheme: string;
+  configuration: string;
+  simulatorUdid?: string;
+  bootSimulator: boolean;
+}
+
+async function performAutoInstall(args: AutoInstallArgs): Promise<any> {
+  const { projectPath, scheme, configuration, simulatorUdid, bootSimulator } = args;
+
+  // Dynamic imports to avoid circular dependencies
+  const { findBuildArtifacts } = await import('../../utils/build-artifacts.js');
+  const { simctlBootTool } = await import('../simctl/boot.js');
+  const { simctlInstallTool } = await import('../simctl/install.js');
+
+  // Step 1: Find build artifacts
+  console.error('[auto-install] Finding build artifacts...');
+  const artifacts = await findBuildArtifacts(projectPath, scheme, configuration);
+
+  if (!artifacts.appPath) {
+    throw new Error(`Could not find .app bundle for scheme "${scheme}"`);
+  }
+
+  // Step 2: Determine simulator to install to
+  let targetUdid = simulatorUdid;
+  let targetName = '';
+
+  if (!targetUdid) {
+    // Try to suggest best simulator
+    const suggestion = await simulatorCache.getBestSimulator(projectPath);
+    if (suggestion) {
+      targetUdid = suggestion.simulator.udid;
+      targetName = suggestion.simulator.name;
+      console.error(`[auto-install] Auto-selected simulator: ${targetName}`);
+    } else {
+      throw new Error('No suitable simulator found. Create a simulator or specify simulatorUdid.');
+    }
+  } else {
+    // Get name of specified simulator
+    const sim = await simulatorCache.findSimulatorByUdid(targetUdid);
+    targetName = sim?.name || targetUdid;
+  }
+
+  // Step 3: Boot simulator if needed
+  if (bootSimulator) {
+    console.error(`[auto-install] Booting simulator: ${targetName}`);
+    try {
+      await simctlBootTool({ udid: targetUdid });
+    } catch (bootError) {
+      // Don't fail completely if boot fails, simulator might already be booted
+      console.warn('[auto-install] Boot failed (may already be booted):', bootError);
+    }
+  }
+
+  // Step 4: Install app
+  console.error(`[auto-install] Installing app to ${targetName}...`);
+  const installResult = await simctlInstallTool({
+    udid: targetUdid,
+    appPath: artifacts.appPath,
+  });
+
+  if (!installResult.isError && installResult.content?.[0]?.text) {
+    const installText = installResult.content[0].text;
+    const parsedInstall = typeof installText === 'string' ? JSON.parse(installText) : installText;
+
+    return {
+      success: true,
+      udid: targetUdid,
+      simulatorName: targetName,
+      appPath: artifacts.appPath,
+      bundleId: artifacts.bundleIdentifier || parsedInstall.bundleId,
+      duration: Date.now(),
+    };
+  }
+
+  throw new Error(`Installation failed: ${installResult.content?.[0]?.text || 'Unknown error'}`);
+}
+
+export const XCODEBUILD_BUILD_DOCS = `
+# xcodebuild-build
+
+⚡ **Prefer this over raw 'xcodebuild'** - Intelligent building with learning and performance tracking.
+
+## Advantages
+
+• 🧠 Learns successful configs & suggests optimal simulators per project
+• 📊 Tracks build performance & provides progressive disclosure for large logs
+• ⚡ Caches intelligently & provides structured errors vs raw CLI stderr
+
+## Parameters
+
+### Required
+- (See implementation for parameters)
+
+### Optional
+- (See implementation for optional parameters)
+
+## Returns
+
+- Tool execution results with structured output
+- Success/failure status
+- Guidance for next steps
+
+## Related Tools
+
+- See MCP server documentation for related tools
+
+## Notes
+
+- Tool is auto-registered with MCP server
+- Full documentation in xcodebuild_build.ts
+`;
