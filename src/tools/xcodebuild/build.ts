@@ -13,6 +13,10 @@ interface BuildToolArgs {
   destination?: string;
   sdk?: string;
   derivedDataPath?: string;
+  // Auto-install options
+  autoInstall?: boolean;
+  simulatorUdid?: string;
+  bootSimulator?: boolean;
 }
 
 /**
@@ -74,6 +78,9 @@ export async function xcodebuildBuildTool(args: any) {
     destination,
     sdk,
     derivedDataPath,
+    autoInstall = false,
+    simulatorUdid,
+    bootSimulator = true,
   } = args as BuildToolArgs;
 
   try {
@@ -132,11 +139,7 @@ export async function xcodebuildBuildTool(args: any) {
           try {
             const configManager = createConfigManager(projectPath);
             const simulator = await simulatorCache.findSimulatorByUdid(udidMatch[1]);
-            await configManager.recordSuccessfulBuild(
-              projectPath,
-              udidMatch[1],
-              simulator?.name
-            );
+            await configManager.recordSuccessfulBuild(projectPath, udidMatch[1], simulator?.name);
           } catch (configError) {
             console.warn('Failed to save simulator preference:', configError);
             // Continue - config is optional
@@ -172,6 +175,27 @@ export async function xcodebuildBuildTool(args: any) {
     const usedSmartConfiguration = !configuration && finalConfig.configuration !== 'Debug';
     const hasPreferredConfig = !!preferredConfig;
 
+    // Handle auto-install if enabled and build succeeded
+    let autoInstallResult = undefined;
+    if (autoInstall && summary.success) {
+      try {
+        console.error('[xcodebuild-build] Starting auto-install...');
+        autoInstallResult = await performAutoInstall({
+          projectPath,
+          scheme,
+          configuration: finalConfig.configuration,
+          simulatorUdid,
+          bootSimulator,
+        });
+      } catch (installError) {
+        console.error('[xcodebuild-build] Auto-install failed:', installError);
+        autoInstallResult = {
+          success: false,
+          error: installError instanceof Error ? installError.message : String(installError),
+        };
+      }
+    }
+
     const responseData = {
       buildId: cacheId,
       success: summary.success,
@@ -182,6 +206,7 @@ export async function xcodebuildBuildTool(args: any) {
         destination: finalConfig.destination,
         duration,
       },
+      autoInstall: autoInstallResult,
       intelligence: {
         usedSmartDestination,
         usedSmartConfiguration,
@@ -190,6 +215,7 @@ export async function xcodebuildBuildTool(args: any) {
           finalConfig.destination && finalConfig.destination.includes('Simulator')
         ),
         configurationLearned: summary.success, // Successful builds get remembered
+        autoInstallAttempted: autoInstall && summary.success,
       },
       guidance: summary.success
         ? [
@@ -198,6 +224,13 @@ export async function xcodebuildBuildTool(args: any) {
             ...(hasPreferredConfig ? [`Applied cached project preferences`] : []),
             `Use 'xcodebuild-get-details' with buildId '${cacheId}' for full logs`,
             `Successful configuration cached for future builds`,
+            ...(autoInstall
+              ? [
+                  autoInstallResult?.success
+                    ? `✅ Auto-install succeeded. App ready to launch with: simctl-launch udid="${autoInstallResult.udid}" bundleId="${autoInstallResult.bundleId}"`
+                    : `❌ Auto-install failed: ${autoInstallResult?.error}. Try manual install with simctl-install.`,
+                ]
+              : []),
           ]
         : [
             `Build failed with ${summary.errorCount} errors, ${summary.warningCount} warnings`,
@@ -254,4 +287,83 @@ async function getSmartDestination(
 
   // Return undefined to let xcodebuild use its own defaults
   return undefined;
+}
+
+interface AutoInstallArgs {
+  projectPath: string;
+  scheme: string;
+  configuration: string;
+  simulatorUdid?: string;
+  bootSimulator: boolean;
+}
+
+async function performAutoInstall(args: AutoInstallArgs): Promise<any> {
+  const { projectPath, scheme, configuration, simulatorUdid, bootSimulator } = args;
+
+  // Dynamic imports to avoid circular dependencies
+  const { findBuildArtifacts } = await import('../../utils/build-artifacts.js');
+  const { simctlBootTool } = await import('../simctl/boot.js');
+  const { simctlInstallTool } = await import('../simctl/install.js');
+
+  // Step 1: Find build artifacts
+  console.error('[auto-install] Finding build artifacts...');
+  const artifacts = await findBuildArtifacts(projectPath, scheme, configuration);
+
+  if (!artifacts.appPath) {
+    throw new Error(`Could not find .app bundle for scheme "${scheme}"`);
+  }
+
+  // Step 2: Determine simulator to install to
+  let targetUdid = simulatorUdid;
+  let targetName = '';
+
+  if (!targetUdid) {
+    // Try to suggest best simulator
+    const suggestion = await simulatorCache.getBestSimulator(projectPath);
+    if (suggestion) {
+      targetUdid = suggestion.simulator.udid;
+      targetName = suggestion.simulator.name;
+      console.error(`[auto-install] Auto-selected simulator: ${targetName}`);
+    } else {
+      throw new Error('No suitable simulator found. Create a simulator or specify simulatorUdid.');
+    }
+  } else {
+    // Get name of specified simulator
+    const sim = await simulatorCache.findSimulatorByUdid(targetUdid);
+    targetName = sim?.name || targetUdid;
+  }
+
+  // Step 3: Boot simulator if needed
+  if (bootSimulator) {
+    console.error(`[auto-install] Booting simulator: ${targetName}`);
+    try {
+      await simctlBootTool({ udid: targetUdid });
+    } catch (bootError) {
+      // Don't fail completely if boot fails, simulator might already be booted
+      console.warn('[auto-install] Boot failed (may already be booted):', bootError);
+    }
+  }
+
+  // Step 4: Install app
+  console.error(`[auto-install] Installing app to ${targetName}...`);
+  const installResult = await simctlInstallTool({
+    udid: targetUdid,
+    appPath: artifacts.appPath,
+  });
+
+  if (!installResult.isError && installResult.content?.[0]?.text) {
+    const installText = installResult.content[0].text;
+    const parsedInstall = typeof installText === 'string' ? JSON.parse(installText) : installText;
+
+    return {
+      success: true,
+      udid: targetUdid,
+      simulatorName: targetName,
+      appPath: artifacts.appPath,
+      bundleId: artifacts.bundleIdentifier || parsedInstall.bundleId,
+      duration: Date.now(),
+    };
+  }
+
+  throw new Error(`Installation failed: ${installResult.content?.[0]?.text || 'Unknown error'}`);
 }
