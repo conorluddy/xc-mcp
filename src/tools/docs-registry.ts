@@ -74,7 +74,7 @@ import { PERSISTENCE_DISABLE_DOCS } from './persistence/disable.js';
 import { PERSISTENCE_STATUS_DOCS } from './persistence/status.js';
 
 // Documentation tool documentation
-import { RTFM_DOCS } from './get-tool-docs.js';
+import { RTFM_DOCS, SCREENSHOT_SAVE_DOCS } from './get-tool-docs.js';
 
 /**
  * Map of tool names to their full documentation.
@@ -148,4 +148,7 @@ export const TOOL_DOCS: Record<string, string> = {
 
   // Documentation tool
   rtfm: RTFM_DOCS,
+
+  // Tool aliases
+  'screenshot-save': SCREENSHOT_SAVE_DOCS,
 };

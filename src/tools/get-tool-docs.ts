@@ -48,6 +48,132 @@ ${availableTools.map(t => `  - ${t}`).join('\n')}`,
   };
 }
 
+export const SCREENSHOT_SAVE_DOCS = `
+# screenshot-save
+
+📸 **File-Based Screenshot Alias** - Save screenshots/videos to files via simctl-io.
+
+## Overview
+
+\`screenshot-save\` is a convenience alias for the file-based variant of \`simctl-io\`. Use this when you want to save screenshots or videos to disk files. For inline base64 screenshots optimized for vision models, use the \`screenshot\` tool instead.
+
+## Relationship to Other Tools
+
+- **screenshot-save** → Saves to file (uses \`simctl-io\`)
+- **screenshot** → Returns inline base64 with coordinate metadata (uses \`simctl-screenshot-inline\`)
+- **simctl-io** → Direct access to I/O operations (screenshots, videos, both file-based)
+
+## When to Use
+
+**Use screenshot-save when:**
+- You need to save screenshots to specific file paths
+- Recording videos for later playback
+- Building test artifacts for CI/CD pipelines
+- Creating screenshot archives
+
+**Use screenshot instead when:**
+- Working with AI vision models (Claude, GPT-4V)
+- Need coordinate transformation metadata for UI automation
+- Want immediate inline image analysis
+- Token efficiency is important (half-size default)
+
+## Parameters
+
+All parameters are passed directly to \`simctl-io\`:
+
+- **udid** (optional): Simulator UDID (auto-detects if not provided)
+- **operation**: "screenshot" or "video"
+- **appName** (optional): App name for semantic naming (e.g., "MyApp")
+- **screenName** (optional): Screen/view name (e.g., "LoginScreen")
+- **state** (optional): UI state (e.g., "Empty", "Filled", "Loading")
+- **outputPath** (optional): Custom output file path
+- **codec** (optional): Video codec for recordings (h264, hevc, prores)
+
+## Examples
+
+### Basic Screenshot
+\`\`\`typescript
+{
+  "tool": "screenshot-save",
+  "arguments": {
+    "operation": "screenshot"
+  }
+}
+\`\`\`
+
+### Semantic Screenshot Naming
+\`\`\`typescript
+{
+  "tool": "screenshot-save",
+  "arguments": {
+    "operation": "screenshot",
+    "appName": "MyApp",
+    "screenName": "LoginScreen",
+    "state": "Empty"
+  }
+}
+// Saves to: MyApp_LoginScreen_Empty_2025-01-24.png
+\`\`\`
+
+### Custom Output Path
+\`\`\`typescript
+{
+  "tool": "screenshot-save",
+  "arguments": {
+    "operation": "screenshot",
+    "outputPath": "/tmp/my-screenshot.png"
+  }
+}
+\`\`\`
+
+### Video Recording
+\`\`\`typescript
+{
+  "tool": "screenshot-save",
+  "arguments": {
+    "operation": "video",
+    "codec": "h264"
+  }
+}
+\`\`\`
+
+## Returns
+
+File path to saved screenshot/video with success confirmation.
+
+Example response:
+\`\`\`json
+{
+  "success": true,
+  "filePath": "/path/to/MyApp_LoginScreen_Empty_2025-01-24.png",
+  "operation": "screenshot",
+  "guidance": [
+    "Screenshot saved successfully",
+    "File: /path/to/MyApp_LoginScreen_Empty_2025-01-24.png",
+    "Use 'screenshot' tool for inline base64 variant with coordinate metadata"
+  ]
+}
+\`\`\`
+
+## Related Tools
+
+- **screenshot**: Inline base64 screenshots with vision model optimization
+- **simctl-io**: Direct I/O operations (supports both screenshot and video)
+- **simctl-addmedia**: Add images/videos to simulator photo library
+
+## Implementation Note
+
+This tool is registered as an alias in \`src/index.ts\` and delegates directly to the \`simctl-io\` tool implementation. It exists for clarity and convenience - the name makes the file-based behavior explicit.
+
+## Notes
+
+- Auto-detects booted simulator if udid not provided
+- Semantic naming helps organize test artifacts
+- Video recording runs until stopped (Ctrl+C)
+- Screenshots saved as PNG by default
+- File paths are absolute and returned in response
+`;
+
 export const RTFM_DOCS = `
 # rtfm
 
