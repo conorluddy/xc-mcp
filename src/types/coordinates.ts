@@ -89,44 +89,152 @@ export interface SwipePath {
 }
 
 /**
- * Calculate directional swipe coordinates
+ * Swipe profile definition
+ *
+ * Why: Different swipe scenarios require different velocities and durations.
+ * iOS requires >6000 px/sec for reliable swipe recognition.
+ */
+export interface SwipeProfile {
+  name: 'flick' | 'swipe' | 'drag';
+  description: string;
+  distance: number; // Percentage of screen (e.g., 0.5 for 50%)
+  duration: number; // Milliseconds
+  minVelocity: number; // px/sec
+}
+
+/**
+ * Swipe profiles for different gesture types
+ *
+ * Why: Different UIs respond to different gesture velocities.
+ * Flick: Fast page changes, carousel navigation (fast = short duration)
+ * Swipe: Standard list scrolling, navigation (balanced)
+ * Drag: Slow controlled scrolling, custom interactions (slow = long duration)
+ *
+ * All profiles exceed iOS minimum velocity threshold of 6000 px/sec
+ */
+export const SWIPE_PROFILES: Record<'flick' | 'swipe' | 'drag', SwipeProfile> = {
+  flick: {
+    name: 'flick',
+    description: 'Fast page changes and carousel navigation',
+    distance: 0.5, // 50% of screen
+    duration: 150, // 150ms for high velocity
+    minVelocity: 13333, // ~5000px / 0.15s = 33k px/sec (very fast)
+  },
+  swipe: {
+    name: 'swipe',
+    description: 'Standard list scrolling and navigation',
+    distance: 0.85, // 85% of screen
+    duration: 250, // 250ms for balanced velocity
+    minVelocity: 11050, // ~2755px / 0.25s = 11k px/sec (fast)
+  },
+  drag: {
+    name: 'drag',
+    description: 'Slow controlled scrolling and custom interactions',
+    distance: 0.9, // 90% of screen
+    duration: 800, // 800ms for low velocity
+    minVelocity: 6500, // ~5200px / 0.8s = 6500 px/sec (minimum viable)
+  },
+};
+
+/**
+ * Calculate swipe velocity in pixels per second
+ *
+ * Why: iOS requires >6000 px/sec for reliable recognition.
+ * Low velocity swipes are interpreted as drags, not swipes.
+ *
+ * @param distance - Distance traveled in pixels
+ * @param durationMs - Duration in milliseconds
+ * @returns Velocity in pixels per second
+ */
+export function calculateSwipeVelocity(distance: number, durationMs: number): number {
+  if (durationMs <= 0) {
+    throw new Error('Duration must be positive');
+  }
+  return (distance / durationMs) * 1000; // Convert ms to seconds
+}
+
+/**
+ * Validate swipe velocity meets iOS minimum threshold
+ *
+ * Why: iOS requires minimum velocity for swipe recognition.
+ * Returns warning if velocity is too low, but execution proceeds.
+ *
+ * @param velocity - Velocity in pixels per second
+ * @param profile - Swipe profile for context
+ * @returns Validation result with warning if velocity too low
+ */
+export function validateSwipeVelocity(
+  velocity: number,
+  _profile: SwipeProfile
+): { valid: boolean; warning?: string } {
+  const minVelocity = 6000; // iOS minimum for reliable swipe recognition
+
+  if (velocity < minVelocity) {
+    return {
+      valid: false,
+      warning: `Swipe velocity ${velocity.toFixed(0)} px/sec is below iOS minimum of ${minVelocity} px/sec. Gesture may not be recognized as a swipe.`,
+    };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Calculate directional swipe coordinates with optional profile
  *
  * Why: Convert high-level directions to precise integer coordinates.
  * Ensures consistent swipe behavior across different screen sizes.
+ * New defaults: 85% distance, 250ms duration (250px/sec on iPhone 16).
+ * Safety margins: 5% from edges to avoid UI controls.
  *
  * @param direction - Swipe direction
  * @param screenWidth - Screen width in pixels
  * @param screenHeight - Screen height in pixels
+ * @param profile - Optional swipe profile (defaults to 'swipe')
  * @returns Integer start and end coordinates
  */
 export function calculateSwipeCoordinates(
   direction: 'up' | 'down' | 'left' | 'right',
   screenWidth: number,
-  screenHeight: number
+  screenHeight: number,
+  profile?: 'flick' | 'swipe' | 'drag'
 ): SwipePath {
+  const selectedProfile = profile ? SWIPE_PROFILES[profile] : SWIPE_PROFILES.swipe;
+  const distance = selectedProfile.distance;
+  const safetyMargin = 0.05; // 5% safety margin from edges
+
+  // Calculate center
   const centerX = toInt(screenWidth / 2);
   const centerY = toInt(screenHeight / 2);
+
+  // Calculate swipe distance with safety margins
+  // For vertical swipes: use screen height, apply safety margins
+  // For horizontal swipes: use screen width, apply safety margins
+  const verticalStart = toInt(screenHeight * (safetyMargin + distance / 2));
+  const verticalEnd = toInt(screenHeight * (1 - safetyMargin - distance / 2));
+  const horizontalStart = toInt(screenWidth * (safetyMargin + distance / 2));
+  const horizontalEnd = toInt(screenWidth * (1 - safetyMargin - distance / 2));
 
   switch (direction) {
     case 'up':
       return {
-        start: { x: centerX, y: toInt(screenHeight * 0.8) },
-        end: { x: centerX, y: toInt(screenHeight * 0.2) },
+        start: { x: centerX, y: verticalEnd },
+        end: { x: centerX, y: verticalStart },
       };
     case 'down':
       return {
-        start: { x: centerX, y: toInt(screenHeight * 0.2) },
-        end: { x: centerX, y: toInt(screenHeight * 0.8) },
+        start: { x: centerX, y: verticalStart },
+        end: { x: centerX, y: verticalEnd },
       };
     case 'left':
       return {
-        start: { x: toInt(screenWidth * 0.8), y: centerY },
-        end: { x: toInt(screenWidth * 0.2), y: centerY },
+        start: { x: horizontalEnd, y: centerY },
+        end: { x: horizontalStart, y: centerY },
       };
     case 'right':
       return {
-        start: { x: toInt(screenWidth * 0.2), y: centerY },
-        end: { x: toInt(screenWidth * 0.8), y: centerY },
+        start: { x: horizontalStart, y: centerY },
+        end: { x: horizontalEnd, y: centerY },
       };
   }
 }
