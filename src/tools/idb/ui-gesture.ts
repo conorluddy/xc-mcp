@@ -219,32 +219,53 @@ async function executeSwipeCommand(
   let swipePath: any;
 
   if (direction) {
-    // Directional swipe: idb ui swipe --udid <UDID> <direction> [--duration <ms>]
-    command = `idb ui swipe --udid "${udid}" ${direction}`;
-    if (duration !== 500) {
-      // Only add if non-default
-      command += ` --duration ${duration}`;
-    }
-
-    // Calculate approximate path for response
+    // Directional swipe: Convert direction to coordinates
+    // Why: IDB CLI expects numeric coordinates, not direction strings
     const screenW = target.screenDimensions.width;
     const screenH = target.screenDimensions.height;
     const centerX = screenW / 2;
     const centerY = screenH / 2;
 
+    let x1: number, y1: number, x2: number, y2: number;
+
     switch (direction) {
       case 'up':
-        swipePath = { start: [centerX, screenH * 0.8], end: [centerX, screenH * 0.2] };
+        x1 = centerX;
+        y1 = screenH * 0.8;
+        x2 = centerX;
+        y2 = screenH * 0.2;
+        swipePath = { start: [x1, y1], end: [x2, y2] };
         break;
       case 'down':
-        swipePath = { start: [centerX, screenH * 0.2], end: [centerX, screenH * 0.8] };
+        x1 = centerX;
+        y1 = screenH * 0.2;
+        x2 = centerX;
+        y2 = screenH * 0.8;
+        swipePath = { start: [x1, y1], end: [x2, y2] };
         break;
       case 'left':
-        swipePath = { start: [screenW * 0.8, centerY], end: [screenW * 0.2, centerY] };
+        x1 = screenW * 0.8;
+        y1 = centerY;
+        x2 = screenW * 0.2;
+        y2 = centerY;
+        swipePath = { start: [x1, y1], end: [x2, y2] };
         break;
       case 'right':
-        swipePath = { start: [screenW * 0.2, centerY], end: [screenW * 0.8, centerY] };
+        x1 = screenW * 0.2;
+        y1 = centerY;
+        x2 = screenW * 0.8;
+        y2 = centerY;
+        swipePath = { start: [x1, y1], end: [x2, y2] };
         break;
+      default:
+        throw new Error(`Invalid direction: ${direction}`);
+    }
+
+    // Build IDB command with coordinates (not direction string)
+    command = `idb ui swipe --udid "${udid}" ${x1} ${y1} ${x2} ${y2}`;
+    if (duration !== 500) {
+      // Only add if non-default
+      command += ` --duration ${duration}`;
     }
   } else {
     // Custom path swipe: idb ui swipe --udid <UDID> <x1> <y1> <x2> <y2> [--duration <ms>]
