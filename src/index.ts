@@ -36,14 +36,18 @@ import { simctlPrivacyTool } from './tools/simctl/privacy.js';
 import { simctlPushTool } from './tools/simctl/push.js';
 import { simctlPbcopyTool } from './tools/simctl/pbcopy.js';
 import { simctlStatusBarTool } from './tools/simctl/status-bar.js';
-// Phase 4: UI Automation Tools
-import { simctlQueryUiTool } from './tools/simctl/query-ui.js';
-import { simctlTapTool } from './tools/simctl/tap.js';
-import { simctlTypeTextTool } from './tools/simctl/type-text.js';
-import { simctlScrollTool } from './tools/simctl/scroll.js';
-import { simctlGestureTool } from './tools/simctl/gesture.js';
-import { simctlGetInteractionDetailsTool } from './tools/simctl/get-interaction-details.js';
 import { simctlScreenshotInlineTool } from './tools/simctl/screenshot-inline.js';
+import { idbTargetsTool } from './tools/idb/targets.js';
+import { idbConnectTool } from './tools/idb/connect.js';
+import { idbUiTapTool } from './tools/idb/ui-tap.js';
+import { idbUiInputTool } from './tools/idb/ui-input.js';
+import { idbUiGestureTool } from './tools/idb/ui-gesture.js';
+import { idbUiDescribeTool } from './tools/idb/ui-describe.js';
+import { idbListAppsTool } from './tools/idb/list-apps.js';
+import { idbInstallTool } from './tools/idb/install.js';
+import { idbLaunchTool } from './tools/idb/launch.js';
+import { idbTerminateTool } from './tools/idb/terminate.js';
+import { idbUninstallTool } from './tools/idb/uninstall.js';
 import { listCachedResponsesTool } from './tools/cache/list-cached.js';
 import {
   getCacheStatsTool,
@@ -69,9 +73,9 @@ class XcodeCLIMCPServer {
         version: '1.0.5',
         description:
           'Intelligent iOS development MCP server providing advanced Xcode and simulator control. ' +
-          'Features 44 focused tools across 7 categories: build management, testing, simulator lifecycle, ' +
-          'device discovery, app management, and Phase 4 UI automation with progressive disclosure caching. ' +
-          'Optimized for agent workflows with auto-UDID detection, semantic naming, and vision-friendly inline screenshots.',
+          'Features 50 focused tools across 8 categories: build management, testing, simulator lifecycle, ' +
+          'device discovery, app management, IDB UI automation, and progressive disclosure caching. ' +
+          'Optimized for agent workflows with auto-UDID detection, coordinate transformation, semantic naming, and vision-friendly inline screenshots.',
       },
       {
         capabilities: {
@@ -922,8 +926,17 @@ Returns: URL open status and guidance for testing URL handling.`,
         description: `📸 **Capture Screenshots and Videos** - Record simulator screen for testing and documentation.
 
 Operations:
-• screenshot: Capture current screen as PNG
+• screenshot: Capture current screen as PNG (with tile-aligned sizing and aspect ratio preservation)
 • video: Record simulator screen (stop with Ctrl+C)
+
+Screenshot size optimization (default: 'half' for 50% token savings):
+• **half**: 256×512 pixels, 1 tile, 170 tokens (DEFAULT)
+• **full**: Native resolution, 2 tiles, 340 tokens
+• **quarter**: 128×256 pixels, 1 tile, 170 tokens
+• **thumb**: 128×128 pixels, 1 tile, 170 tokens
+
+⚠️ **Coordinate Scaling for Resized Screenshots**:
+When screenshots are resized (all sizes except 'full'), the response includes \`coordinateTransform\` with scale factors. To tap coordinates from a resized screenshot, multiply by these scale factors before tapping.
 
 Supports custom output paths and video codecs (h264, hevc, prores).
 
@@ -934,6 +947,12 @@ Returns: File path and guidance for viewing captured media.`,
           udid: z.string().describe('Simulator UDID'),
           operation: z.enum(['screenshot', 'video']).describe('Operation: screenshot or video'),
           outputPath: z.string().optional().describe('Custom output file path'),
+          size: z
+            .enum(['full', 'half', 'quarter', 'thumb'])
+            .optional()
+            .describe(
+              'Screenshot size preset (default: "half" for 50% token savings). Use "full" for detailed analysis, "half" for general use, "quarter"/"thumb" for thumbnails.'
+            ),
           codec: z
             .enum(['h264', 'hevc', 'prores'])
             .optional()
@@ -1151,250 +1170,27 @@ Returns: Status bar modification status and guidance for verification.`,
         }
       }
     );
-
-    // Phase 4: UI Automation Tools (6 total)
-    this.server.registerTool(
-      'simctl-query-ui',
-      {
-        description: `🔍 **Query UI Elements** - Find elements on app screen using XCUITest predicates.
-
-Query UI elements with powerful predicate syntax for element discovery. UDID is optional and auto-detects booted simulator if not provided.
-
-Predicates enable:
-• Element type matching: Button, TextField, Switch, Table, Cell, etc.
-• Accessibility queries: identifier, label, placeholderValue
-• State queries: enabled, visible, hittable
-• Compound predicates: AND, OR, NOT operators
-
-Returns: Elements found and their properties for interaction.`,
-        inputSchema: {
-          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
-          bundleId: z.string().describe('App bundle ID (e.g., com.example.MyApp)'),
-          predicate: z
-            .string()
-            .describe(
-              'XCUITest predicate (e.g., \'type == "XCUIElementTypeButton" AND label == "Login"\')'
-            ),
-          captureLocation: z
-            .boolean()
-            .optional()
-            .describe('Capture element locations for interaction'),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlQueryUiTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'simctl-tap',
-      {
-        description: `👆 **Tap Screen** - Simulate tap interactions on simulator screen.
-
-Perform single tap, double tap, or long press at specified coordinates. UDID is optional and auto-detects booted simulator if not provided. Also available as 'tap' alias for shorter invocations.
-
-Returns: Tap status and guidance for verification.`,
-        inputSchema: {
-          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
-          x: z.number().describe('X coordinate in pixels'),
-          y: z.number().describe('Y coordinate in pixels'),
-          numberOfTaps: z.number().optional().describe('Number of taps (default: 1)'),
-          duration: z.number().optional().describe('Duration in seconds for long press'),
-          actionName: z
-            .string()
-            .optional()
-            .describe('Action description for tracking (e.g., "Login Button Tap")'),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlTapTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'simctl-type-text',
-      {
-        description: `⌨️ **Type Text** - Enter text into focused text field.
-
-Type text, passwords, or multi-line input. Supports keyboard actions like return, tab, backspace. UDID is optional and auto-detects booted simulator if not provided. Also available as 'type' alias for shorter invocations.
-
-Returns: Text entry status and guidance for verification.`,
-        inputSchema: {
-          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
-          text: z.string().describe('Text to type'),
-          isSensitive: z
-            .boolean()
-            .optional()
-            .describe('Mark as sensitive (output will be redacted)'),
-          keyboardActions: z
-            .array(z.string())
-            .optional()
-            .describe('Keyboard actions after text (e.g., ["return", "tab"])'),
-          actionName: z
-            .string()
-            .optional()
-            .describe('Action description for tracking (e.g., "Enter email address")'),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlTypeTextTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'simctl-scroll',
-      {
-        description: `📜 **Scroll Content** - Scroll in direction on simulator screen.
-
-Scroll views, tables, and lists in any direction with configurable velocity. UDID is optional and auto-detects booted simulator if not provided. Also available as 'scroll' alias for shorter invocations.
-
-Returns: Scroll status and guidance for verification.`,
-        inputSchema: {
-          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
-          direction: z.enum(['up', 'down', 'left', 'right']).describe('Scroll direction'),
-          x: z.number().optional().describe('X coordinate (default: screen center)'),
-          y: z.number().optional().describe('Y coordinate (default: screen center)'),
-          velocity: z.number().optional().describe('Scroll velocity 1-10 (default: 3)'),
-          actionName: z
-            .string()
-            .optional()
-            .describe('Action description for tracking (e.g., "Scroll to bottom")'),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlScrollTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'simctl-gesture',
-      {
-        description: `✋ **Perform Gestures** - Execute complex gestures (swipe, pinch, rotate, multi-touch).
-
-Advanced gesture support for swipes, pinch zoom, rotation, and multi-touch interactions. UDID is optional and auto-detects booted simulator if not provided. Also available as 'swipe', 'pinch', 'rotate' aliases for shorter invocations.
-
-Gestures: swipe, pinch, rotate, multitouch
-
-Returns: Gesture status and guidance for verification.`,
-        inputSchema: {
-          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
-          type: z.enum(['swipe', 'pinch', 'rotate', 'multitouch']).describe('Gesture type'),
-          direction: z
-            .enum(['up', 'down', 'left', 'right'])
-            .optional()
-            .describe('Direction (for swipe)'),
-          scale: z.number().optional().describe('Scale factor (for pinch)'),
-          angle: z.number().optional().describe('Rotation angle in degrees (for rotate)'),
-          startX: z.number().optional().describe('Starting X coordinate (for swipe)'),
-          startY: z.number().optional().describe('Starting Y coordinate (for swipe)'),
-          centerX: z.number().optional().describe('Center X coordinate (for pinch/rotate)'),
-          centerY: z.number().optional().describe('Center Y coordinate (for pinch/rotate)'),
-          fingers: z.number().optional().describe('Number of fingers (for multitouch)'),
-          action: z.string().optional().describe('Action type (for multitouch, e.g., "tap")'),
-          actionName: z.string().optional().describe('Action description for tracking'),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlGestureTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    // Phase 4: Progressive Disclosure for UI Interactions
-    this.server.registerTool(
-      'simctl-get-interaction-details',
-      {
-        description: `🔍 **Get Interaction Details** - Retrieve full output from cached UI automation operations.
-
-Supports progressive disclosure for Phase 4 UI automation tools:
-• simctl-query-ui - Element querying results
-• simctl-tap - Tap operation logs
-• simctl-type-text - Text input results
-• simctl-scroll - Scroll operation logs
-• simctl-gesture - Gesture operation logs
-
-Use interactionId from tool responses to fetch full command output, errors, or metadata.
-
-Returns: Detailed operation results with optional log limiting.`,
-        inputSchema: {
-          interactionId: z.string().describe('Interaction ID from UI automation tool response'),
-          detailType: z
-            .enum(['full-log', 'summary', 'command', 'metadata'])
-            .describe('Type of details to retrieve'),
-          maxLines: z
-            .number()
-            .optional()
-            .default(100)
-            .describe('Maximum number of lines to return for logs'),
-        },
-      },
-      async args => {
-        try {
-          return await simctlGetInteractionDetailsTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
     this.server.registerTool(
       'screenshot',
       {
         description: `📸 **Capture Screenshot** - Take an optimized screenshot and return as base64 image data (inline).
 
+Screenshot size optimization (default: 'half' for 50% token savings):
+• **half**: 256×512 pixels, 1 tile, 170 tokens (DEFAULT)
+• **full**: Native resolution, 2 tiles, 340 tokens
+• **quarter**: 128×256 pixels, 1 tile, 170 tokens
+• **thumb**: 128×128 pixels, 1 tile, 170 tokens
+
 Automatically optimizes screenshots for token efficiency:
+• Resizes to tile-aligned dimensions (default: 256×512) while preserving aspect ratio
 • Converts to WebP format (60% quality) - ~30-50% smaller than JPEG
-• 1:1 pixel dimensions (no resizing artifacts)
 • Falls back to JPEG if WebP unavailable
 • Returns image inline with metadata
+
+⚠️ **Coordinate Scaling for Resized Screenshots**:
+When screenshots are resized (all sizes except 'full'), the response includes \`coordinateTransform\` with scale factors. To tap coordinates from a resized screenshot, multiply by these scale factors before tapping:
+• deviceX = screenshotX × scaleX
+• deviceY = screenshotY × scaleY
 
 With semantic naming, generates filenames like: MyApp_LoginScreen_Empty_2025-01-23.png`,
         inputSchema: {
@@ -1402,6 +1198,12 @@ With semantic naming, generates filenames like: MyApp_LoginScreen_Empty_2025-01-
             .string()
             .optional()
             .describe('Simulator UDID (optional - auto-detects booted simulator if not provided)'),
+          size: z
+            .enum(['full', 'half', 'quarter', 'thumb'])
+            .optional()
+            .describe(
+              'Screenshot size preset (default: "half" for 50% token savings). Use "full" for detailed analysis, "half" for general use, "quarter"/"thumb" for thumbnails.'
+            ),
           appName: z.string().optional().describe('App name for semantic naming (e.g., "MyApp")'),
           screenName: z
             .string()
@@ -1411,6 +1213,12 @@ With semantic naming, generates filenames like: MyApp_LoginScreen_Empty_2025-01-
             .string()
             .optional()
             .describe('UI state for semantic naming (e.g., "Empty", "Filled", "Loading")'),
+          enableCoordinateCaching: z
+            .boolean()
+            .optional()
+            .describe(
+              'Enable view fingerprint computation for coordinate caching (opt-in Phase 1 feature)'
+            ),
         },
       },
       async args => {
@@ -1425,6 +1233,405 @@ With semantic naming, generates filenames like: MyApp_LoginScreen_Empty_2025-01-
           );
         }
       }
+    );
+
+    // IDB Tools (11 total) - iOS Development Bridge for UI Automation & App Management
+    this.server.registerTool(
+      'idb-targets',
+      {
+        description: `Query and manage iOS targets (simulators + devices)
+
+Operations:
+- list: Show available targets with filters
+- describe: Get detailed target information
+- focus: Bring simulator window to foreground (macOS only)
+
+Examples:
+- List all targets: operation: "list"
+- List booted only: operation: "list", state: "Booted"
+- Get target details: operation: "describe", udid: "ABC-123"
+- Focus simulator: operation: "focus", udid: "ABC-123"`,
+        inputSchema: {
+          operation: z.enum(['list', 'describe', 'focus']).describe('Operation to perform'),
+          udid: z.string().optional().describe('Target UDID (required for describe/focus)'),
+          state: z.enum(['Booted', 'Shutdown']).optional().describe('Filter by state (list only)'),
+          type: z.enum(['device', 'simulator']).optional().describe('Filter by type (list only)'),
+        },
+      },
+      async args => idbTargetsTool(args)
+    );
+
+    this.server.registerTool(
+      'idb-connect',
+      {
+        description: `Manage IDB companion connections for persistent target access
+
+Why: IDB maintains persistent gRPC connections to targets.
+Connecting registers the companion for faster subsequent operations.
+
+Examples:
+- Connect to target: udid: "ABC-123"
+- Auto-detect and connect: (no parameters)
+- Disconnect: udid: "ABC-123", operation: "disconnect"`,
+        inputSchema: {
+          udid: z.string().optional().describe('Target UDID (auto-detect if not provided)'),
+          operation: z
+            .enum(['connect', 'disconnect'])
+            .default('connect')
+            .describe('Operation to perform'),
+        },
+      },
+      async args => idbConnectTool(args)
+    );
+
+    this.server.registerTool(
+      'idb-ui-tap',
+      {
+        description: `🎯 Tap at coordinates on iOS simulator or physical device
+
+Coordinate System:
+- Absolute device coordinates (0,0 = top-left)
+- Use applyScreenshotScale for screenshot-based coordinates
+- Tool automatically transforms and validates bounds
+
+Examples:
+- Simple tap: x: 200, y: 400
+- From screenshot: x: 100, y: 200, applyScreenshotScale: true, screenshotScaleX: 2.0, screenshotScaleY: 2.0
+- Double tap: x: 200, y: 400, numberOfTaps: 2
+- Long press: x: 200, y: 400, duration: 1000
+
+Device Support:
+- Simulators: Full support ✅
+- Physical Devices: Requires USB + idb_companion ✅`,
+        inputSchema: {
+          udid: z.string().optional().describe('Target UDID (auto-detect if not provided)'),
+          x: z.number().describe('X coordinate'),
+          y: z.number().describe('Y coordinate'),
+          numberOfTaps: z.number().default(1).describe('Number of taps'),
+          duration: z.number().optional().describe('Long press duration in milliseconds'),
+          applyScreenshotScale: z
+            .boolean()
+            .optional()
+            .describe('Apply coordinate transform from screenshot'),
+          screenshotScaleX: z.number().optional().describe('Scale factor for X axis'),
+          screenshotScaleY: z.number().optional().describe('Scale factor for Y axis'),
+          actionName: z.string().optional().describe('LLM: Action name (e.g., "Login Button")'),
+          screenContext: z
+            .string()
+            .optional()
+            .describe('LLM: Screen context (e.g., "LoginScreen")'),
+          expectedOutcome: z
+            .string()
+            .optional()
+            .describe('LLM: Expected outcome (e.g., "Navigate to Home")'),
+          testScenario: z.string().optional().describe('LLM: Test scenario name'),
+          step: z.number().optional().describe('LLM: Step number in workflow'),
+        },
+      },
+      async args => idbUiTapTool(args)
+    );
+
+    this.server.registerTool(
+      'idb-ui-input',
+      {
+        description: `⌨️ Input text and keyboard commands on iOS target
+
+Operations:
+- text: Type text string (requires focused text field)
+- key: Press single special key (home, return, etc.)
+- key-sequence: Press multiple keys in sequence
+
+Available Keys:
+home, lock, siri, delete, return, space, escape, tab, up, down, left, right
+
+Examples:
+- Type text: operation: "text", text: "test@example.com"
+- Press key: operation: "key", key: "return"
+- Key sequence: operation: "key-sequence", keySequence: ["tab", "return"]
+- Sensitive input: operation: "text", text: "password123", isSensitive: true`,
+        inputSchema: {
+          udid: z.string().optional().describe('Target UDID (auto-detect if not provided)'),
+          operation: z.enum(['text', 'key', 'key-sequence']).describe('Input operation type'),
+          text: z.string().optional().describe('Text to type (for text operation)'),
+          key: z
+            .enum([
+              'home',
+              'lock',
+              'siri',
+              'delete',
+              'return',
+              'space',
+              'escape',
+              'tab',
+              'up',
+              'down',
+              'left',
+              'right',
+            ])
+            .optional()
+            .describe('Key to press (for key operation)'),
+          keySequence: z.array(z.string()).optional().describe('Keys to press (for key-sequence)'),
+          actionName: z.string().optional().describe('LLM: Action name (e.g., "Enter Email")'),
+          fieldContext: z
+            .string()
+            .optional()
+            .describe('LLM: Field context (e.g., "Email TextField")'),
+          expectedOutcome: z
+            .string()
+            .optional()
+            .describe('LLM: Expected outcome (e.g., "Email populated")'),
+          isSensitive: z.boolean().optional().describe('Mark as sensitive (password, etc.)'),
+        },
+      },
+      async args => idbUiInputTool(args)
+    );
+
+    this.server.registerTool(
+      'idb-ui-gesture',
+      {
+        description: `👆 Perform gestures and hardware button presses
+
+Operations:
+- swipe: Swipe gesture in direction or custom path
+- button: Press hardware button (HOME, LOCK, SIRI, etc.)
+
+Swipe Directions: up, down, left, right
+Hardware Buttons: HOME, LOCK, SIDE_BUTTON, APPLE_PAY, SIRI, SCREENSHOT, APP_SWITCH
+
+Examples:
+- Swipe up: operation: "swipe", direction: "up"
+- Custom swipe: operation: "swipe", startX: 100, startY: 500, endX: 100, endY: 100
+- Home button: operation: "button", buttonType: "HOME"
+- Lock device: operation: "button", buttonType: "LOCK"`,
+        inputSchema: {
+          udid: z.string().optional().describe('Target UDID (auto-detect if not provided)'),
+          operation: z.enum(['swipe', 'button']).describe('Gesture operation type'),
+          direction: z.enum(['up', 'down', 'left', 'right']).optional().describe('Swipe direction'),
+          startX: z.number().optional().describe('Custom swipe start X'),
+          startY: z.number().optional().describe('Custom swipe start Y'),
+          endX: z.number().optional().describe('Custom swipe end X'),
+          endY: z.number().optional().describe('Custom swipe end Y'),
+          duration: z.number().default(500).describe('Swipe duration in milliseconds'),
+          buttonType: z
+            .enum(['HOME', 'LOCK', 'SIDE_BUTTON', 'APPLE_PAY', 'SIRI', 'SCREENSHOT', 'APP_SWITCH'])
+            .optional()
+            .describe('Hardware button type'),
+          actionName: z.string().optional().describe('LLM: Action name'),
+          expectedOutcome: z.string().optional().describe('LLM: Expected outcome'),
+        },
+      },
+      async args => idbUiGestureTool(args)
+    );
+
+    this.server.registerTool(
+      'idb-ui-describe',
+      {
+        description: `🔍 Query UI accessibility tree for element discovery
+
+Operations:
+- all: Get full accessibility tree (uses progressive disclosure)
+- point: Get element at specific coordinates
+
+Progressive Disclosure:
+- 'all' operation returns summary + cache ID
+- Use idb-ui-get-details with uiTreeId for full tree
+- Prevents token overflow for complex UIs
+
+Examples:
+- Full UI tree: operation: "all"
+- Element at point: operation: "point", x: 200, y: 400
+- With context: operation: "all", screenContext: "LoginScreen"`,
+        inputSchema: {
+          udid: z.string().optional().describe('Target UDID (auto-detect if not provided)'),
+          operation: z.enum(['all', 'point']).describe('Query operation type'),
+          x: z.number().optional().describe('X coordinate (for point operation)'),
+          y: z.number().optional().describe('Y coordinate (for point operation)'),
+          screenContext: z
+            .string()
+            .optional()
+            .describe('LLM: Screen context (e.g., "LoginScreen")'),
+          purposeDescription: z
+            .string()
+            .optional()
+            .describe('LLM: Query purpose (e.g., "Find tappable button")'),
+        },
+      },
+      async args => idbUiDescribeTool(args)
+    );
+
+    this.server.registerTool(
+      'idb-list-apps',
+      {
+        description: `📱 List installed applications on iOS target
+
+Output includes:
+- Bundle ID, app name, install type (system/user/internal)
+- Running status (which app is active)
+- Debuggable status (can attach LLDB)
+- Architecture (arm64, x86_64, universal)
+
+Filters:
+- filterType: Show only system/user/internal apps
+- runningOnly: Show only running apps
+
+Examples:
+- List all apps: (no parameters needed)
+- List user apps: filterType: "user"
+- List running apps: runningOnly: true
+- Running user apps: filterType: "user", runningOnly: true
+
+Device Support:
+- Simulators: Full support ✅
+- Physical Devices: Requires USB + idb_companion ✅`,
+        inputSchema: {
+          udid: z.string().optional().describe('Target UDID (auto-detect if not provided)'),
+          filterType: z
+            .enum(['system', 'user', 'internal'])
+            .optional()
+            .describe('Filter by install type'),
+          runningOnly: z.boolean().optional().describe('Show only running apps'),
+        },
+      },
+      async args => idbListAppsTool(args)
+    );
+
+    this.server.registerTool(
+      'idb-install',
+      {
+        description: `📦 Install application to iOS target
+
+Supported formats:
+- .app bundles (from Xcode build)
+- .ipa archives (signed/unsigned)
+
+Installation process:
+- Validates app exists and is correct format
+- Transfers to target device/simulator
+- Registers app with system
+- Returns bundle ID for launching
+
+Examples:
+- Install .app: appPath: "/path/to/MyApp.app"
+- Install .ipa: appPath: "/path/to/MyApp.ipa"
+- Auto-detect target: appPath: "/path/to/App.app"
+- Specific target: appPath: "/path/to/App.app", udid: "ABC-123"
+
+Device Support:
+- Simulators: Full support ✅
+- Physical Devices: Requires USB + idb_companion ✅
+
+Note: Installation can take 10-60 seconds depending on app size`,
+        inputSchema: {
+          udid: z.string().optional().describe('Target UDID (auto-detect if not provided)'),
+          appPath: z.string().describe('Path to .app or .ipa file'),
+        },
+      },
+      async args => idbInstallTool(args)
+    );
+
+    this.server.registerTool(
+      'idb-launch',
+      {
+        description: `🚀 Launch application on iOS target
+
+Features:
+- Simple launch or stream stdout/stderr
+- Pass command-line arguments to app
+- Set environment variables
+- Returns process ID for tracking
+
+Output streaming (-w flag):
+- streamOutput: true enables stdout/stderr capture
+- Useful for debugging and behavior analysis
+- Output included in response
+
+Examples:
+- Simple launch: bundleId: "com.example.MyApp"
+- Stream output: bundleId: "com.example.MyApp", streamOutput: true
+- With arguments: bundleId: "com.example.MyApp", arguments: ["--debug"]
+- With env vars: bundleId: "com.example.MyApp", environment: {"DEBUG": "1"}
+
+Device Support:
+- Simulators: Full support ✅
+- Physical Devices: Requires USB + idb_companion ✅`,
+        inputSchema: {
+          udid: z.string().optional().describe('Target UDID (auto-detect if not provided)'),
+          bundleId: z.string().describe('App bundle identifier'),
+          streamOutput: z.boolean().optional().describe('Stream stdout/stderr (enables -w flag)'),
+          arguments: z
+            .array(z.string())
+            .optional()
+            .describe('Command-line arguments to pass to app'),
+          environment: z.record(z.string()).optional().describe('Environment variables'),
+        },
+      },
+      async args => idbLaunchTool(args)
+    );
+
+    this.server.registerTool(
+      'idb-terminate',
+      {
+        description: `⏹️ Terminate (kill) running application on iOS target
+
+Behavior:
+- Immediately stops the running app
+- Equivalent to force-quitting
+- App state is not saved (no graceful shutdown)
+- Idempotent (succeeds even if app not running)
+
+Use cases:
+- Stop app before reinstalling
+- Force quit hung/crashed app
+- Reset app state for testing
+- Clean up before debugging
+
+Examples:
+- Terminate app: bundleId: "com.example.MyApp"
+- Auto-detect target: bundleId: "com.example.MyApp"
+- Specific target: bundleId: "com.example.MyApp", udid: "ABC-123"
+
+Device Support:
+- Simulators: Full support ✅
+- Physical Devices: Requires USB + idb_companion ✅`,
+        inputSchema: {
+          udid: z.string().optional().describe('Target UDID (auto-detect if not provided)'),
+          bundleId: z.string().describe('App bundle identifier to terminate'),
+        },
+      },
+      async args => idbTerminateTool(args)
+    );
+
+    this.server.registerTool(
+      'idb-uninstall',
+      {
+        description: `🗑️ Uninstall (remove) application from iOS target
+
+Behavior:
+- Removes app from device/simulator
+- Deletes app data and preferences
+- Cannot uninstall system apps
+- Auto-terminates if app is running
+
+Use cases:
+- Clean install testing
+- Remove old versions before reinstall
+- Free device storage
+- Reset app state completely
+
+Examples:
+- Uninstall app: bundleId: "com.example.MyApp"
+- Auto-detect target: bundleId: "com.example.MyApp"
+- Specific target: bundleId: "com.example.MyApp", udid: "ABC-123"
+
+Device Support:
+- Simulators: Full support ✅
+- Physical Devices: Requires USB + idb_companion ✅`,
+        inputSchema: {
+          udid: z.string().optional().describe('Target UDID (auto-detect if not provided)'),
+          bundleId: z.string().describe('App bundle identifier to uninstall'),
+        },
+      },
+      async args => idbUninstallTool(args)
     );
 
     // Cache Management Tools (5 total)
@@ -1675,244 +1882,6 @@ Essential for:
         try {
           await validateXcodeInstallation();
           return (await persistenceStatusTool(args)) as any;
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    // Short-name aliases for Phase 4 UI Automation Tools
-    // Register same handlers under shorter names for agent-friendly invocations
-    this.server.registerTool(
-      'query',
-      {
-        description: 'Short alias for simctl-query-ui - Query UI elements with XCUITest predicates',
-        inputSchema: {
-          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
-          bundleId: z.string().describe('App bundle ID (e.g., com.example.MyApp)'),
-          predicate: z
-            .string()
-            .describe(
-              'XCUITest predicate (e.g., \'type == "XCUIElementTypeButton" AND label == "Login"\')'
-            ),
-          captureLocation: z
-            .boolean()
-            .optional()
-            .describe('Capture element locations for interaction'),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlQueryUiTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'tap',
-      {
-        description: 'Short alias for simctl-tap - Tap screen at coordinates',
-        inputSchema: {
-          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
-          x: z.number().describe('X coordinate in pixels'),
-          y: z.number().describe('Y coordinate in pixels'),
-          numberOfTaps: z.number().optional().describe('Number of taps (default: 1)'),
-          duration: z.number().optional().describe('Duration in seconds for long press'),
-          actionName: z
-            .string()
-            .optional()
-            .describe('Action description for tracking (e.g., "Login Button Tap")'),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlTapTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'type',
-      {
-        description: 'Short alias for simctl-type-text - Type text into focused field',
-        inputSchema: {
-          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
-          text: z.string().describe('Text to type'),
-          isSensitive: z
-            .boolean()
-            .optional()
-            .describe('Mark as sensitive (output will be redacted)'),
-          keyboardActions: z
-            .array(z.string())
-            .optional()
-            .describe('Keyboard actions after text (e.g., ["return", "tab"])'),
-          actionName: z
-            .string()
-            .optional()
-            .describe('Action description for tracking (e.g., "Enter email address")'),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlTypeTextTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'scroll',
-      {
-        description: 'Short alias for simctl-scroll - Scroll in direction on screen',
-        inputSchema: {
-          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
-          direction: z.enum(['up', 'down', 'left', 'right']).describe('Scroll direction'),
-          x: z.number().optional().describe('X coordinate (default: screen center)'),
-          y: z.number().optional().describe('Y coordinate (default: screen center)'),
-          velocity: z.number().optional().describe('Scroll velocity 1-10 (default: 3)'),
-          actionName: z
-            .string()
-            .optional()
-            .describe('Action description for tracking (e.g., "Scroll to bottom")'),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlScrollTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    // Gesture aliases
-    this.server.registerTool(
-      'swipe',
-      {
-        description: 'Short alias for simctl-gesture (type: swipe) - Swipe gesture',
-        inputSchema: {
-          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
-          type: z.enum(['swipe', 'pinch', 'rotate', 'multitouch']).describe('Gesture type'),
-          direction: z
-            .enum(['up', 'down', 'left', 'right'])
-            .optional()
-            .describe('Direction (for swipe)'),
-          scale: z.number().optional().describe('Scale factor (for pinch)'),
-          angle: z.number().optional().describe('Rotation angle in degrees (for rotate)'),
-          startX: z.number().optional().describe('Starting X coordinate (for swipe)'),
-          startY: z.number().optional().describe('Starting Y coordinate (for swipe)'),
-          centerX: z.number().optional().describe('Center X coordinate (for pinch/rotate)'),
-          centerY: z.number().optional().describe('Center Y coordinate (for pinch/rotate)'),
-          fingers: z.number().optional().describe('Number of fingers (for multitouch)'),
-          action: z.string().optional().describe('Action type (for multitouch, e.g., "tap")'),
-          actionName: z.string().optional().describe('Action description for tracking'),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlGestureTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'pinch',
-      {
-        description: 'Short alias for simctl-gesture (type: pinch) - Pinch zoom gesture',
-        inputSchema: {
-          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
-          type: z.enum(['swipe', 'pinch', 'rotate', 'multitouch']).describe('Gesture type'),
-          direction: z
-            .enum(['up', 'down', 'left', 'right'])
-            .optional()
-            .describe('Direction (for swipe)'),
-          scale: z.number().optional().describe('Scale factor (for pinch)'),
-          angle: z.number().optional().describe('Rotation angle in degrees (for rotate)'),
-          startX: z.number().optional().describe('Starting X coordinate (for swipe)'),
-          startY: z.number().optional().describe('Starting Y coordinate (for swipe)'),
-          centerX: z.number().optional().describe('Center X coordinate (for pinch/rotate)'),
-          centerY: z.number().optional().describe('Center Y coordinate (for pinch/rotate)'),
-          fingers: z.number().optional().describe('Number of fingers (for multitouch)'),
-          action: z.string().optional().describe('Action type (for multitouch, e.g., "tap")'),
-          actionName: z.string().optional().describe('Action description for tracking'),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlGestureTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'rotate',
-      {
-        description: 'Short alias for simctl-gesture (type: rotate) - Rotation gesture',
-        inputSchema: {
-          udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
-          type: z.enum(['swipe', 'pinch', 'rotate', 'multitouch']).describe('Gesture type'),
-          direction: z
-            .enum(['up', 'down', 'left', 'right'])
-            .optional()
-            .describe('Direction (for swipe)'),
-          scale: z.number().optional().describe('Scale factor (for pinch)'),
-          angle: z.number().optional().describe('Rotation angle in degrees (for rotate)'),
-          startX: z.number().optional().describe('Starting X coordinate (for swipe)'),
-          startY: z.number().optional().describe('Starting Y coordinate (for swipe)'),
-          centerX: z.number().optional().describe('Center X coordinate (for pinch/rotate)'),
-          centerY: z.number().optional().describe('Center Y coordinate (for pinch/rotate)'),
-          fingers: z.number().optional().describe('Number of fingers (for multitouch)'),
-          action: z.string().optional().describe('Action type (for multitouch, e.g., "tap")'),
-          actionName: z.string().optional().describe('Action description for tracking'),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlGestureTool(args);
         } catch (error) {
           if (error instanceof McpError) throw error;
           throw new McpError(

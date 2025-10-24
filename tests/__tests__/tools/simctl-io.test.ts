@@ -156,7 +156,7 @@ describe('simctlIoTool', () => {
       await expect(
         simctlIoTool({
           udid: validUDID,
-          operation: 'invalid',
+          operation: 'invalid' as 'screenshot', // Type assertion for testing invalid input
         })
       ).rejects.toThrow(McpError);
     });
@@ -412,7 +412,7 @@ describe('simctlIoTool', () => {
 
   describe('supported operations', () => {
     it('should list all supported operations', async () => {
-      const supportedOps = ['screenshot', 'video'];
+      const supportedOps: Array<'screenshot' | 'video'> = ['screenshot', 'video'];
       for (const op of supportedOps) {
         const result = await simctlIoTool({
           udid: validUDID,

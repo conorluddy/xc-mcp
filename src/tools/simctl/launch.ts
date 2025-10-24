@@ -20,23 +20,21 @@ interface SimctlLaunchToolArgs {
  * Returns the process ID of the launched app
  */
 export async function simctlLaunchTool(args: any) {
-  const { udid, bundleId, arguments: appArgs = [], environment = {} } =
-    args as SimctlLaunchToolArgs;
+  const {
+    udid,
+    bundleId,
+    arguments: appArgs = [],
+    environment = {},
+  } = args as SimctlLaunchToolArgs;
 
   try {
     // Validate inputs
     if (!udid || udid.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'UDID is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'UDID is required and cannot be empty');
     }
 
     if (!bundleId || bundleId.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'Bundle ID is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'Bundle ID is required and cannot be empty');
     }
 
     // Validate bundle ID format
@@ -56,20 +54,18 @@ export async function simctlLaunchTool(args: any) {
       );
     }
 
-    // Build environment variables string
-    let envString = '';
+    // Build environment variables with SIMCTL_CHILD_ prefix
+    // simctl requires environment variables to be prefixed with SIMCTL_CHILD_
+    let envPrefix = '';
     for (const [key, value] of Object.entries(environment)) {
-      envString += ` ${key}="${value}"`;
+      envPrefix += `SIMCTL_CHILD_${key}="${value}" `;
     }
 
     // Build arguments string
-    const argsString = appArgs.map((arg) => `"${arg}"`).join(' ');
+    const argsString = appArgs.map(arg => `"${arg}"`).join(' ');
 
-    // Build launch command
-    let command = `xcrun simctl launch ${udid} "${bundleId}"`;
-    if (envString) {
-      command = `env${envString} ${command}`;
-    }
+    // Build launch command with environment variables prefixed
+    let command = `${envPrefix}xcrun simctl launch ${udid} "${bundleId}"`;
     if (argsString) {
       command += ` ${argsString}`;
     }

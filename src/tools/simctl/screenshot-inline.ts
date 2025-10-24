@@ -7,6 +7,15 @@ import {
   AccessibilityElement,
 } from '../../utils/element-extraction.js';
 import { computeViewFingerprint, isViewCacheable } from '../../utils/view-fingerprinting.js';
+import {
+  ScreenshotSize,
+  DEFAULT_SCREENSHOT_SIZE,
+  isValidScreenshotSize,
+  buildResizeCommand,
+  getScreenshotSizeMetadata,
+  calculateCoordinateTransform,
+  CoordinateTransform,
+} from '../../utils/screenshot-sizing.js';
 import { promises as fs } from 'fs';
 import fsSync from 'fs';
 import path from 'path';
@@ -15,6 +24,8 @@ import { resolveDeviceId } from '../../utils/device-detection.js';
 
 interface ScreenshotInlineToolArgs {
   udid?: string;
+  // Screenshot size optimization (opt-out approach)
+  size?: ScreenshotSize;
   // LLM optimization: semantic naming for screenshots
   appName?: string;
   screenName?: string;
@@ -27,12 +38,20 @@ interface ScreenshotInlineToolArgs {
  * Capture screenshot and return as optimized base64 image data (inline)
  *
  * Examples:
- * - Simple screenshot: udid: "device-123", returns base64 WebP image
+ * - Simple screenshot: udid: "device-123" (defaults to 256×512, 170 tokens)
+ * - Full size: udid: "device-123", size: "full" (native resolution, 340 tokens)
+ * - Quarter size: udid: "device-123", size: "quarter" (128×256, 170 tokens)
  * - Semantic naming: udid: "device-123", appName: "MyApp", screenName: "LoginScreen", state: "Empty"
  *
+ * Screenshot size optimization (default: 'half' for 50% token savings):
+ * - half: 256×512 pixels, 1 tile, 170 tokens (DEFAULT)
+ * - full: Native resolution, 2 tiles, 340 tokens
+ * - quarter: 128×256 pixels, 1 tile, 170 tokens
+ * - thumb: 128×128 pixels, 1 tile, 170 tokens
+ *
  * The tool automatically optimizes the screenshot:
+ * - Resizes to tile-aligned dimensions (default: 256×512)
  * - Converts to WebP format for best compression (60% quality)
- * - 1:1 pixel dimensions (no resizing artifacts)
  * - Falls back to JPEG if WebP unavailable
  * - Returns base64-encoded data inline in response
  *
@@ -41,9 +60,14 @@ interface ScreenshotInlineToolArgs {
  * understand which screen was captured and track state progression.
  */
 export async function simctlScreenshotInlineTool(args: ScreenshotInlineToolArgs) {
-  const { udid, appName, screenName, state, enableCoordinateCaching } = args;
+  const { udid, size, appName, screenName, state, enableCoordinateCaching } = args;
+
+  // Validate and set size (default to 'half' for 50% token savings)
+  const screenshotSize: ScreenshotSize =
+    size && isValidScreenshotSize(size) ? size : DEFAULT_SCREENSHOT_SIZE;
 
   let tempPng: string | null = null;
+  let tempResized: string | null = null;
   let tempOptimized: string | null = null;
 
   try {
@@ -62,11 +86,16 @@ export async function simctlScreenshotInlineTool(args: ScreenshotInlineToolArgs)
     // Create temp directory
     const tempDir = fsSync.mkdtempSync(path.join(os.tmpdir(), 'xc-mcp-screenshot-'));
 
+    // ============================================================================
+    // SCREENSHOT CAPTURE
+    // ============================================================================
+
     // Generate temp file paths
     tempPng = path.join(tempDir, 'screenshot.png');
+    tempResized = path.join(tempDir, 'screenshot-resized.png');
     tempOptimized = path.join(tempDir, 'screenshot-optimized.webp');
 
-    // Capture screenshot as PNG
+    // Capture screenshot as PNG at native resolution
     const captureCommand = `xcrun simctl io "${resolvedUdid}" screenshot "${tempPng}"`;
     console.error(`[simctl-screenshot-inline] Capturing: ${captureCommand}`);
 
@@ -81,9 +110,40 @@ export async function simctlScreenshotInlineTool(args: ScreenshotInlineToolArgs)
       );
     }
 
-    // Optimize to WebP with 60% quality
-    // First try WebP, fall back to JPEG if WebP is not available
-    let optimizationCommand = `sips -s format webp -s formatOptions 60 "${tempPng}" --out "${tempOptimized}"`;
+    // Get original PNG size for metadata
+    const originalPngStats = await fs.stat(tempPng);
+
+    // ============================================================================
+    // SIZE OPTIMIZATION (TILE-ALIGNED RESIZING)
+    // ============================================================================
+
+    // Resize to tile-aligned dimensions if not full size
+    let sourceForOptimization = tempPng;
+    const resizeCommand = buildResizeCommand(tempPng, tempResized, screenshotSize);
+
+    if (resizeCommand) {
+      console.error(`[simctl-screenshot-inline] Resizing to ${screenshotSize}: ${resizeCommand}`);
+      const resizeResult = await executeCommand(resizeCommand, {
+        timeout: 10000,
+      });
+
+      if (resizeResult.code !== 0) {
+        console.warn(
+          `[simctl-screenshot-inline] Resize failed, using original: ${resizeResult.stderr}`
+        );
+        // Continue with original if resize fails
+      } else {
+        sourceForOptimization = tempResized;
+      }
+    }
+
+    // ============================================================================
+    // FORMAT OPTIMIZATION (WEBP/JPEG COMPRESSION)
+    // ============================================================================
+
+    // Optimize to WebP with 60% quality (best compression)
+    // Fall back to JPEG if WebP is not available
+    let optimizationCommand = `sips -s format webp -s formatOptions 60 "${sourceForOptimization}" --out "${tempOptimized}"`;
     let formatUsed = 'webp';
 
     console.error(`[simctl-screenshot-inline] Optimizing to WebP: ${optimizationCommand}`);
@@ -96,7 +156,7 @@ export async function simctlScreenshotInlineTool(args: ScreenshotInlineToolArgs)
     if (optimizeResult.code !== 0) {
       console.error('[simctl-screenshot-inline] WebP optimization failed, trying JPEG');
       tempOptimized = path.join(tempDir, 'screenshot-optimized.jpg');
-      optimizationCommand = `sips -s format jpeg -s formatOptions 60 "${tempPng}" --out "${tempOptimized}"`;
+      optimizationCommand = `sips -s format jpeg -s formatOptions 60 "${sourceForOptimization}" --out "${tempOptimized}"`;
       formatUsed = 'jpeg';
 
       console.error(`[simctl-screenshot-inline] Optimizing to JPEG: ${optimizationCommand}`);
@@ -117,9 +177,30 @@ export async function simctlScreenshotInlineTool(args: ScreenshotInlineToolArgs)
     const base64Data = imageData.toString('base64');
 
     // Get file sizes for diagnostics
-    const pngStats = await fs.stat(tempPng);
     const optimizedStats = await fs.stat(tempOptimized);
-    const compressionRatio = ((1 - optimizedStats.size / pngStats.size) * 100).toFixed(1);
+    const compressionRatio = ((1 - optimizedStats.size / originalPngStats.size) * 100).toFixed(1);
+
+    // Get actual dimensions of resized/optimized image using sips
+    let displayWidth: number | undefined;
+    let displayHeight: number | undefined;
+    try {
+      const dimensionCommand = `sips -g pixelWidth -g pixelHeight "${sourceForOptimization}" | grep -E 'pixelWidth|pixelHeight' | awk '{print $2}'`;
+      const dimensionResult = await executeCommand(dimensionCommand, { timeout: 5000 });
+      if (dimensionResult.code === 0) {
+        const [widthStr, heightStr] = dimensionResult.stdout.trim().split('\n');
+        displayWidth = parseInt(widthStr, 10);
+        displayHeight = parseInt(heightStr, 10);
+      }
+    } catch {
+      // Ignore dimension detection errors - coordinateTransform will be undefined
+    }
+
+    // Get screenshot size metadata for response
+    const sizeMetadata = getScreenshotSizeMetadata(
+      screenshotSize,
+      originalPngStats.size,
+      optimizedStats.size
+    );
 
     // Extract interactive elements from accessibility tree
     // This enables automated element discovery and reliable interaction
@@ -151,6 +232,17 @@ export async function simctlScreenshotInlineTool(args: ScreenshotInlineToolArgs)
       // This might fail if app is not running or accessibility is disabled
     }
 
+    // Calculate coordinate transform for mapping screenshot to device coordinates
+    let coordinateTransform: CoordinateTransform | undefined;
+    if (screenDimensions && displayWidth && displayHeight && screenshotSize !== 'full') {
+      coordinateTransform = calculateCoordinateTransform(
+        screenDimensions.width,
+        screenDimensions.height,
+        displayWidth,
+        displayHeight
+      );
+    }
+
     // Compute view fingerprint for coordinate caching (opt-in)
     let viewFingerprint = undefined;
     let cacheableView = false;
@@ -180,12 +272,16 @@ export async function simctlScreenshotInlineTool(args: ScreenshotInlineToolArgs)
         state: simulator.state,
       },
       imageFormat: formatUsed.toUpperCase(),
+      // Screenshot size optimization metadata
+      screenshotSize: sizeMetadata,
       imageSizes: {
-        original: pngStats.size,
+        original: originalPngStats.size,
         optimized: optimizedStats.size,
         compressionRatio: `${compressionRatio}%`,
       },
       screenDimensions: screenDimensions || undefined,
+      // Coordinate transform for mapping screenshot coordinates to device coordinates
+      coordinateTransform: coordinateTransform || undefined,
       // LLM optimization: semantic metadata when provided
       semanticMetadata:
         appName || screenName || state
@@ -222,13 +318,24 @@ export async function simctlScreenshotInlineTool(args: ScreenshotInlineToolArgs)
         : undefined,
       guidance: [
         `✅ Screenshot captured and optimized`,
+        `Size: ${sizeMetadata.preset} (${sizeMetadata.dimensions})`,
+        `Estimated tokens: ${sizeMetadata.estimatedTokens} (${sizeMetadata.tiles} tile${sizeMetadata.tiles > 1 ? 's' : ''})`,
+        sizeMetadata.tokenSavings ? `Token savings: ${sizeMetadata.tokenSavings}` : undefined,
         `Format: ${formatUsed.toUpperCase()} at 60% quality`,
-        `Compression: ${compressionRatio}% reduction from original PNG`,
-        `Size: ${optimizedStats.size} bytes`,
+        `Compression: ${compressionRatio}% reduction from original`,
+        `File size: ${optimizedStats.size} bytes`,
         appName && screenName && state ? `Screen: ${appName}/${screenName} (${state})` : undefined,
         interactiveElements
           ? `📍 ${interactiveElements.length} interactive element(s) detected`
           : undefined,
+        coordinateTransform
+          ? `⚖️ Coordinate transform: scale by ${coordinateTransform.scaleX}× (X) and ${coordinateTransform.scaleY}× (Y)`
+          : undefined,
+        ``,
+        coordinateTransform
+          ? `⚠️ Screenshot is resized - multiply coordinates by scale factors before tapping:`
+          : undefined,
+        coordinateTransform ? `  ${coordinateTransform.guidance}` : undefined,
         ``,
         `Next steps to interact with UI:`,
         interactiveElements && interactiveElements.length > 0
@@ -278,6 +385,13 @@ export async function simctlScreenshotInlineTool(args: ScreenshotInlineToolArgs)
     if (tempPng) {
       try {
         await fs.unlink(tempPng);
+      } catch {
+        // Ignore cleanup errors
+      }
+    }
+    if (tempResized) {
+      try {
+        await fs.unlink(tempResized);
       } catch {
         // Ignore cleanup errors
       }
