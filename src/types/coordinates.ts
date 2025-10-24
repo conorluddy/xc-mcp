@@ -193,16 +193,20 @@ export function validateSwipeVelocity(
  * CRITICAL: Uses POINT coordinates (393×852 for iPhone 16 Pro), NOT pixel coordinates.
  * IDB's swipe command expects coordinates in point space.
  *
- * Why: Convert high-level directions to precise integer coordinates.
- * Ensures consistent swipe behavior across different screen sizes.
- * Profiles: Standard (1475 pts/sec), Flick (2775 pts/sec), Gentle (653 pts/sec)
- * Empirically tested on iOS 18.5 home screen (verified page navigation).
+ * Why: Convert high-level directions to precise integer coordinates using empirically tested
+ * absolute coordinates for each profile. This ensures reliable swipe recognition across all
+ * profiles and ensures consistency with Grapla reference implementation.
+ *
+ * Profiles use absolute coordinates (iPhone 16 Pro 393×852):
+ * - Standard: Balanced (350→50 horizontal, 750→150 vertical, 1475 pts/sec)
+ * - Flick: Fast (360→30 horizontal, 780→120 vertical, 2775 pts/sec)
+ * - Gentle: Slow (300→100 horizontal, 650→250 vertical, 653 pts/sec)
  *
  * @param direction - Swipe direction ('up', 'down', 'left', 'right')
  * @param screenWidth - Screen width in POINTS (393 for iPhone 16 Pro), NOT pixels
  * @param screenHeight - Screen height in POINTS (852 for iPhone 16 Pro), NOT pixels
  * @param profile - Optional swipe profile (defaults to 'standard')
- * @returns Integer start and end coordinates in POINT space
+ * @returns Integer start and end coordinates in POINT space (absolute, not relative to screen size)
  */
 export function calculateSwipeCoordinates(
   direction: 'up' | 'down' | 'left' | 'right',
@@ -210,43 +214,66 @@ export function calculateSwipeCoordinates(
   screenHeight: number,
   profile?: 'standard' | 'flick' | 'gentle'
 ): SwipePath {
-  const selectedProfile = profile ? SWIPE_PROFILES[profile] : SWIPE_PROFILES.standard;
-  const distancePercent = selectedProfile.distancePercent;
+  // Use absolute coordinates based on profile (empirically tested values for iPhone 16 Pro)
+  // These coordinates are fixed and work best with the 393×852 point dimensions
+  const profileCoordinates: Record<
+    'standard' | 'flick' | 'gentle',
+    {
+      horizontalStart: number;
+      horizontalEnd: number;
+      verticalStart: number;
+      verticalEnd: number;
+    }
+  > = {
+    standard: {
+      horizontalStart: 350,
+      horizontalEnd: 50,
+      verticalStart: 750,
+      verticalEnd: 150,
+    },
+    flick: {
+      horizontalStart: 360,
+      horizontalEnd: 30,
+      verticalStart: 780,
+      verticalEnd: 120,
+    },
+    gentle: {
+      horizontalStart: 300,
+      horizontalEnd: 100,
+      verticalStart: 650,
+      verticalEnd: 250,
+    },
+  };
 
-  // Calculate center point
+  const selectedProfile = profile || 'standard';
+  const coords = profileCoordinates[selectedProfile as 'standard' | 'flick' | 'gentle'];
   const centerX = toInt(screenWidth / 2);
   const centerY = toInt(screenHeight / 2);
-
-  // Calculate swipe distance
-  // For horizontal swipes: use screen width
-  // For vertical swipes: use screen height
-  const horizontalDistance = toInt(screenWidth * distancePercent);
-  const verticalDistance = toInt(screenHeight * distancePercent);
 
   switch (direction) {
     case 'up':
       // Swipe from bottom to top
       return {
-        start: { x: centerX, y: toInt(centerY + verticalDistance / 2) },
-        end: { x: centerX, y: toInt(centerY - verticalDistance / 2) },
+        start: { x: centerX, y: coords.verticalStart },
+        end: { x: centerX, y: coords.verticalEnd },
       };
     case 'down':
       // Swipe from top to bottom
       return {
-        start: { x: centerX, y: toInt(centerY - verticalDistance / 2) },
-        end: { x: centerX, y: toInt(centerY + verticalDistance / 2) },
+        start: { x: centerX, y: coords.verticalEnd },
+        end: { x: centerX, y: coords.verticalStart },
       };
     case 'left':
       // Swipe from right to left
       return {
-        start: { x: toInt(centerX + horizontalDistance / 2), y: centerY },
-        end: { x: toInt(centerX - horizontalDistance / 2), y: centerY },
+        start: { x: coords.horizontalStart, y: centerY },
+        end: { x: coords.horizontalEnd, y: centerY },
       };
     case 'right':
       // Swipe from left to right
       return {
-        start: { x: toInt(centerX - horizontalDistance / 2), y: centerY },
-        end: { x: toInt(centerX + horizontalDistance / 2), y: centerY },
+        start: { x: coords.horizontalEnd, y: centerY },
+        end: { x: coords.horizontalStart, y: centerY },
       };
   }
 }
