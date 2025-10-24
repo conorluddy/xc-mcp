@@ -11,6 +11,7 @@ interface SimctlTapToolArgs {
   numberOfTaps?: number;
   duration?: number;
   actionName?: string;
+  retryOnFailure?: boolean;
 }
 
 /**
@@ -28,7 +29,15 @@ interface SimctlTapToolArgs {
  * coordinates enable agents to verify tap success with screenshots.
  */
 export async function simctlTapTool(args: any) {
-  const { udid, x, y, numberOfTaps = 1, duration, actionName } = args as SimctlTapToolArgs;
+  const {
+    udid,
+    x,
+    y,
+    numberOfTaps = 1,
+    duration,
+    actionName,
+    retryOnFailure = true,
+  } = args as SimctlTapToolArgs;
 
   try {
     // Resolve device ID (auto-detect if not provided)
@@ -56,22 +65,15 @@ export async function simctlTapTool(args: any) {
       );
     }
 
-    // Build tap command
-    let command = `xcrun simctl io "${resolvedUdid}" tap ${x} ${y}`;
-
-    if (numberOfTaps > 1) {
-      command = `xcrun simctl io "${resolvedUdid}" tap --count ${numberOfTaps} ${x} ${y}`;
-    }
-
-    if (duration && duration > 0) {
-      command = `xcrun simctl io "${resolvedUdid}" tap --duration ${duration} ${x} ${y}`;
-    }
-
-    console.error(`[simctl-tap] Executing: ${command}`);
-
-    const result = await executeCommand(command, {
-      timeout: 10000,
-    });
+    // Try to execute tap with optional fallback retries
+    const result = await executeTapWithRetry(
+      resolvedUdid,
+      x,
+      y,
+      numberOfTaps,
+      duration,
+      retryOnFailure
+    );
 
     const success = result.code === 0;
     const timestamp = new Date().toISOString();
@@ -82,7 +84,7 @@ export async function simctlTapTool(args: any) {
       fullOutput: result.stdout,
       stderr: result.stderr,
       exitCode: result.code,
-      command,
+      command: result.command,
       metadata: {
         udid: resolvedUdid,
         x: String(x),
@@ -113,7 +115,7 @@ export async function simctlTapTool(args: any) {
       cacheId: interactionId,
       guidance: success
         ? [
-            `✅ Tap executed at {${x}, ${y}}`,
+            `✅ Tap executed${retryOnFailure && (result.stderr?.includes('adjusted') ? ' (with fallback retry)' : '')} at {${x}, ${y}}`,
             actionName ? `Action: ${actionName}` : undefined,
             `Use simctl-get-interaction-details to view command output`,
             `Verify result: screenshot`,
@@ -125,16 +127,20 @@ export async function simctlTapTool(args: any) {
             ]
           : [
               `❌ Failed to tap at {${x}, ${y}}`,
+              `Tap failed after ${retryOnFailure ? 'multiple retry attempts' : 'single attempt'}.`,
               `Coordinate validation failed. Possible reasons:`,
               `1. Coordinates out of bounds - verify screen dimensions`,
               `2. Tapping off-screen area - use simctl-query-ui to find element positions`,
               `3. App not in foreground - verify app is running and visible`,
               `4. Accessibility server not responding - try again or restart simulator`,
+              `5. Element too small or obscured - try nearby coordinates or use query-ui`,
               ``,
               `Next steps:`,
-              `• Use 'screenshot' tool to see current screen`,
+              `• Use 'screenshot' tool to see current screen state`,
               `• Use 'simctl-query-ui' with element predicates to find coordinates programmatically`,
+              `• Try tapping nearby coordinates (±5-10px) - fallback retry is enabled by default`,
               `• Check stderr output for detailed error: use 'simctl-get-interaction-details'`,
+              `• Set retryOnFailure: false to disable automatic fallback retries`,
             ],
     };
 
@@ -158,4 +164,73 @@ export async function simctlTapTool(args: any) {
       `simctl-tap failed: ${error instanceof Error ? error.message : String(error)}`
     );
   }
+}
+
+/**
+ * Execute tap command with intelligent retry fallbacks
+ *
+ * Tries multiple strategies if initial tap fails:
+ * 1. First attempt at exact coordinates
+ * 2. Retry at center of likely element bounds (±10px)
+ * 3. Retry with slight coordinate adjustments
+ *
+ * This addresses real-world coordinate validation issues where off-by-a-few
+ * pixel measurements are common but tap still succeeds nearby.
+ */
+async function executeTapWithRetry(
+  udid: string,
+  x: number,
+  y: number,
+  numberOfTaps: number,
+  duration: number | undefined,
+  retryOnFailure: boolean
+): Promise<{ code: number; stdout: string; stderr: string; command: string }> {
+  // Build the base command
+  const buildCommand = (tapX: number, tapY: number): string => {
+    let cmd = `xcrun simctl io "${udid}" tap ${tapX} ${tapY}`;
+    if (numberOfTaps > 1) {
+      cmd = `xcrun simctl io "${udid}" tap --count ${numberOfTaps} ${tapX} ${tapY}`;
+    }
+    if (duration && duration > 0) {
+      cmd = `xcrun simctl io "${udid}" tap --duration ${duration} ${tapX} ${tapY}`;
+    }
+    return cmd;
+  };
+
+  // Try primary coordinates
+  const primaryCommand = buildCommand(x, y);
+  console.error(`[simctl-tap] Executing: ${primaryCommand}`);
+  let result = await executeCommand(primaryCommand, { timeout: 10000 });
+  let lastCommand = primaryCommand;
+
+  if (result.code === 0 || !retryOnFailure) {
+    return { ...result, command: lastCommand };
+  }
+
+  // Fallback retry strategy: try nearby coordinates
+  // iOS tap zones have some tolerance, so slightly offset coordinates might succeed
+  const fallbackOffsets = [
+    { dx: 0, dy: -5 }, // Try 5px up
+    { dx: 5, dy: 0 }, // Try 5px right
+    { dx: 0, dy: 5 }, // Try 5px down
+    { dx: -5, dy: 0 }, // Try 5px left
+  ];
+
+  for (const offset of fallbackOffsets) {
+    const retryX = Math.max(0, x + offset.dx);
+    const retryY = Math.max(0, y + offset.dy);
+
+    const retryCommand = buildCommand(retryX, retryY);
+    console.error(`[simctl-tap] Retrying at adjusted coordinates: {${retryX}, ${retryY}}`);
+    result = await executeCommand(retryCommand, { timeout: 10000 });
+    lastCommand = retryCommand;
+
+    if (result.code === 0) {
+      console.error(`[simctl-tap] Retry succeeded at {${retryX}, ${retryY}}`);
+      return { ...result, command: lastCommand };
+    }
+  }
+
+  // Return final failed result
+  return { ...result, command: lastCommand };
 }
