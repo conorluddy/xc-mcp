@@ -36,20 +36,24 @@ export interface IDBTarget {
 interface IDBTargetCacheEntry {
   targets: Map<string, IDBTarget>;
   lastFetched: number;
-  ttl: number; // Default: 60000ms (1 minute)
+  ttl: number; // Default: 5000ms (5 seconds) - simulator state changes frequently
 }
 
 /**
  * IDB Target Cache Manager
  *
  * Why: Avoid expensive `idb list-targets` calls on every operation.
- * Cache targets for 1 minute (configurable) and track usage for intelligent defaults.
+ * Cache targets for 5 seconds (configurable) to balance performance with state accuracy.
+ *
+ * Note: Short TTL is critical because simulator boot state changes frequently during
+ * development. A 60s TTL caused stale "Shutdown" data when simulators were actually "Booted",
+ * blocking all IDB operations. 5 seconds provides fast cache while ensuring state accuracy.
  */
 class IDBTargetCacheManager {
   private cache: IDBTargetCacheEntry = {
     targets: new Map(),
     lastFetched: 0,
-    ttl: 60000, // 1 minute default
+    ttl: 5000, // 5 seconds default - balance performance with state accuracy
   };
 
   /**
