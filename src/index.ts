@@ -1923,11 +1923,12 @@ Essential for:
       }
     );
 
-    // Screenshot alias
+    // Screenshot save alias (file-based variant)
     this.server.registerTool(
-      'screenshot',
+      'screenshot-save',
       {
-        description: 'Short alias for simctl-io (operation: screenshot) - Capture screenshot',
+        description:
+          'Save screenshot to file via simctl-io - Use "screenshot" for inline base64 variant',
         inputSchema: {
           udid: z.string().optional().describe('Simulator UDID (auto-detects if not provided)'),
           operation: z.enum(['screenshot', 'video']).describe('Operation: screenshot or video'),
