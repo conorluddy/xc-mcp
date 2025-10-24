@@ -4,7 +4,9 @@ import { simulatorCache } from '../../state/simulator-cache.js';
 import {
   extractAccessibilityElements,
   getScreenDimensions,
+  AccessibilityElement,
 } from '../../utils/element-extraction.js';
+import { computeViewFingerprint, isViewCacheable } from '../../utils/view-fingerprinting.js';
 import { promises as fs } from 'fs';
 import fsSync from 'fs';
 import path from 'path';
@@ -17,6 +19,8 @@ interface ScreenshotInlineToolArgs {
   appName?: string;
   screenName?: string;
   state?: string;
+  // View coordinate caching (opt-in)
+  enableCoordinateCaching?: boolean;
 }
 
 /**
@@ -36,8 +40,8 @@ interface ScreenshotInlineToolArgs {
  * For semantic naming, provide appName, screenName, and state to help agents
  * understand which screen was captured and track state progression.
  */
-export async function simctlScreenshotInlineTool(args: any) {
-  const { udid, appName, screenName, state } = args as ScreenshotInlineToolArgs;
+export async function simctlScreenshotInlineTool(args: ScreenshotInlineToolArgs) {
+  const { udid, appName, screenName, state, enableCoordinateCaching } = args;
 
   let tempPng: string | null = null;
   let tempOptimized: string | null = null;
@@ -121,6 +125,7 @@ export async function simctlScreenshotInlineTool(args: any) {
     // This enables automated element discovery and reliable interaction
     let interactiveElements = undefined;
     let screenDimensions = undefined;
+    let allElements: AccessibilityElement[] = []; // Store all elements for fingerprinting
     try {
       // Get screen dimensions
       screenDimensions = await getScreenDimensions(resolvedUdid);
@@ -131,8 +136,11 @@ export async function simctlScreenshotInlineTool(args: any) {
         resolvedUdid,
         appName ? `com.example.${appName.toLowerCase()}` : 'com.example.app'
       );
-      const timeoutPromise = new Promise<any[]>(resolve => setTimeout(() => resolve([]), 2000));
+      const timeoutPromise = new Promise<AccessibilityElement[]>(resolve =>
+        setTimeout(() => resolve([]), 2000)
+      );
       const elements = await Promise.race([extractPromise, timeoutPromise]);
+      allElements = elements; // Save for fingerprinting
 
       if (elements.length > 0) {
         // Filter to only tappable elements (buttons, text fields, etc.) with bounds
@@ -141,6 +149,27 @@ export async function simctlScreenshotInlineTool(args: any) {
     } catch {
       // Element extraction is optional - gracefully degrade if it fails
       // This might fail if app is not running or accessibility is disabled
+    }
+
+    // Compute view fingerprint for coordinate caching (opt-in)
+    let viewFingerprint = undefined;
+    let cacheableView = false;
+    if (enableCoordinateCaching && screenDimensions && allElements.length > 0) {
+      try {
+        // Check if view is cacheable (excludes loading/animation states)
+        cacheableView = isViewCacheable(allElements);
+
+        if (cacheableView) {
+          viewFingerprint = computeViewFingerprint(
+            allElements,
+            screenDimensions,
+            'portrait' // TODO: Detect actual orientation from device
+          );
+        }
+      } catch (error) {
+        // Fingerprint computation is optional
+        console.warn('[screenshot-inline] Failed to compute view fingerprint:', error);
+      }
     }
 
     const responseData = {
@@ -177,6 +206,18 @@ export async function simctlScreenshotInlineTool(args: any) {
               bounds: e.bounds,
               tappable: e.hittable !== false,
             })),
+          }
+        : undefined,
+      // View fingerprint for coordinate caching (opt-in Phase 1 feature)
+      viewFingerprint: viewFingerprint
+        ? {
+            hash: viewFingerprint.elementStructureHash,
+            cacheable: cacheableView,
+            elementCount: viewFingerprint.elementCount,
+            orientation: viewFingerprint.orientation,
+            guidance: cacheableView
+              ? 'View is cacheable - coordinates can be stored and reused'
+              : 'View contains dynamic content - caching disabled',
           }
         : undefined,
       guidance: [
