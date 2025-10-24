@@ -142,3 +142,110 @@ export async function simctlOpenUrlTool(args: any) {
     );
   }
 }
+
+export const SIMCTL_OPENURL_DOCS = `
+# simctl-openurl
+
+Open URLs in a simulator, including web URLs, deep links, and special URL schemes.
+
+## What it does
+
+Opens a URL in the simulator, which can be a web URL (http/https), custom app deep link
+(myapp://), or special URL scheme (mailto:, tel:, sms:). The system will route the URL
+to the appropriate app handler.
+
+## Parameters
+
+- **udid** (string, required): Simulator UDID (from simctl-list)
+- **url** (string, required): URL to open (e.g., https://example.com or myapp://deeplink?id=123)
+
+## Supported URL Schemes
+
+- **HTTP/HTTPS**: Web URLs (opens in Safari)
+- **Custom schemes**: Deep links to your app (myapp://, yourapp://)
+- **mailto**: Email composition (opens Mail app)
+- **tel**: Phone dialer (opens Phone app on iPhone)
+- **sms**: SMS composition (opens Messages app)
+- **facetime**: FaceTime calls
+- **maps**: Apple Maps URLs
+
+## Returns
+
+JSON response with:
+- URL open status
+- Detected URL scheme
+- Guidance for testing URL handling and deep links
+
+## Examples
+
+### Open web URL
+\`\`\`typescript
+await simctlOpenUrlTool({
+  udid: 'device-123',
+  url: 'https://example.com'
+})
+\`\`\`
+
+### Open deep link with parameters
+\`\`\`typescript
+await simctlOpenUrlTool({
+  udid: 'device-123',
+  url: 'myapp://open?id=123&action=view'
+})
+\`\`\`
+
+### Open mailto link
+\`\`\`typescript
+await simctlOpenUrlTool({
+  udid: 'device-123',
+  url: 'mailto:test@example.com?subject=Hello'
+})
+\`\`\`
+
+### Open tel link
+\`\`\`typescript
+await simctlOpenUrlTool({
+  udid: 'device-123',
+  url: 'tel:+1234567890'
+})
+\`\`\`
+
+## Common Use Cases
+
+1. **Deep link testing**: Verify app handles custom URL schemes correctly
+2. **Universal links**: Test https:// URLs that open your app
+3. **Navigation testing**: Confirm deep links navigate to correct screens
+4. **Parameter parsing**: Verify URL parameters are parsed correctly
+5. **Fallback handling**: Test behavior when no handler is registered
+
+## Important Notes
+
+- **Simulator must be booted**: URLs can only be opened on running simulators
+- **Handler registration**: Custom schemes require an app that handles them
+- **URL encoding**: Ensure URL parameters are properly encoded
+- **Timing**: Consider launching app first if testing immediate URL handling
+
+## Error Handling
+
+- **No handler registered**: Error if no app handles the URL scheme
+- **Simulator not booted**: Indicates simulator must be booted first
+- **Invalid URL format**: Validates URL has proper scheme and format
+- **Simulator not found**: Validates simulator exists in cache
+
+## Deep Link Testing Workflow
+
+1. **Install app**: \`simctl-install <udid> /path/to/App.app\`
+2. **Launch app**: \`simctl-launch <udid> <bundleId>\`
+3. **Open deep link**: \`simctl-openurl <udid> myapp://route?param=value\`
+4. **Take screenshot**: \`simctl-io <udid> screenshot\` to verify navigation
+5. **Check logs**: Monitor console for URL handling logs
+
+## Testing Strategies
+
+- **Parameter variations**: Test different query parameters
+- **Invalid URLs**: Verify error handling for malformed URLs
+- **Background handling**: Test URLs when app is backgrounded
+- **Fresh launch**: Test URLs when app is not running
+- **State preservation**: Verify app state is maintained after URL handling
+`;
+

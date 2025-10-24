@@ -184,3 +184,161 @@ export async function simctlPushTool(args: any) {
     );
   }
 }
+
+export const SIMCTL_PUSH_DOCS = `
+# simctl-push
+
+Send simulated push notifications to apps on simulators with test context tracking.
+
+## What it does
+
+Sends push notifications with custom JSON payloads to apps, simulating remote notifications
+from APNS. Supports test tracking to verify push delivery and validate app behavior.
+
+## Parameters
+
+- **udid** (string, required): Simulator UDID (from simctl-list)
+- **bundleId** (string, required): App bundle ID (e.g., com.example.MyApp)
+- **payload** (string, required): JSON payload with APS dictionary
+- **testName** (string, optional): Test name for tracking
+- **expectedBehavior** (string, optional): Expected app behavior description
+
+## Payload Format
+
+Must be valid JSON with an "aps" dictionary:
+\`\`\`json
+{
+  "aps": {
+    "alert": "Notification text",
+    "badge": 1,
+    "sound": "default"
+  },
+  "custom": "Additional data"
+}
+\`\`\`
+
+## LLM Optimization
+
+The **testName** and **expectedBehavior** parameters enable structured test tracking.
+This allows AI agents to verify push notification delivery and validate that app behavior
+matches expectations (e.g., navigation, UI updates, data refresh).
+
+## Returns
+
+JSON response with:
+- Push delivery status
+- Delivery information (sent timestamp)
+- Test context with expected vs actual behavior
+- Guidance for verifying notification handling
+
+## Examples
+
+### Simple alert notification
+\`\`\`typescript
+await simctlPushTool({
+  udid: 'device-123',
+  bundleId: 'com.example.MyApp',
+  payload: JSON.stringify({
+    aps: { alert: 'Test notification' }
+  })
+})
+\`\`\`
+
+### Notification with badge and sound
+\`\`\`typescript
+await simctlPushTool({
+  udid: 'device-123',
+  bundleId: 'com.example.MyApp',
+  payload: JSON.stringify({
+    aps: {
+      alert: 'New message',
+      badge: 5,
+      sound: 'default'
+    }
+  })
+})
+\`\`\`
+
+### Rich notification with custom data
+\`\`\`typescript
+await simctlPushTool({
+  udid: 'device-123',
+  bundleId: 'com.example.MyApp',
+  payload: JSON.stringify({
+    aps: {
+      alert: {
+        title: 'New Order',
+        body: 'Order #1234 has been placed'
+      },
+      badge: 1
+    },
+    orderId: '1234',
+    action: 'view_order'
+  })
+})
+\`\`\`
+
+### Push with test context tracking
+\`\`\`typescript
+await simctlPushTool({
+  udid: 'device-123',
+  bundleId: 'com.example.MyApp',
+  payload: JSON.stringify({
+    aps: { alert: 'Product available' },
+    productId: '567'
+  }),
+  testName: 'PushNotification_DeepLinkTest',
+  expectedBehavior: 'App navigates to ProductDetail view for product 567'
+})
+\`\`\`
+
+## Common Use Cases
+
+1. **Notification delivery testing**: Verify app receives and displays notifications
+2. **Deep link navigation**: Test notification taps navigate to correct screens
+3. **Badge updates**: Verify badge count is updated correctly
+4. **Custom data handling**: Test app processes custom payload data
+5. **Background behavior**: Test app behavior when notification arrives in background
+
+## Important Notes
+
+- **App must be running**: Launch app first or test background notification handling
+- **Payload validation**: JSON must be valid and include "aps" dictionary
+- **Immediate delivery**: Notification is delivered immediately (no delay)
+- **No user interaction**: Notification appears automatically without tapping
+- **Visual verification**: Use simctl-io screenshot to confirm notification display
+
+## Error Handling
+
+- **Invalid JSON**: Error if payload is not valid JSON
+- **App not running**: May fail if app is not running (test background handling)
+- **Simulator not booted**: Indicates simulator must be booted first
+- **Invalid bundle ID**: Validates bundle ID format (must contain '.')
+
+## Testing Workflow
+
+1. **Launch app**: \`simctl-launch <udid> <bundleId>\`
+2. **Send push**: \`simctl-push <udid> <bundleId> <payload>\`
+3. **Take screenshot**: \`simctl-io <udid> screenshot\` to verify delivery
+4. **Check navigation**: Verify app navigated to expected screen
+5. **Validate data**: Confirm app processed custom payload data
+
+## Test Context Tracking
+
+The testContext in the response includes:
+- testName: Identifier for this push notification test
+- expectedBehavior: What should happen when notification is received
+- actualBehavior: What actually happened (delivery success/failure)
+- passed: Whether test passed
+
+This enables agents to track push notification tests and verify expected behavior.
+
+## Advanced Testing
+
+- **Multiple notifications**: Send sequential pushes to test badge accumulation
+- **Different payload types**: Test alert, sound-only, silent notifications
+- **Content extensions**: Test notification service extensions with custom content
+- **Action buttons**: Test notification actions and user responses
+- **Notification grouping**: Test thread-id for notification grouping
+`;
+

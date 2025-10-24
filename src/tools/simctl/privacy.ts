@@ -191,3 +191,138 @@ export async function simctlPrivacyTool(args: any) {
     );
   }
 }
+
+export const SIMCTL_PRIVACY_DOCS = `
+# simctl-privacy
+
+Manage app privacy permissions on simulators with structured audit trail support.
+
+## What it does
+
+Grants, revokes, or resets privacy permissions for apps without requiring user interaction.
+Supports audit trail tracking for test scenario documentation and verification.
+
+## Parameters
+
+- **udid** (string, required): Simulator UDID (from simctl-list)
+- **bundleId** (string, required): App bundle ID (e.g., com.example.MyApp)
+- **action** (string, required): "grant", "revoke", or "reset"
+- **service** (string, required): Permission service to modify
+- **scenario** (string, optional): Test scenario name for audit trail
+- **step** (number, optional): Step number in test scenario
+
+## Supported Services
+
+- camera, microphone, location, contacts, photos
+- calendar, health, reminders, motion, keyboard
+- mediaLibrary, calls, siri, all (for reset)
+
+## LLM Optimization
+
+The **scenario** and **step** parameters enable structured permission audit trail tracking.
+This allows AI agents to track permission state changes across test scenarios and verify
+permissions at each step of a test workflow.
+
+## Returns
+
+JSON response with:
+- Permission modification status
+- Audit entry with timestamp and test context
+- Guidance for verification and next steps
+
+## Examples
+
+### Grant camera permission
+\`\`\`typescript
+await simctlPrivacyTool({
+  udid: 'device-123',
+  bundleId: 'com.example.MyApp',
+  action: 'grant',
+  service: 'camera'
+})
+\`\`\`
+
+### Revoke microphone permission
+\`\`\`typescript
+await simctlPrivacyTool({
+  udid: 'device-123',
+  bundleId: 'com.example.MyApp',
+  action: 'revoke',
+  service: 'microphone'
+})
+\`\`\`
+
+### Reset all permissions
+\`\`\`typescript
+await simctlPrivacyTool({
+  udid: 'device-123',
+  bundleId: 'com.example.MyApp',
+  action: 'reset',
+  service: 'all'
+})
+\`\`\`
+
+### Grant with audit trail tracking
+\`\`\`typescript
+await simctlPrivacyTool({
+  udid: 'device-123',
+  bundleId: 'com.example.MyApp',
+  action: 'grant',
+  service: 'location',
+  scenario: 'LocationTest',
+  step: 1
+})
+\`\`\`
+
+## Common Use Cases
+
+1. **Permission testing**: Verify app behavior with different permission states
+2. **Onboarding flows**: Test permission request flows without manual interaction
+3. **Denied permission handling**: Test app behavior when permissions are denied
+4. **Permission combinations**: Test apps with various permission combinations
+5. **Audit trail**: Track permission changes across automated test scenarios
+
+## Important Notes
+
+- **No user prompts**: Permissions are changed without showing system alerts
+- **Immediate effect**: Changes take effect immediately for running apps
+- **App restart**: Some permissions may require app restart to take effect
+- **Reset behavior**: "reset" with "all" service clears all permissions
+- **Audit trail**: scenario/step parameters create structured test documentation
+
+## Error Handling
+
+- **App not installed**: Error if app is not installed on simulator
+- **Invalid service**: Error if service name is not recognized
+- **Invalid action**: Error if action is not "grant", "revoke", or "reset"
+- **Invalid bundle ID**: Validates bundle ID format (must contain '.')
+
+## Testing Workflow
+
+1. **Reset permissions**: Start with clean slate
+2. **Grant permission**: \`simctl-privacy <udid> <bundleId> grant camera scenario:"CameraTest" step:1\`
+3. **Launch app**: \`simctl-launch <udid> <bundleId>\`
+4. **Test feature**: Use camera feature in app
+5. **Take screenshot**: \`simctl-io <udid> screenshot\` to verify UI
+6. **Revoke permission**: Test denied permission handling
+7. **Verify behavior**: Screenshot and check error handling
+
+## Permission Testing Strategies
+
+- **Happy path**: Grant all permissions, test full functionality
+- **Denial path**: Deny permissions, verify error handling
+- **Mixed state**: Some granted, some denied, test partial functionality
+- **Reset testing**: Test permission request flows from clean state
+- **Background permissions**: Test location "always" vs "when in use"
+
+## Audit Trail Usage
+
+The auditEntry in the response includes:
+- timestamp: When permission was changed
+- action, service, bundleId: What was changed
+- success: Whether change succeeded
+- testContext: scenario and step for test tracking
+
+This enables agents to maintain a complete history of permission changes during testing.
+`;
+

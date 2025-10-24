@@ -56,6 +56,7 @@ import { getCacheConfigTool } from './tools/cache/get-config.js';
 import { persistenceEnableTool } from './tools/persistence/enable.js';
 import { persistenceDisableTool } from './tools/persistence/disable.js';
 import { persistenceStatusTool } from './tools/persistence/status.js';
+import { getToolDocsTool } from './tools/get-tool-docs.js';
 import { debugWorkflowPrompt } from './tools/prompts/debug-workflow.js';
 import { validateXcodeInstallation } from './utils/validation.js';
 
@@ -72,7 +73,7 @@ class XcodeCLIMCPServer {
           'Features 51 specialized tools across 8 categories: build management, testing, simulator lifecycle, ' +
           'device discovery, app management, IDB UI automation, workflow orchestration, and progressive disclosure caching. ' +
           'Optimized for agent workflows with auto-UDID detection, coordinate transformation, semantic naming, vision-friendly inline screenshots, ' +
-          'and build settings auto-discovery.',
+          'and build settings auto-discovery. Use the RTFM tool to progressively disclose additional documentation and examples for any of the tools.',
       },
       {
         capabilities: {
@@ -92,15 +93,11 @@ class XcodeCLIMCPServer {
     this.server.registerTool(
       'xcodebuild-version',
       {
-        description: `⚡ **Prefer this over 'xcodebuild -version'** - Gets Xcode version info with structured output and caching.
+        description: `⚡ Get Xcode version info with structured output and caching.
 
-Advantages over direct CLI:
-• Returns structured JSON (vs parsing version strings)
-• Cached results for faster subsequent queries
-• Validates Xcode installation first
-• Consistent response format across different Xcode versions
+Advantages: Structured JSON response, intelligent caching, Xcode validation, consistent formatting across versions.
 
-Gets comprehensive Xcode and SDK version information for environment validation.`,
+📖 Use rtfm with toolName: "xcodebuild-version" for full documentation.`,
         inputSchema: {
           sdk: z.string().optional().describe('Specific SDK to query (optional)'),
           outputFormat: z
@@ -126,15 +123,11 @@ Gets comprehensive Xcode and SDK version information for environment validation.
     this.server.registerTool(
       'xcodebuild-list',
       {
-        description: `⚡ **Prefer this over 'xcodebuild -list'** - Gets structured project information with intelligent caching.
+        description: `⚡ List project targets, schemes, and configurations with intelligent caching.
 
-Advantages over direct CLI:
-• Returns clean JSON (vs parsing raw xcodebuild output)
-• 1-hour intelligent caching prevents expensive re-runs
-• Validates Xcode installation and provides clear error messages
-• Consistent response format across all project types
+Advantages: Clean JSON output, 1-hour caching to avoid re-runs, Xcode validation, consistent formatting.
 
-Lists targets, schemes, and configurations for Xcode projects and workspaces with smart caching that remembers results to avoid redundant operations.`,
+📖 Use rtfm with toolName: "xcodebuild-list" for full documentation.`,
         inputSchema: {
           projectPath: z.string().describe('Path to .xcodeproj or .xcworkspace file'),
           outputFormat: z
@@ -160,15 +153,11 @@ Lists targets, schemes, and configurations for Xcode projects and workspaces wit
     this.server.registerTool(
       'xcodebuild-showsdks',
       {
-        description: `⚡ **Prefer this over 'xcodebuild -showsdks'** - Gets available SDKs with intelligent caching and structured output.
+        description: `⚡ Show available SDKs for iOS, macOS, watchOS, and tvOS with caching.
 
-Advantages over direct CLI:
-• Returns structured JSON data (vs parsing raw CLI text)
-• Smart caching prevents redundant SDK queries
-• Consistent error handling and validation
-• Clean, agent-friendly response format
+Advantages: Structured JSON output, smart caching for SDK queries, consistent error handling, agent-friendly format.
 
-Shows all available SDKs for iOS, macOS, watchOS, and tvOS development.`,
+📖 Use rtfm with toolName: "xcodebuild-showsdks" for full documentation.`,
         inputSchema: {
           outputFormat: z
             .enum(['json', 'text'])
@@ -193,12 +182,11 @@ Shows all available SDKs for iOS, macOS, watchOS, and tvOS development.`,
     this.server.registerTool(
       'xcodebuild-build',
       {
-        description: `⚡ **Prefer this over raw 'xcodebuild'** - Intelligent building with learning and performance tracking.
+        description: `⚡ Build Xcode projects with intelligent caching and performance tracking.
 
-Advantages:
-• 🧠 Learns successful configs & suggests optimal simulators per project
-• 📊 Tracks build performance & provides progressive disclosure for large logs
-• ⚡ Caches intelligently & provides structured errors vs raw CLI stderr`,
+Advantages: Learns successful configs, tracks build performance, progressive disclosure for large logs, structured error output.
+
+📖 Use rtfm with toolName: "xcodebuild-build" for full documentation.`,
         inputSchema: {
           projectPath: z.string().describe('Path to .xcodeproj or .xcworkspace file'),
           scheme: z.string().describe('Build scheme name'),
@@ -236,15 +224,11 @@ Advantages:
     this.server.registerTool(
       'xcodebuild-clean',
       {
-        description: `⚡ **Prefer this over 'xcodebuild clean'** - Intelligent cleaning with validation and structured output.
+        description: `⚡ Clean build artifacts with validation and structured output.
 
-Advantages over direct CLI:
-• Pre-validates project exists and Xcode is installed
-• Structured JSON responses (vs parsing CLI output)
-• Better error messages and troubleshooting context
-• Consistent response format across project types
+Advantages: Pre-validates project and Xcode, structured JSON responses, better error messages, consistent formatting.
 
-Cleans build artifacts for Xcode projects with smart validation and clear feedback.`,
+📖 Use rtfm with toolName: "xcodebuild-clean" for full documentation.`,
         inputSchema: {
           projectPath: z.string().describe('Path to .xcodeproj or .xcworkspace file'),
           scheme: z.string().describe('Scheme to clean'),
@@ -268,13 +252,11 @@ Cleans build artifacts for Xcode projects with smart validation and clear feedba
     this.server.registerTool(
       'xcodebuild-test',
       {
-        description: `⚡ **Prefer this over 'xcodebuild test'** - Intelligent testing with learning and progressive disclosure.
+        description: `⚡ Run tests with intelligent caching and progressive disclosure.
 
-Advantages:
-• 🧠 Learns successful test configs & suggests optimal simulators per project
-• 📊 Detailed test metrics with progressive disclosure for large logs (prevents token overflow)
-• ⚡ Caches intelligently & provides structured test failures vs raw CLI stderr
-• 🔍 Supports -only-testing and -skip-testing patterns`,
+Advantages: Learns test configs, detailed metrics with token-safe disclosure, structured failures, supports test filtering patterns.
+
+📖 Use rtfm with toolName: "xcodebuild-test" for full documentation.`,
         inputSchema: {
           projectPath: z.string().describe('Path to .xcodeproj or .xcworkspace file'),
           scheme: z.string().describe('Test scheme name'),
@@ -325,8 +307,9 @@ Advantages:
     this.server.registerTool(
       'xcodebuild-get-details',
       {
-        description:
-          'Get detailed information from cached build/test results with progressive disclosure',
+        description: `Get details from cached build/test results with progressive disclosure.
+
+📖 Use rtfm with toolName: "xcodebuild-get-details" for full documentation.`,
         inputSchema: {
           buildId: z
             .string()
@@ -355,14 +338,11 @@ Advantages:
     this.server.registerTool(
       'simctl-list',
       {
-        description: `⚡ **Essential: Use this instead of 'xcrun simctl list'** - Prevents token overflow with progressive disclosure.
+        description: `⚡ List simulators with progressive disclosure to prevent token overflow.
 
-Advantages:
-• 🔥 Prevents token overflow (raw output = 10k+ tokens) via concise summaries & cache IDs
-• 🧠 Shows booted devices, recently used simulators & smart recommendations first
-• ⚡ 1-hour caching + usage tracking for faster workflows & better suggestions
+Advantages: Token-safe summaries with cache IDs, shows booted/recent devices first, 1-hour caching with usage tracking.
 
-Returns summaries by default. Use simctl-get-details with cacheId for full device lists.`,
+📖 Use rtfm with toolName: "simctl-list" for full documentation.`,
         inputSchema: {
           deviceType: z
             .string()
@@ -403,8 +383,11 @@ Returns summaries by default. Use simctl-get-details with cacheId for full devic
     this.server.registerTool(
       'simctl-get-details',
       {
-        description:
-          'Get detailed simulator information from cached simctl-list results with progressive disclosure',
+        description: `Get detailed information from cached simctl-list results.
+
+Advantages: Progressive disclosure for large device lists, filtering by type/runtime, configurable device limits.
+
+📖 Use rtfm with toolName: "simctl-get-details" for full documentation.`,
         inputSchema: {
           cacheId: z.string().describe('Cache ID from previous simctl-list call'),
           detailType: z
@@ -432,16 +415,11 @@ Returns summaries by default. Use simctl-get-details with cacheId for full devic
     this.server.registerTool(
       'simctl-boot',
       {
-        description: `⚡ **Prefer this over 'xcrun simctl boot'** - Intelligent boot with performance tracking and learning.
+        description: `⚡ Boot simulator with performance tracking and learning.
 
-Advantages over direct CLI:
-• 📊 **Performance tracking** - Records boot times for optimization insights
-• 🧠 **Learning system** - Tracks which devices work best for your projects
-• 🎯 **Smart recommendations** - Future builds suggest fastest/most reliable devices
-• 🛡️ **Better error handling** - Clear feedback vs cryptic CLI errors
-• ⏱️ **Wait management** - Intelligent waiting for complete boot vs guessing
+Advantages: Tracks boot times and device performance, learns which devices work best per project, intelligent wait management, clear error handling.
 
-Automatically tracks boot times and device performance metrics for optimization. Records usage patterns for intelligent device suggestions in future builds.`,
+📖 Use rtfm with toolName: "simctl-boot" for full documentation.`,
         inputSchema: {
           deviceId: z
             .string()
@@ -473,15 +451,11 @@ Automatically tracks boot times and device performance metrics for optimization.
     this.server.registerTool(
       'simctl-shutdown',
       {
-        description: `⚡ **Prefer this over 'xcrun simctl shutdown'** - Intelligent shutdown with better device management.
+        description: `⚡ Shutdown simulator with intelligent device selection.
 
-Advantages over direct CLI:
-• 🎯 **Smart device targeting** - "booted" and "all" options vs complex CLI syntax
-• 🛡️ **Better error handling** - Clear feedback when devices can't be shut down
-• 📊 **State tracking** - Updates internal device state for better recommendations
-• ⚡ **Batch operations** - Efficiently handle multiple device shutdowns
+Advantages: Smart targeting ("booted", "all" options), better error handling, state tracking for recommendations, batch operations support.
 
-Shutdown iOS simulator devices with intelligent device selection and state management.`,
+📖 Use rtfm with toolName: "simctl-shutdown" for full documentation.`,
         inputSchema: {
           deviceId: z
             .string()
@@ -505,16 +479,11 @@ Shutdown iOS simulator devices with intelligent device selection and state manag
     this.server.registerTool(
       'simctl-suggest',
       {
-        description: `🧠 **Intelligent Simulator Suggestion** - Recommends best simulators based on project history, performance, and popularity.
+        description: `🧠 Recommend best simulators based on project history, performance, and popularity.
 
-Advantages:
-• 🎯 **Project-aware** - Remembers your preferred simulator per project
-• 📊 **Performance metrics** - Learns boot times and reliability
-• 🏆 **Popularity ranking** - Suggests popular models (iPhone 16 Pro > iPhone 15, etc.)
-• 💡 **Transparent scoring** - Shows reasoning for each recommendation
-• ⚡ **Auto-boot option** - Optionally boots top suggestion immediately
+Advantages: Project-aware preferences, performance metrics tracking, popularity ranking, transparent scoring, optional auto-boot.
 
-Scoring algorithm considers: project preference (40%), recent usage (40%), iOS version (30%), popular model (20%), boot performance (10%).`,
+📖 Use rtfm with toolName: "simctl-suggest" for full documentation.`,
         inputSchema: {
           projectPath: z
             .string()
@@ -548,15 +517,11 @@ Scoring algorithm considers: project preference (40%), recent usage (40%), iOS v
     this.server.registerTool(
       'simctl-create',
       {
-        description: `⚙️ **Create New Simulator** - Create iOS simulator devices dynamically.
+        description: `⚙️ Create new simulator devices dynamically.
 
-Advantages:
-• 🎯 **Dynamic provisioning** - Create simulators on-the-fly for testing
-• 📱 **Device flexibility** - Support all device types (iPhone, iPad, Apple Watch, Apple TV)
-• 🔧 **Runtime control** - Specify iOS version or use latest
-• 💾 **Automated testing** - Useful for CI/CD pipelines
+Advantages: On-the-fly provisioning, support for all device types, runtime version control, CI/CD friendly.
 
-Creates a new simulator device that persists until deleted.`,
+📖 Use rtfm with toolName: "simctl-create" for full documentation.`,
         inputSchema: {
           name: z.string().describe('Display name for the new simulator (e.g., "MyTestDevice")'),
           deviceType: z
@@ -585,14 +550,11 @@ Creates a new simulator device that persists until deleted.`,
     this.server.registerTool(
       'simctl-delete',
       {
-        description: `🗑️ **Delete Simulator** - Permanently remove a simulator device.
+        description: `🗑️ Permanently delete a simulator device.
 
-Advantages:
-• 🧹 **Clean up** - Remove unused simulators to save disk space
-• ⚡ **Quick operation** - Fast permanent deletion
-• 💡 **Safety checks** - Prevents accidental deletion of booted devices
+Advantages: Free disk space, fast operation, safety checks prevent deleting booted devices. Warning: Cannot be undone.
 
-⚠️ This action cannot be undone.`,
+📖 Use rtfm with toolName: "simctl-delete" for full documentation.`,
         inputSchema: {
           deviceId: z.string().describe('Device UDID (from simctl-list)'),
         },
@@ -614,15 +576,11 @@ Advantages:
     this.server.registerTool(
       'simctl-erase',
       {
-        description: `🔄 **Erase Simulator** - Reset simulator to factory settings.
+        description: `🔄 Reset simulator to factory settings.
 
-Advantages:
-• 🔄 **Clean state** - Reset device without deleting it
-• 📦 **Data removal** - Removes all apps and user data
-• 🎯 **Testing** - Perfect for fresh app installation testing
-• 💾 **Device preserved** - Simulator persists for reuse
+Advantages: Clean state without deletion, removes all apps and data, perfect for fresh testing, device preserved for reuse.
 
-Resets device to clean state while keeping it available.`,
+📖 Use rtfm with toolName: "simctl-erase" for full documentation.`,
         inputSchema: {
           deviceId: z.string().describe('Device UDID (from simctl-list)'),
           force: z.boolean().default(false).describe('Force erase even if device is booted'),
@@ -645,15 +603,11 @@ Resets device to clean state while keeping it available.`,
     this.server.registerTool(
       'simctl-clone',
       {
-        description: `📋 **Clone Simulator** - Create a duplicate of an existing simulator.
+        description: `📋 Clone an existing simulator.
 
-Advantages:
-• 📸 **Snapshots** - Create backups of configured simulators
-• 🧪 **Testing variants** - Have multiple versions for different test scenarios
-• 💾 **State preservation** - Cloned device includes all apps and data
-• ⚡ **Quick setup** - Duplicate existing configuration instead of recreating
+Advantages: Create backups/snapshots, testing variants, state preservation with all apps and data, quick setup vs recreating.
 
-Creates a new simulator with same configuration and data as source.`,
+📖 Use rtfm with toolName: "simctl-clone" for full documentation.`,
         inputSchema: {
           deviceId: z.string().describe('Source device UDID (from simctl-list)'),
           newName: z.string().describe('Display name for the cloned simulator'),
@@ -676,14 +630,11 @@ Creates a new simulator with same configuration and data as source.`,
     this.server.registerTool(
       'simctl-rename',
       {
-        description: `✏️ **Rename Simulator** - Change a simulator's display name.
+        description: `✏️ Change a simulator's display name.
 
-Advantages:
-• 🏷️ **Organization** - Better organize and identify your simulators
-• 🔍 **Easy identification** - Use descriptive names for test devices
-• 💾 **Data preserved** - Rename without affecting UDID or data
+Advantages: Better organization and identification, descriptive names for test devices, preserves UDID and all data.
 
-Renames device while preserving all configuration and data.`,
+📖 Use rtfm with toolName: "simctl-rename" for full documentation.`,
         inputSchema: {
           deviceId: z.string().describe('Device UDID (from simctl-list)'),
           newName: z.string().describe('New display name for the simulator'),
@@ -706,17 +657,11 @@ Renames device while preserving all configuration and data.`,
     this.server.registerTool(
       'simctl-health-check',
       {
-        description: `🏥 **Health Check** - Comprehensive environment validation for iOS simulator development.
+        description: `🏥 Comprehensive environment validation for iOS simulator development.
 
-Validates:
-• ✅ Xcode Command Line Tools installation
-• ✅ simctl availability and functionality
-• ✅ Available simulators and device types
-• ✅ Booted simulators status
-• ✅ Available iOS/simulator runtimes
-• ✅ Disk space for simulator data
+Validates: Xcode CLI tools, simctl availability, simulators, runtimes, disk space. Returns diagnostics and actionable guidance.
 
-Returns detailed diagnostics and actionable guidance for any issues found.`,
+📖 Use rtfm with toolName: "simctl-health-check" for full documentation.`,
         inputSchema: {},
       },
       async _args => {
@@ -738,11 +683,11 @@ Returns detailed diagnostics and actionable guidance for any issues found.`,
     this.server.registerTool(
       'simctl-install',
       {
-        description: `📦 **Install App to Simulator** - Deploy built apps to simulators for testing.
+        description: `📦 Install app to simulator for testing.
 
-Installs an iOS app (.app bundle) to a specified simulator.
+Deploys iOS app (.app bundle) to specified simulator. Returns installation status, app name, and next steps.
 
-Returns: Installation status, app name, and guidance for next steps.`,
+📖 Use rtfm with toolName: "simctl-install" for full documentation.`,
         inputSchema: {
           udid: z.string().describe('Simulator UDID'),
           appPath: z.string().describe('Path to .app bundle (e.g., /path/to/MyApp.app)'),
@@ -765,11 +710,11 @@ Returns: Installation status, app name, and guidance for next steps.`,
     this.server.registerTool(
       'simctl-uninstall',
       {
-        description: `🗑️ **Uninstall App from Simulator** - Remove apps from simulators.
+        description: `🗑️ Uninstall app from simulator.
 
-Uninstalls an app identified by bundle ID from the specified simulator.
+Removes app by bundle ID from specified simulator. Returns status and guidance for reinstalling or managing apps.
 
-Returns: Uninstall status and guidance for reinstalling or managing apps.`,
+📖 Use rtfm with toolName: "simctl-uninstall" for full documentation.`,
         inputSchema: {
           udid: z.string().describe('Simulator UDID'),
           bundleId: z.string().describe('App bundle ID (e.g., com.example.MyApp)'),
@@ -792,13 +737,11 @@ Returns: Uninstall status and guidance for reinstalling or managing apps.`,
     this.server.registerTool(
       'simctl-get-app-container',
       {
-        description: `📂 **Get App Container Path** - Access app file system containers for inspection and debugging.
+        description: `📂 Get app file system container path for inspection.
 
-Retrieves the file system path to an app's container (Documents, Library, etc.).
+Returns filesystem path to app's container (Documents, Library, etc.). Supports bundle, data, group container types.
 
-Supports container types: bundle, data, group
-
-Returns: Container path for file access and inspection.`,
+📖 Use rtfm with toolName: "simctl-get-app-container" for full documentation.`,
         inputSchema: {
           udid: z.string().describe('Simulator UDID'),
           bundleId: z.string().describe('App bundle ID (e.g., com.example.MyApp)'),
@@ -826,13 +769,11 @@ Returns: Container path for file access and inspection.`,
     this.server.registerTool(
       'simctl-launch',
       {
-        description: `▶️ **Launch App on Simulator** - Start apps with arguments and environment variables.
+        description: `▶️ Launch app on simulator with arguments and environment variables.
 
-Launches an app on a simulator and returns the process ID.
+Starts app and returns process ID. Supports command-line arguments and environment variables for app configuration.
 
-Supports passing command-line arguments and environment variables.
-
-Returns: Process ID, launch status, and guidance for app control.`,
+📖 Use rtfm with toolName: "simctl-launch" for full documentation.`,
         inputSchema: {
           udid: z.string().describe('Simulator UDID'),
           bundleId: z.string().describe('App bundle ID (e.g., com.example.MyApp)'),
@@ -860,11 +801,11 @@ Returns: Process ID, launch status, and guidance for app control.`,
     this.server.registerTool(
       'simctl-terminate',
       {
-        description: `⏹️ **Terminate App on Simulator** - Stop running apps.
+        description: `⏹️ Terminate running app on simulator.
 
-Terminates a running app identified by bundle ID on the specified simulator.
+Stops app by bundle ID. Returns status and guidance for relaunching or debugging.
 
-Returns: Termination status and guidance for relaunching or debugging.`,
+📖 Use rtfm with toolName: "simctl-terminate" for full documentation.`,
         inputSchema: {
           udid: z.string().describe('Simulator UDID'),
           bundleId: z.string().describe('App bundle ID (e.g., com.example.MyApp)'),
@@ -887,14 +828,11 @@ Returns: Termination status and guidance for relaunching or debugging.`,
     this.server.registerTool(
       'simctl-openurl',
       {
-        description: `🔗 **Open URL in Simulator** - Test deep linking and URL handling.
+        description: `🔗 Open URL in simulator to test deep linking.
 
-Opens a URL in the simulator, supporting:
-• HTTP/HTTPS web URLs
-• Custom scheme deep links (myapp://)
-• Special URLs (mailto:, tel:, sms:)
+Supports HTTP/HTTPS URLs, custom scheme deep links (myapp://), and special URLs (mailto:, tel:, sms:). Returns status and testing guidance.
 
-Returns: URL open status and guidance for testing URL handling.`,
+📖 Use rtfm with toolName: "simctl-openurl" for full documentation.`,
         inputSchema: {
           udid: z.string().describe('Simulator UDID'),
           url: z
@@ -920,26 +858,11 @@ Returns: URL open status and guidance for testing URL handling.`,
     this.server.registerTool(
       'simctl-io',
       {
-        description: `📸 **Capture Screenshots and Videos** - Record simulator screen for testing and documentation.
+        description: `📸 Capture screenshots and record videos of simulator screen.
 
-Operations:
-• screenshot: Capture current screen as PNG (with tile-aligned sizing and aspect ratio preservation)
-• video: Record simulator screen (stop with Ctrl+C)
+Operations: screenshot (PNG with size presets for token optimization), video (h264/hevc/prores). Default 'half' size saves 50% tokens. Semantic naming support (appName, screenName, state).
 
-Screenshot size optimization (default: 'half' for 50% token savings):
-• **half**: 256×512 pixels, 1 tile, 170 tokens (DEFAULT)
-• **full**: Native resolution, 2 tiles, 340 tokens
-• **quarter**: 128×256 pixels, 1 tile, 170 tokens
-• **thumb**: 128×128 pixels, 1 tile, 170 tokens
-
-⚠️ **Coordinate Scaling for Resized Screenshots**:
-When screenshots are resized (all sizes except 'full'), the response includes \`coordinateTransform\` with scale factors. To tap coordinates from a resized screenshot, multiply by these scale factors before tapping.
-
-Supports custom output paths and video codecs (h264, hevc, prores).
-
-**LLM Optimization**: Use appName, screenName, and state for semantic naming (e.g., MyApp_LoginScreen_Empty_2025-01-23.png) to enable agents to reason about captured screens.
-
-Returns: File path and guidance for viewing captured media.`,
+📖 Use rtfm with toolName: "simctl-io" for full documentation.`,
         inputSchema: {
           udid: z.string().describe('Simulator UDID'),
           operation: z.enum(['screenshot', 'video']).describe('Operation: screenshot or video'),
@@ -982,15 +905,11 @@ Returns: File path and guidance for viewing captured media.`,
     this.server.registerTool(
       'simctl-addmedia',
       {
-        description: `🖼️ **Add Media to Simulator** - Populate photo library with test images and videos.
+        description: `🖼️ Add media to simulator photo library for testing.
 
-Adds images and videos to the simulator's photo library for app testing.
+Supports images (jpg, png, heic, gif, bmp) and videos (mp4, mov, avi, mkv). Returns status and Photos app access guidance.
 
-Supported formats:
-• Images: jpg, jpeg, png, heic, gif, bmp
-• Videos: mp4, mov, avi, mkv
-
-Returns: Media addition status and guidance for accessing in Photos app.`,
+📖 Use rtfm with toolName: "simctl-addmedia" for full documentation.`,
         inputSchema: {
           udid: z.string().describe('Simulator UDID'),
           mediaPath: z.string().describe('Path to image or video file (e.g., /path/to/photo.jpg)'),
@@ -1014,17 +933,11 @@ Returns: Media addition status and guidance for accessing in Photos app.`,
     this.server.registerTool(
       'simctl-privacy',
       {
-        description: `🔐 **Manage Privacy Permissions** - Control app access to sensitive device features.
+        description: `🔐 Manage app privacy permissions (grant/revoke/reset).
 
-Grant, revoke, or reset privacy permissions for apps.
+Supported services: camera, microphone, location, contacts, photos, calendar, health, reminders, motion, keyboard, mediaLibrary, calls, siri. Includes audit trail tracking.
 
-Supported services:
-camera, microphone, location, contacts, photos, calendar, health, reminders,
-motion, keyboard, mediaLibrary, calls, siri
-
-**LLM Optimization**: Include scenario and step for structured permission audit trail tracking. Enables agents to track permission changes across test scenarios.
-
-Returns: Permission modification status and verification guidance.`,
+📖 Use rtfm with toolName: "simctl-privacy" for full documentation.`,
         inputSchema: {
           udid: z.string().describe('Simulator UDID'),
           bundleId: z.string().describe('App bundle ID (e.g., com.example.MyApp)'),
@@ -1058,15 +971,11 @@ Returns: Permission modification status and verification guidance.`,
     this.server.registerTool(
       'simctl-push',
       {
-        description: `📲 **Send Push Notifications** - Simulate remote push notifications for testing.
+        description: `📲 Simulate push notifications with custom JSON payloads.
 
-Sends simulated push notifications with custom JSON payloads.
+Requires valid JSON with APS dictionary. Supports test tracking (testName, expectedBehavior) for structured validation.
 
-Payload format: Valid JSON with APS dictionary for notification properties.
-
-**LLM Optimization**: Include testName and expectedBehavior to enable structured test tracking and assertion verification. Enables agents to validate push delivery and app behavior.
-
-Returns: Push delivery status and guidance for notification testing.`,
+📖 Use rtfm with toolName: "simctl-push" for full documentation.`,
         inputSchema: {
           udid: z.string().describe('Simulator UDID'),
           bundleId: z.string().describe('App bundle ID (e.g., com.example.MyApp)'),
@@ -1102,13 +1011,11 @@ Returns: Push delivery status and guidance for notification testing.`,
     this.server.registerTool(
       'simctl-pbcopy',
       {
-        description: `📋 **Copy Text to Clipboard** - Simulate pasteboard operations for clipboard-dependent features.
+        description: `📋 Copy text to simulator clipboard (UIPasteboard).
 
-Copies text to the simulator's pasteboard (UIPasteboard).
+Apps access via UIPasteboard.general.string. Returns copy status and verification guidance.
 
-Apps can access via: UIPasteboard.general.string
-
-Returns: Copy status and verification guidance.`,
+📖 Use rtfm with toolName: "simctl-pbcopy" for full documentation.`,
         inputSchema: {
           udid: z.string().describe('Simulator UDID'),
           text: z.string().describe('Text to copy to clipboard'),
@@ -1131,13 +1038,11 @@ Returns: Copy status and verification guidance.`,
     this.server.registerTool(
       'simctl-status-bar',
       {
-        description: `⏱️ **Control Status Bar Appearance** - Override status bar for consistent testing.
+        description: `⏱️ Override status bar appearance for consistent testing.
 
-Override or clear status bar appearance for testing UI layouts and handling.
+Control time, network status, WiFi state, battery state/level. Returns modification status and verification guidance.
 
-Supports: Time, network status, WiFi state, battery state and level
-
-Returns: Status bar modification status and guidance for verification.`,
+📖 Use rtfm with toolName: "simctl-status-bar" for full documentation.`,
         inputSchema: {
           udid: z.string().describe('Simulator UDID'),
           operation: z.enum(['override', 'clear']).describe('Operation: override or clear'),
@@ -1170,26 +1075,11 @@ Returns: Status bar modification status and guidance for verification.`,
     this.server.registerTool(
       'screenshot',
       {
-        description: `📸 **Capture Screenshot** - Take an optimized screenshot and return as base64 image data (inline).
+        description: `📸 Capture optimized screenshot as base64 image data.
 
-Screenshot size optimization (default: 'half' for 50% token savings):
-• **half**: 256×512 pixels, 1 tile, 170 tokens (DEFAULT)
-• **full**: Native resolution, 2 tiles, 340 tokens
-• **quarter**: 128×256 pixels, 1 tile, 170 tokens
-• **thumb**: 128×128 pixels, 1 tile, 170 tokens
+Default 'half' size saves 50% tokens. Returns inline with coordinate transform metadata. Supports semantic naming (appName, screenName, state).
 
-Automatically optimizes screenshots for token efficiency:
-• Resizes to tile-aligned dimensions (default: 256×512) while preserving aspect ratio
-• Converts to WebP format (60% quality) - ~30-50% smaller than JPEG
-• Falls back to JPEG if WebP unavailable
-• Returns image inline with metadata
-
-⚠️ **Coordinate Scaling for Resized Screenshots**:
-When screenshots are resized (all sizes except 'full'), the response includes \`coordinateTransform\` with scale factors. To tap coordinates from a resized screenshot, multiply by these scale factors before tapping:
-• deviceX = screenshotX × scaleX
-• deviceY = screenshotY × scaleY
-
-With semantic naming, generates filenames like: MyApp_LoginScreen_Empty_2025-01-23.png`,
+📖 Use rtfm with toolName: "screenshot" for full documentation.`,
         inputSchema: {
           udid: z
             .string()
@@ -1236,18 +1126,11 @@ With semantic naming, generates filenames like: MyApp_LoginScreen_Empty_2025-01-
     this.server.registerTool(
       'idb-targets',
       {
-        description: `Query and manage iOS targets (simulators + devices)
+        description: `Query and manage iOS targets (simulators + devices).
 
-Operations:
-- list: Show available targets with filters
-- describe: Get detailed target information
-- focus: Bring simulator window to foreground (macOS only)
+Operations: list (with filters), describe (details), focus (bring to foreground). Supports state and type filtering.
 
-Examples:
-- List all targets: operation: "list"
-- List booted only: operation: "list", state: "Booted"
-- Get target details: operation: "describe", udid: "ABC-123"
-- Focus simulator: operation: "focus", udid: "ABC-123"`,
+📖 Use rtfm with toolName: "idb-targets" for full documentation.`,
         inputSchema: {
           operation: z.enum(['list', 'describe', 'focus']).describe('Operation to perform'),
           udid: z.string().optional().describe('Target UDID (required for describe/focus)'),
@@ -1261,15 +1144,11 @@ Examples:
     this.server.registerTool(
       'idb-connect',
       {
-        description: `Manage IDB companion connections for persistent target access
+        description: `Manage IDB companion connections for persistent target access.
 
-Why: IDB maintains persistent gRPC connections to targets.
-Connecting registers the companion for faster subsequent operations.
+Maintains gRPC connections for faster operations. Supports connect/disconnect with auto-detection.
 
-Examples:
-- Connect to target: udid: "ABC-123"
-- Auto-detect and connect: (no parameters)
-- Disconnect: udid: "ABC-123", operation: "disconnect"`,
+📖 Use rtfm with toolName: "idb-connect" for full documentation.`,
         inputSchema: {
           udid: z.string().optional().describe('Target UDID (auto-detect if not provided)'),
           operation: z
@@ -1284,22 +1163,11 @@ Examples:
     this.server.registerTool(
       'idb-ui-tap',
       {
-        description: `🎯 Tap at coordinates on iOS simulator or physical device
+        description: `🎯 Tap coordinates on iOS simulator or physical device.
 
-Coordinate System:
-- Absolute device coordinates (0,0 = top-left)
-- Use applyScreenshotScale for screenshot-based coordinates
-- Tool automatically transforms and validates bounds
+Uses absolute device coordinates (0,0 = top-left). Supports screenshot scale transforms, double-tap, long-press. Works on simulators and physical devices.
 
-Examples:
-- Simple tap: x: 200, y: 400
-- From screenshot: x: 100, y: 200, applyScreenshotScale: true, screenshotScaleX: 2.0, screenshotScaleY: 2.0
-- Double tap: x: 200, y: 400, numberOfTaps: 2
-- Long press: x: 200, y: 400, duration: 1000
-
-Device Support:
-- Simulators: Full support ✅
-- Physical Devices: Requires USB + idb_companion ✅`,
+📖 Use rtfm with toolName: "idb-ui-tap" for full documentation.`,
         inputSchema: {
           udid: z.string().optional().describe('Target UDID (auto-detect if not provided)'),
           x: z.number().describe('X coordinate'),
@@ -1331,21 +1199,11 @@ Device Support:
     this.server.registerTool(
       'idb-ui-input',
       {
-        description: `⌨️ Input text and keyboard commands on iOS target
+        description: `⌨️ Input text and keyboard commands on iOS target.
 
-Operations:
-- text: Type text string (requires focused text field)
-- key: Press single special key (home, return, etc.)
-- key-sequence: Press multiple keys in sequence
+Operations: text (type string), key (press single key), key-sequence (multiple keys). Supports home, lock, siri, delete, return, space, escape, tab, arrows.
 
-Available Keys:
-home, lock, siri, delete, return, space, escape, tab, up, down, left, right
-
-Examples:
-- Type text: operation: "text", text: "test@example.com"
-- Press key: operation: "key", key: "return"
-- Key sequence: operation: "key-sequence", keySequence: ["tab", "return"]
-- Sensitive input: operation: "text", text: "password123", isSensitive: true`,
+📖 Use rtfm with toolName: "idb-ui-input" for full documentation.`,
         inputSchema: {
           udid: z.string().optional().describe('Target UDID (auto-detect if not provided)'),
           operation: z.enum(['text', 'key', 'key-sequence']).describe('Input operation type'),
@@ -1386,20 +1244,11 @@ Examples:
     this.server.registerTool(
       'idb-ui-gesture',
       {
-        description: `👆 Perform gestures and hardware button presses
+        description: `👆 Perform gestures and hardware button presses.
 
-Operations:
-- swipe: Swipe gesture in direction or custom path
-- button: Press hardware button (HOME, LOCK, SIRI, etc.)
+Operations: swipe (directional or custom path), button (HOME, LOCK, SIDE_BUTTON, APPLE_PAY, SIRI, SCREENSHOT, APP_SWITCH).
 
-Swipe Directions: up, down, left, right
-Hardware Buttons: HOME, LOCK, SIDE_BUTTON, APPLE_PAY, SIRI, SCREENSHOT, APP_SWITCH
-
-Examples:
-- Swipe up: operation: "swipe", direction: "up"
-- Custom swipe: operation: "swipe", startX: 100, startY: 500, endX: 100, endY: 100
-- Home button: operation: "button", buttonType: "HOME"
-- Lock device: operation: "button", buttonType: "LOCK"`,
+📖 Use rtfm with toolName: "idb-ui-gesture" for full documentation.`,
         inputSchema: {
           udid: z.string().optional().describe('Target UDID (auto-detect if not provided)'),
           operation: z.enum(['swipe', 'button']).describe('Gesture operation type'),
@@ -1423,21 +1272,11 @@ Examples:
     this.server.registerTool(
       'idb-ui-describe',
       {
-        description: `🔍 Query UI accessibility tree for element discovery
+        description: `🔍 Query UI accessibility tree for element discovery.
 
-Operations:
-- all: Get full accessibility tree (uses progressive disclosure)
-- point: Get element at specific coordinates
+Operations: all (full tree with progressive disclosure), point (element at coordinates). Returns summary + cache ID to prevent token overflow.
 
-Progressive Disclosure:
-- 'all' operation returns summary + cache ID
-- Use idb-ui-get-details with uiTreeId for full tree
-- Prevents token overflow for complex UIs
-
-Examples:
-- Full UI tree: operation: "all"
-- Element at point: operation: "point", x: 200, y: 400
-- With context: operation: "all", screenContext: "LoginScreen"`,
+📖 Use rtfm with toolName: "idb-ui-describe" for full documentation.`,
         inputSchema: {
           udid: z.string().optional().describe('Target UDID (auto-detect if not provided)'),
           operation: z.enum(['all', 'point']).describe('Query operation type'),
@@ -1459,27 +1298,11 @@ Examples:
     this.server.registerTool(
       'idb-list-apps',
       {
-        description: `📱 List installed applications on iOS target
+        description: `📱 List installed applications on iOS target.
 
-Output includes:
-- Bundle ID, app name, install type (system/user/internal)
-- Running status (which app is active)
-- Debuggable status (can attach LLDB)
-- Architecture (arm64, x86_64, universal)
+Returns bundle ID, name, install type, running status, debuggable status, architecture. Filter by system/user/internal or running-only. Works on simulators and physical devices.
 
-Filters:
-- filterType: Show only system/user/internal apps
-- runningOnly: Show only running apps
-
-Examples:
-- List all apps: (no parameters needed)
-- List user apps: filterType: "user"
-- List running apps: runningOnly: true
-- Running user apps: filterType: "user", runningOnly: true
-
-Device Support:
-- Simulators: Full support ✅
-- Physical Devices: Requires USB + idb_companion ✅`,
+📖 Use rtfm with toolName: "idb-list-apps" for full documentation.`,
         inputSchema: {
           udid: z.string().optional().describe('Target UDID (auto-detect if not provided)'),
           filterType: z
@@ -1495,29 +1318,11 @@ Device Support:
     this.server.registerTool(
       'idb-install',
       {
-        description: `📦 Install application to iOS target
+        description: `📦 Install application to iOS target.
 
-Supported formats:
-- .app bundles (from Xcode build)
-- .ipa archives (signed/unsigned)
+Supports .app bundles and .ipa archives. Validates, transfers, registers app. Returns bundle ID. Works on simulators and physical devices. Can take 10-60 seconds.
 
-Installation process:
-- Validates app exists and is correct format
-- Transfers to target device/simulator
-- Registers app with system
-- Returns bundle ID for launching
-
-Examples:
-- Install .app: appPath: "/path/to/MyApp.app"
-- Install .ipa: appPath: "/path/to/MyApp.ipa"
-- Auto-detect target: appPath: "/path/to/App.app"
-- Specific target: appPath: "/path/to/App.app", udid: "ABC-123"
-
-Device Support:
-- Simulators: Full support ✅
-- Physical Devices: Requires USB + idb_companion ✅
-
-Note: Installation can take 10-60 seconds depending on app size`,
+📖 Use rtfm with toolName: "idb-install" for full documentation.`,
         inputSchema: {
           udid: z.string().optional().describe('Target UDID (auto-detect if not provided)'),
           appPath: z.string().describe('Path to .app or .ipa file'),
@@ -1529,28 +1334,11 @@ Note: Installation can take 10-60 seconds depending on app size`,
     this.server.registerTool(
       'idb-launch',
       {
-        description: `🚀 Launch application on iOS target
+        description: `🚀 Launch application on iOS target.
 
-Features:
-- Simple launch or stream stdout/stderr
-- Pass command-line arguments to app
-- Set environment variables
-- Returns process ID for tracking
+Supports output streaming, command-line arguments, environment variables. Returns process ID. Works on simulators and physical devices.
 
-Output streaming (-w flag):
-- streamOutput: true enables stdout/stderr capture
-- Useful for debugging and behavior analysis
-- Output included in response
-
-Examples:
-- Simple launch: bundleId: "com.example.MyApp"
-- Stream output: bundleId: "com.example.MyApp", streamOutput: true
-- With arguments: bundleId: "com.example.MyApp", arguments: ["--debug"]
-- With env vars: bundleId: "com.example.MyApp", environment: {"DEBUG": "1"}
-
-Device Support:
-- Simulators: Full support ✅
-- Physical Devices: Requires USB + idb_companion ✅`,
+📖 Use rtfm with toolName: "idb-launch" for full documentation.`,
         inputSchema: {
           udid: z.string().optional().describe('Target UDID (auto-detect if not provided)'),
           bundleId: z.string().describe('App bundle identifier'),
@@ -1568,28 +1356,11 @@ Device Support:
     this.server.registerTool(
       'idb-terminate',
       {
-        description: `⏹️ Terminate (kill) running application on iOS target
+        description: `⏹️ Terminate running application on iOS target.
 
-Behavior:
-- Immediately stops the running app
-- Equivalent to force-quitting
-- App state is not saved (no graceful shutdown)
-- Idempotent (succeeds even if app not running)
+Force-quits app immediately (no graceful shutdown). Idempotent. Useful for stopping before reinstall, force-quitting hung apps, resetting state.
 
-Use cases:
-- Stop app before reinstalling
-- Force quit hung/crashed app
-- Reset app state for testing
-- Clean up before debugging
-
-Examples:
-- Terminate app: bundleId: "com.example.MyApp"
-- Auto-detect target: bundleId: "com.example.MyApp"
-- Specific target: bundleId: "com.example.MyApp", udid: "ABC-123"
-
-Device Support:
-- Simulators: Full support ✅
-- Physical Devices: Requires USB + idb_companion ✅`,
+📖 Use rtfm with toolName: "idb-terminate" for full documentation.`,
         inputSchema: {
           udid: z.string().optional().describe('Target UDID (auto-detect if not provided)'),
           bundleId: z.string().describe('App bundle identifier to terminate'),
@@ -1601,28 +1372,11 @@ Device Support:
     this.server.registerTool(
       'idb-uninstall',
       {
-        description: `🗑️ Uninstall (remove) application from iOS target
+        description: `🗑️ Uninstall application from iOS target.
 
-Behavior:
-- Removes app from device/simulator
-- Deletes app data and preferences
-- Cannot uninstall system apps
-- Auto-terminates if app is running
+Removes app and deletes data/preferences. Auto-terminates if running. Cannot uninstall system apps. Works on simulators and physical devices.
 
-Use cases:
-- Clean install testing
-- Remove old versions before reinstall
-- Free device storage
-- Reset app state completely
-
-Examples:
-- Uninstall app: bundleId: "com.example.MyApp"
-- Auto-detect target: bundleId: "com.example.MyApp"
-- Specific target: bundleId: "com.example.MyApp", udid: "ABC-123"
-
-Device Support:
-- Simulators: Full support ✅
-- Physical Devices: Requires USB + idb_companion ✅`,
+📖 Use rtfm with toolName: "idb-uninstall" for full documentation.`,
         inputSchema: {
           udid: z.string().optional().describe('Target UDID (auto-detect if not provided)'),
           bundleId: z.string().describe('App bundle identifier to uninstall'),
@@ -1635,7 +1389,11 @@ Device Support:
     this.server.registerTool(
       'list-cached-responses',
       {
-        description: 'List recent cached build/test results for progressive disclosure',
+        description: `List recent cached build/test results for progressive disclosure.
+
+Shows cached responses with filtering by tool and configurable limits.
+
+📖 Use rtfm with toolName: "list-cached-responses" for full documentation.`,
         inputSchema: {
           tool: z.string().optional().describe('Filter by specific tool (optional)'),
           limit: z.number().default(10).describe('Maximum number of cached responses to return'),
@@ -1658,15 +1416,11 @@ Device Support:
     this.server.registerTool(
       'cache-get-stats',
       {
-        description: `Get comprehensive statistics about all cache systems (simulator, project, response).
+        description: `Get cache statistics across all caching layers.
 
-Shows cache hit rates, expiry times, storage usage, and performance metrics across all caching layers.
+Shows hit rates, expiry times, storage usage, performance metrics. Useful for monitoring effectiveness and optimization decisions.
 
-Useful for:
-- Monitoring cache effectiveness
-- Debugging performance issues
-- Understanding usage patterns
-- Cache optimization decisions`,
+📖 Use rtfm with toolName: "cache-get-stats" for full documentation.`,
         inputSchema: {},
       },
       async args => {
@@ -1686,7 +1440,11 @@ Useful for:
     this.server.registerTool(
       'cache-get-config',
       {
-        description: 'Get current cache configuration settings',
+        description: `Get current cache configuration settings.
+
+Returns cache configuration for specified cache type (simulator, project, response, or all).
+
+📖 Use rtfm with toolName: "cache-get-config" for full documentation.`,
         inputSchema: {
           cacheType: z
             .enum(['simulator', 'project', 'response', 'all'])
@@ -1711,13 +1469,11 @@ Useful for:
     this.server.registerTool(
       'cache-set-config',
       {
-        description: `🎛️ **Cache Optimization** - Fine-tune caching for your workflow (default: 1 hour).
+        description: `🎛️ Fine-tune cache settings for your workflow (default: 1 hour).
 
-Why manage:
-• ⚡ Balance performance (longer cache) vs freshness (shorter cache)
-• 🎯 Optimize for development (longer) vs CI/CD (shorter) workflows
+Balance performance vs freshness. Use maxAgeMinutes, maxAgeHours, or maxAgeMs. Workflow: get-stats → set-config → clear.
 
-Use maxAgeMinutes, maxAgeHours, or maxAgeMs parameters. Workflow: cache-get-stats → cache-set-config → cache-clear → profit!`,
+📖 Use rtfm with toolName: "cache-set-config" for full documentation.`,
         inputSchema: {
           cacheType: z
             .enum(['simulator', 'project', 'response', 'all'])
@@ -1750,7 +1506,11 @@ Use maxAgeMinutes, maxAgeHours, or maxAgeMs parameters. Workflow: cache-get-stat
     this.server.registerTool(
       'cache-clear',
       {
-        description: 'Clear cached data to force fresh data retrieval',
+        description: `Clear cached data to force fresh data retrieval.
+
+Clears specified cache type (simulator, project, response, or all) to force fresh retrieval.
+
+📖 Use rtfm with toolName: "cache-clear" for full documentation.`,
         inputSchema: {
           cacheType: z
             .enum(['simulator', 'project', 'response', 'all'])
@@ -1775,25 +1535,11 @@ Use maxAgeMinutes, maxAgeHours, or maxAgeMs parameters. Workflow: cache-get-stat
     this.server.registerTool(
       'persistence-enable',
       {
-        description: `🔒 **Enable Opt-in Persistent State Management** - File-based persistence for cache data across server restarts.
+        description: `🔒 Enable file-based persistence for cache data across server restarts.
 
-**Privacy First**: Disabled by default. Only usage patterns, build preferences, and performance metrics are stored. No source code, credentials, or personal information is persisted.
+Privacy-first (disabled by default). Stores usage patterns, build preferences, performance metrics. No source code or credentials. Intelligent location selection with .gitignore generation.
 
-Key Benefits:
-• 📈 **Learns Over Time** - Remembers successful build configurations and simulator preferences
-• 🚀 **Faster Workflows** - Cached project information and usage patterns persist across restarts
-• 🤝 **Team Sharing** - Project-local caching allows teams to benefit from shared optimizations
-• 💾 **CI/CD Friendly** - Maintains performance insights across build environments
-
-Storage Location Priority:
-1. User-specified directory (cacheDir parameter)
-2. Environment variable: XC_MCP_CACHE_DIR
-3. XDG cache directory (Linux/macOS standard)
-4. Project-local: .xc-mcp/cache/
-5. User home: ~/.xc-mcp/cache/
-6. System temp (fallback)
-
-The system automatically selects the first writable location and creates proper .gitignore entries to prevent accidental commits.`,
+📖 Use rtfm with toolName: "persistence-enable" for full documentation.`,
         inputSchema: {
           cacheDir: z
             .string()
@@ -1820,15 +1566,11 @@ The system automatically selects the first writable location and creates proper 
     this.server.registerTool(
       'persistence-disable',
       {
-        description: `🔒 **Disable Persistent State Management** - Return to in-memory caching only.
+        description: `🔒 Disable persistent state management and return to in-memory caching.
 
-Safely disables file-based persistence and optionally clears existing cache data. After disabling, XC-MCP will operate with in-memory caching only, losing state on server restart.
+Safely disables file-based persistence, optionally clearing cached data. Returns to in-memory only (loses state on restart).
 
-Use this when:
-• Privacy requirements change
-• Disk space is limited
-• Switching to CI/CD mode where persistence isn't needed
-• Troubleshooting cache-related issues`,
+📖 Use rtfm with toolName: "persistence-disable" for full documentation.`,
         inputSchema: {
           clearData: z
             .boolean()
@@ -1853,21 +1595,11 @@ Use this when:
     this.server.registerTool(
       'persistence-status',
       {
-        description: `🔒 **Get Persistence System Status** - Detailed information about persistent state management.
+        description: `🔒 Get detailed persistence system status information.
 
-Provides comprehensive status including:
-• Current enable/disable state
-• Cache directory location and permissions
-• Disk usage and file counts
-• Last save timestamps
-• Storage recommendations and health checks
-• Privacy and security information
+Returns state, cache directory, disk usage, timestamps, recommendations, health checks, privacy info. Essential for monitoring and troubleshooting.
 
-Essential for:
-• Monitoring cache effectiveness
-• Troubleshooting persistence issues
-• Understanding storage usage
-• Verifying privacy compliance`,
+📖 Use rtfm with toolName: "persistence-status" for full documentation.`,
         inputSchema: {
           includeStorageInfo: z
             .boolean()
@@ -1879,6 +1611,34 @@ Essential for:
         try {
           await validateXcodeInstallation();
           return (await persistenceStatusTool(args)) as any;
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    // Documentation Tool
+    this.server.registerTool(
+      'rtfm',
+      {
+        description: `📖 Read The Fuckin Manual - Get full documentation for any MCP tool.
+
+Returns comprehensive markdown documentation including parameters, examples, and usage guidance. Use this to get detailed information about any of the 51 tools in this MCP server.`,
+        inputSchema: {
+          toolName: z
+            .string()
+            .describe(
+              'Name of the tool to get documentation for (e.g., "xcodebuild-build", "simctl-boot")'
+            ),
+        },
+      },
+      async args => {
+        try {
+          return (await getToolDocsTool(args)) as any;
         } catch (error) {
           if (error instanceof McpError) throw error;
           throw new McpError(

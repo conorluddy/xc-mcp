@@ -110,3 +110,71 @@ export async function simctlTerminateTool(args: any) {
     );
   }
 }
+
+export const SIMCTL_TERMINATE_DOCS = `
+# simctl-terminate
+
+Gracefully terminate a running iOS app on a simulator.
+
+## What it does
+
+Stops a running app by sending a termination signal. The app's lifecycle methods
+(applicationWillTerminate:) will be called, allowing clean shutdown.
+
+## Parameters
+
+- **udid** (string, required): Simulator UDID (from simctl-list)
+- **bundleId** (string, required): App bundle ID (e.g., com.example.MyApp)
+
+## Returns
+
+JSON response with:
+- Termination status
+- Command executed
+- Guidance for next steps (relaunching, uninstalling, checking container)
+
+## Examples
+
+### Terminate running app
+\`\`\`typescript
+await simctlTerminateTool({
+  udid: 'device-123',
+  bundleId: 'com.example.MyApp'
+})
+\`\`\`
+
+## Common Use Cases
+
+1. **Clean app restart**: Terminate then relaunch to reset app state
+2. **Test lifecycle**: Verify app handles termination correctly
+3. **Memory cleanup**: Stop app before running memory-intensive tests
+4. **State reset**: Terminate app to clear runtime state between test runs
+5. **Background testing**: Stop foreground app to test background behavior
+
+## Important Notes
+
+- **Graceful termination**: App lifecycle methods are called for clean shutdown
+- **Not running OK**: Returns error if app is not running, but can be safely ignored
+- **Simulator state**: Works on both booted and shutdown simulators
+- **No force kill**: This is a graceful termination, not a force kill
+
+## Error Handling
+
+- **App not running**: Error returned but operation is safe to ignore
+- **App not installed**: Indicates app must be installed first
+- **Simulator not booted**: Warning shown but termination may still succeed
+- **Invalid bundle ID**: Validates bundle ID format (must contain '.')
+
+## Next Steps After Termination
+
+1. **Launch app again**: \`simctl-launch <udid> <bundleId>\`
+2. **Uninstall app**: \`simctl-uninstall <udid> <bundleId>\`
+3. **Check app container**: \`simctl-get-app-container <udid> <bundleId>\`
+4. **Install new build**: \`simctl-install <udid> /path/to/App.app\`
+
+## Difference from Force Kill
+
+- **Terminate (this tool)**: Graceful shutdown with lifecycle callbacks
+- **Force kill**: Immediate termination without cleanup (use system kill command)
+`;
+

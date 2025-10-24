@@ -327,3 +327,129 @@ export async function simctlIoTool(args: SimctlIoToolArgs) {
     );
   }
 }
+
+export const SIMCTL_IO_DOCS = `
+# simctl-io
+
+Capture screenshots or record videos from iOS simulators with automatic optimization.
+
+## What it does
+
+Captures simulator screen as optimized PNG images or records video with configurable
+codecs. Screenshots are automatically resized to tile-aligned dimensions for token
+efficiency and support semantic naming for AI agent reasoning.
+
+## Parameters
+
+- **udid** (string, optional): Simulator UDID (auto-detects booted device if omitted)
+- **operation** (string, required): "screenshot" or "video"
+- **outputPath** (string, optional): Custom file path (auto-generated if omitted)
+- **codec** (string, optional): Video codec - h264, hevc, or prores (default: h264)
+- **size** (string, optional): Screenshot size - half, full, quarter, thumb (default: half)
+- **appName** (string, optional): App name for semantic naming
+- **screenName** (string, optional): Screen/view name for semantic naming
+- **state** (string, optional): UI state for semantic naming
+
+## Screenshot Size Optimization
+
+Screenshots are automatically optimized for token efficiency:
+
+- **half** (default): 256×512 pixels, 1 tile, 170 tokens (50% savings)
+- **full**: Native resolution, 2 tiles, 340 tokens
+- **quarter**: 128×256 pixels, 1 tile, 170 tokens
+- **thumb**: 128×128 pixels, 1 tile, 170 tokens
+
+## Semantic Naming (LLM Optimization)
+
+Provide appName, screenName, and state to generate semantic filenames:
+- Format: \`{appName}_{screenName}_{state}_{date}.png\`
+- Example: \`MyApp_LoginScreen_Empty_2025-01-23.png\`
+- Enables AI agents to reason about screen context and track state progression
+
+## Returns
+
+JSON response with:
+- File path and size information
+- Screenshot optimization metadata (dimensions, token count, savings)
+- Coordinate transform for mapping resized coordinates to device
+- Semantic metadata when provided
+- Guidance for viewing and using the capture
+
+## Examples
+
+### Capture optimized screenshot (default 256×512)
+\`\`\`typescript
+await simctlIoTool({
+  udid: 'device-123',
+  operation: 'screenshot'
+})
+\`\`\`
+
+### Capture full-size screenshot
+\`\`\`typescript
+await simctlIoTool({
+  udid: 'device-123',
+  operation: 'screenshot',
+  size: 'full'
+})
+\`\`\`
+
+### Capture with semantic naming
+\`\`\`typescript
+await simctlIoTool({
+  udid: 'device-123',
+  operation: 'screenshot',
+  appName: 'MyApp',
+  screenName: 'LoginScreen',
+  state: 'Empty'
+})
+\`\`\`
+
+### Record video with custom codec
+\`\`\`typescript
+await simctlIoTool({
+  udid: 'device-123',
+  operation: 'video',
+  codec: 'hevc'
+})
+\`\`\`
+
+## Common Use Cases
+
+1. **UI testing**: Capture screenshots for visual regression testing
+2. **Bug reporting**: Record videos demonstrating issues
+3. **Documentation**: Create screenshots for app documentation
+4. **State tracking**: Use semantic naming to track UI state progression
+5. **Token optimization**: Use half/quarter sizes for LLM-based analysis
+
+## Coordinate Transform
+
+When screenshots are resized (size ≠ 'full'), a coordinate transform is provided:
+- **scaleX**: Multiply screenshot X coordinates by this to get device coordinates
+- **scaleY**: Multiply screenshot Y coordinates by this to get device coordinates
+- **guidance**: Human-readable scaling instructions
+
+This enables accurate element tapping even with optimized screenshots.
+
+## Important Notes
+
+- **Auto-detection**: If udid is omitted, automatically uses the booted device
+- **Temp files**: Screenshots saved to /tmp unless custom path specified
+- **Video recording**: Press Ctrl+C to stop video recording
+- **Simulator must be booted**: Operations require running simulator
+- **File permissions**: Ensure output path is writable
+
+## Error Handling
+
+- **Simulator not booted**: Indicates simulator must be booted first
+- **Simulator not found**: Validates simulator exists in cache
+- **File path errors**: Reports if output path is not writable
+- **Invalid operation**: Validates operation is "screenshot" or "video"
+
+## Next Steps After Capture
+
+1. **View screenshot**: \`open "<file-path>"\`
+2. **Copy to clipboard**: \`pbcopy < "<file-path>"\`
+3. **Analyze with LLM**: Use optimized size for token-efficient analysis
+4. **Use coordinates**: Apply transform to map screenshot coords to device
+`;

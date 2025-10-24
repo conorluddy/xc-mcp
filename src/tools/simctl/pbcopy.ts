@@ -135,3 +135,136 @@ export async function simctlPbcopyTool(args: any) {
     );
   }
 }
+
+export const SIMCTL_PBCOPY_DOCS = `
+# simctl-pbcopy
+
+Copy text to simulator's clipboard for testing paste operations and UIPasteboard APIs.
+
+## What it does
+
+Copies text to the simulator's pasteboard (UIPasteboard.general), making it available for
+apps to access via standard pasteboard APIs. Useful for testing paste functionality without
+manual interaction.
+
+## Parameters
+
+- **udid** (string, required): Simulator UDID (from simctl-list)
+- **text** (string, required): Text to copy to clipboard
+
+## Returns
+
+JSON response with:
+- Copy operation status
+- Text length and preview
+- Guidance for accessing pasteboard in app
+
+## Examples
+
+### Copy simple text
+\`\`\`typescript
+await simctlPbcopyTool({
+  udid: 'device-123',
+  text: 'Hello World'
+})
+\`\`\`
+
+### Copy URL
+\`\`\`typescript
+await simctlPbcopyTool({
+  udid: 'device-123',
+  text: 'https://example.com/path?param=value'
+})
+\`\`\`
+
+### Copy JSON data
+\`\`\`typescript
+await simctlPbcopyTool({
+  udid: 'device-123',
+  text: JSON.stringify({ key: 'value', number: 123 })
+})
+\`\`\`
+
+## Common Use Cases
+
+1. **Paste testing**: Test text field paste functionality
+2. **URL handling**: Test app URL detection from clipboard
+3. **Data import**: Test importing data via clipboard
+4. **Share functionality**: Test receiving shared text content
+5. **Clipboard monitoring**: Test apps that monitor pasteboard changes
+
+## How Apps Access the Text
+
+Apps can access the clipboard text using:
+\`\`\`swift
+if let text = UIPasteboard.general.string {
+    // Use the pasted text
+}
+\`\`\`
+
+Or for URLs:
+\`\`\`swift
+if let url = UIPasteboard.general.url {
+    // Handle the URL
+}
+\`\`\`
+
+## Important Notes
+
+- **Immediate availability**: Text is available on pasteboard immediately
+- **Simulator-specific**: Each simulator has its own separate pasteboard
+- **String only**: Only supports string data (no images, files, or custom types)
+- **Persistent**: Clipboard content persists until overwritten or simulator resets
+
+## Error Handling
+
+- **Empty text**: Error if text string is empty
+- **Simulator not found**: Validates simulator exists in cache
+- **Write failure**: Reports if clipboard operation fails
+
+## Testing Workflow
+
+1. **Copy text**: \`simctl-pbcopy <udid> "Test text to paste"\`
+2. **Launch app**: \`simctl-launch <udid> <bundleId>\`
+3. **Navigate to input**: Use app to navigate to text field
+4. **Test paste**: App should detect clipboard content
+5. **Take screenshot**: \`simctl-io <udid> screenshot\` to verify paste
+
+## Use Cases by Category
+
+### Authentication Testing
+- Copy and paste email addresses
+- Copy and paste passwords (for test accounts only!)
+- Copy verification codes from clipboard
+
+### URL Handling
+- Copy URLs and test app deep link detection
+- Test universal link handling from clipboard
+- Verify URL parameter parsing
+
+### Data Import
+- Copy JSON/CSV data for import testing
+- Test clipboard-based data transfer
+- Verify data format validation
+
+### UX Testing
+- Test long-press paste menu appearance
+- Verify paste button states
+- Test clipboard change notifications
+
+## Clipboard Monitoring
+
+Some apps monitor clipboard changes. To test this:
+1. Launch app first
+2. Copy text to clipboard
+3. App should detect and respond to clipboard change
+4. Take screenshot to verify UI update
+
+## Limitations
+
+- **String data only**: Cannot copy images, files, or custom types
+- **No rich text**: Only plain text is supported
+- **No pasteboard metadata**: Cannot set pasteboard change count or other metadata
+- **Simulator scope**: Clipboard is not shared with host macOS clipboard
+`;
+

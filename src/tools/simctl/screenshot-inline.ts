@@ -420,3 +420,171 @@ export async function simctlScreenshotInlineTool(args: ScreenshotInlineToolArgs)
     }
   }
 }
+
+export const SIMCTL_SCREENSHOT_INLINE_DOCS = `
+# simctl-screenshot-inline
+
+Capture optimized screenshots with inline base64 encoding for direct MCP response transmission.
+
+## What it does
+
+Captures simulator screenshots and returns them as base64-encoded images directly in the
+MCP response. Automatically optimizes images for token efficiency with tile-aligned resizing
+and WebP/JPEG compression. Includes interactive element detection and coordinate transforms.
+
+## Parameters
+
+- **udid** (string, optional): Simulator UDID (auto-detects booted device if omitted)
+- **size** (string, optional): Screenshot size - half, full, quarter, thumb (default: half)
+- **appName** (string, optional): App name for semantic context
+- **screenName** (string, optional): Screen/view name for semantic context
+- **state** (string, optional): UI state for semantic context
+- **enableCoordinateCaching** (boolean, optional): Enable view fingerprinting for coordinate caching
+
+## Screenshot Size Optimization
+
+Automatically optimizes screenshots for token efficiency:
+
+- **half** (default): 256×512 pixels, 1 tile, ~170 tokens (50% savings)
+- **full**: Native resolution, 2 tiles, ~340 tokens
+- **quarter**: 128×256 pixels, 1 tile, ~170 tokens
+- **thumb**: 128×128 pixels, 1 tile, ~170 tokens
+
+## Automatic Optimization Process
+
+1. **Capture**: Screenshot taken at native resolution
+2. **Resize**: Automatically resized to tile-aligned dimensions (unless size='full')
+3. **Compress**: Converted to WebP format at 60% quality (falls back to JPEG if unavailable)
+4. **Encode**: Base64-encoded for inline MCP response transmission
+5. **Extract**: Interactive elements detected from accessibility tree
+6. **Transform**: Coordinate mapping provided for resized screenshots
+
+## Returns
+
+MCP response with:
+- Base64-encoded optimized image (inline)
+- Screenshot optimization metadata (dimensions, tokens, savings)
+- Interactive elements with coordinates and properties
+- Coordinate transform for mapping screenshot to device coordinates
+- View fingerprint (if enableCoordinateCaching is true)
+- Semantic metadata (if provided)
+
+## Examples
+
+### Simple optimized screenshot (256×512)
+\`\`\`typescript
+await simctlScreenshotInlineTool({
+  udid: 'device-123'
+})
+\`\`\`
+
+### Full resolution screenshot
+\`\`\`typescript
+await simctlScreenshotInlineTool({
+  udid: 'device-123',
+  size: 'full'
+})
+\`\`\`
+
+### Screenshot with semantic context
+\`\`\`typescript
+await simctlScreenshotInlineTool({
+  udid: 'device-123',
+  appName: 'MyApp',
+  screenName: 'LoginScreen',
+  state: 'Empty'
+})
+\`\`\`
+
+### Screenshot with coordinate caching enabled
+\`\`\`typescript
+await simctlScreenshotInlineTool({
+  udid: 'device-123',
+  enableCoordinateCaching: true
+})
+\`\`\`
+
+## Interactive Element Detection
+
+Automatically extracts interactive elements from the accessibility tree:
+- Element type (Button, TextField, etc.)
+- Label and identifier
+- Bounds (x, y, width, height)
+- Tappability status
+
+Limited to top 20 elements to avoid token overflow. Elements are filtered to only
+include those with bounds and hittable status.
+
+## Coordinate Transform
+
+When screenshots are resized (size ≠ 'full'), provides coordinate transform:
+- **scaleX**: Multiply screenshot X coordinates by this to get device coordinates
+- **scaleY**: Multiply screenshot Y coordinates by this to get device coordinates
+- **guidance**: Human-readable instructions for coordinate mapping
+
+This enables accurate element tapping even with optimized screenshots.
+
+## View Fingerprinting (Opt-in)
+
+When enableCoordinateCaching is true, computes a structural hash of the view:
+- **elementStructureHash**: SHA-256 hash of element hierarchy
+- **cacheable**: Whether view is stable enough to cache coordinates
+- **elementCount**: Number of elements in hierarchy
+- **orientation**: Device orientation
+
+Excludes loading states, animations, and dynamic content from caching.
+
+## Common Use Cases
+
+1. **Visual analysis**: LLM-based screenshot analysis with token optimization
+2. **UI automation**: Detect interactive elements and get tap coordinates
+3. **Bug reporting**: Capture and transmit screenshots inline
+4. **Test documentation**: Screenshot with semantic context for test tracking
+5. **Coordinate caching**: Store element coordinates for repeated interactions
+
+## Token Efficiency
+
+Screenshots are optimized for minimal token usage:
+- **Default (half)**: ~170 tokens (50% savings vs full)
+- **Full**: ~340 tokens (native resolution)
+- **Quarter**: ~170 tokens (75% savings vs full)
+- **Thumb**: ~170 tokens (smallest, for thumbnails)
+
+Token counts are estimates based on Claude's image processing (170 tokens per 512×512 tile).
+
+## Important Notes
+
+- **Auto-detection**: If udid is omitted, uses the currently booted device
+- **Temp files**: Uses temp directory for processing, auto-cleans up
+- **WebP fallback**: Attempts WebP compression, falls back to JPEG if unavailable
+- **Element extraction**: Requires app to be running with accessibility enabled
+- **Coordinate accuracy**: Transform provides pixel-perfect coordinate mapping
+
+## Error Handling
+
+- **Simulator not found**: Validates simulator exists in cache
+- **Simulator not booted**: Indicates simulator must be booted first
+- **Capture failure**: Reports if screenshot capture fails
+- **Optimization failure**: Falls back to original if optimization fails
+- **Element extraction**: Gracefully degrades if accessibility is unavailable
+
+## Next Steps After Screenshot
+
+1. **Analyze visually**: LLM processes inline image for visual analysis
+2. **Interact with elements**: Use coordinates from interactiveElements
+3. **Tap elements**: Apply coordinate transform if resized, then use simctl-tap
+4. **Query specific elements**: Use simctl-query-ui for targeted element discovery
+5. **Cache coordinates**: Store fingerprint for reuse on identical views
+
+## Comparison with simctl-io
+
+| Feature | screenshot-inline | simctl-io |
+|---------|------------------|-----------|
+| Returns | Base64 inline | File path |
+| Optimization | Automatic | Manual |
+| Elements | Auto-detected | Not included |
+| Transform | Included | Included |
+| Use case | MCP responses | File storage |
+| Token usage | Optimized | Depends on size |
+`;
+

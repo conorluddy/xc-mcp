@@ -153,3 +153,95 @@ export async function simctlAddmediaTool(args: any) {
     );
   }
 }
+
+export const SIMCTL_ADDMEDIA_DOCS = `
+# simctl-addmedia
+
+Add media files (photos and videos) to a simulator's photo library for testing.
+
+## What it does
+
+Adds image or video files to the simulator's Photos app, making them available for
+apps to access via PHPhotoLibrary or UIImagePickerController APIs.
+
+## Parameters
+
+- **udid** (string, required): Simulator UDID (from simctl-list)
+- **mediaPath** (string, required): Path to image or video file
+
+## Supported Formats
+
+**Images**: jpg, jpeg, png, heic, gif, bmp
+**Videos**: mp4, mov, avi, mkv
+
+## Returns
+
+JSON response with:
+- Media addition status
+- Media type and format detected
+- Guidance for viewing in Photos app and adding more media
+
+## Examples
+
+### Add image to photo library
+\`\`\`typescript
+await simctlAddmediaTool({
+  udid: 'device-123',
+  mediaPath: '/path/to/photo.jpg'
+})
+\`\`\`
+
+### Add video to photo library
+\`\`\`typescript
+await simctlAddmediaTool({
+  udid: 'device-123',
+  mediaPath: '/path/to/video.mp4'
+})
+\`\`\`
+
+## Common Use Cases
+
+1. **Photo picker testing**: Add test images for UIImagePickerController testing
+2. **PHPhotoLibrary testing**: Populate library for photo access API testing
+3. **Image processing**: Add images to test filters, crops, and transformations
+4. **Video playback**: Add videos to test AVPlayer integration
+5. **Camera roll simulation**: Populate library to simulate real user photo collection
+
+## Important Notes
+
+- **File must exist**: Validates file exists before attempting to add
+- **Format validation**: Only supported image/video formats are accepted
+- **Simulator state**: Works on both booted and shutdown simulators
+- **Photos app**: Media appears in simulator's Photos app immediately
+- **Metadata**: Original file metadata (EXIF, date, etc.) is preserved
+
+## Error Handling
+
+- **File not found**: Error if media file path doesn't exist
+- **Unsupported format**: Error if file extension is not in supported list
+- **Simulator not found**: Validates simulator exists in cache
+- **Addition failure**: Reports simctl errors if media cannot be added
+
+## Next Steps After Adding Media
+
+1. **View in Photos app**: \`simctl-launch <udid> com.apple.mobileslideshow\`
+2. **Test photo picker**: Launch your app and open UIImagePickerController
+3. **Add more media**: Repeat with different images/videos
+4. **Test PHPhotoLibrary**: Use PHPhotoLibrary.requestAuthorization() in your app
+
+## Testing Workflow
+
+1. **Grant photo permissions**: \`simctl-privacy <udid> <bundleId> grant photos\`
+2. **Add test media**: \`simctl-addmedia <udid> /path/to/photo.jpg\`
+3. **Launch app**: \`simctl-launch <udid> <bundleId>\`
+4. **Test photo access**: Verify app can read from photo library
+5. **Take screenshot**: \`simctl-io <udid> screenshot\` to verify UI
+
+## Tips
+
+- **Test image formats**: Add different image formats (JPEG, PNG, HEIC) to test compatibility
+- **Test video formats**: Add various video formats (MP4, MOV) to test playback
+- **Large files**: Be aware that adding large video files may take time
+- **Batch addition**: Add multiple files to simulate realistic photo library
+`;
+

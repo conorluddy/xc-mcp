@@ -174,3 +174,84 @@ export async function simctlGetAppContainerTool(args: any) {
     );
   }
 }
+
+export const SIMCTL_GET_APP_CONTAINER_DOCS = `
+# simctl-get-app-container
+
+Access iOS app file system containers for inspection and debugging.
+
+## What it does
+
+Retrieves the file system path to an app's container directories on a simulator,
+enabling direct access to app bundle, data directories, and shared group containers
+for debugging and testing.
+
+## Why you'd use it
+
+- **Debug data access**: Inspect app Documents and Library folders
+- **File inspection**: View database files, preferences, and cached data
+- **Testing validation**: Confirm app writes data to correct locations
+- **Container types**: Access bundle (app binary), data (Documents/Library), and group (shared) containers
+
+## Parameters
+
+- **udid** (string, required): Simulator UDID (from simctl-list)
+- **bundleId** (string, required): App bundle ID (e.g., com.example.MyApp)
+- **containerType** (string, optional): Container type - bundle, data, or group (default: data)
+
+## Container Types
+
+- **bundle**: App binary and resources (read-only)
+- **data**: App's Documents and Library directories (read-write)
+- **group**: Shared containers for app groups (read-write)
+
+## Returns
+
+JSON response with:
+- Container path for file system access
+- Container type information
+- Guidance for accessing and inspecting files
+- Simulator state and validation
+
+## Examples
+
+### Get app data container path
+\`\`\`typescript
+await simctlGetAppContainerTool({
+  udid: 'ABC-123-DEF',
+  bundleId: 'com.example.MyApp'
+})
+\`\`\`
+
+### Get app bundle path
+\`\`\`typescript
+await simctlGetAppContainerTool({
+  udid: 'ABC-123-DEF',
+  bundleId: 'com.example.MyApp',
+  containerType: 'bundle'
+})
+\`\`\`
+
+## Common Use Cases
+
+1. **Debugging data persistence**: Access app's Documents folder to inspect saved files
+2. **Database inspection**: View SQLite database files and validate schema
+3. **Preferences debugging**: Check UserDefaults plist files
+4. **Cache validation**: Verify cached data is stored correctly
+5. **Bundle inspection**: Access app binary and embedded resources
+
+## Error Handling
+
+- **App not installed**: Returns error if app is not installed on simulator
+- **Invalid bundle ID**: Validates bundle ID format (must contain '.')
+- **Simulator not found**: Validates simulator exists in cache
+- **Container access failure**: Reports if container cannot be accessed
+
+## Next Steps After Getting Container Path
+
+1. **View files**: \`cd "<container-path>" && ls -la\`
+2. **Open in Finder**: \`open "<container-path>/Documents"\`
+3. **Find files**: \`find "<container-path>" -type f | head -20\`
+4. **Inspect specific file**: \`cat "<container-path>/Documents/data.json"\`
+`;
+

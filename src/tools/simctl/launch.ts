@@ -139,3 +139,86 @@ export async function simctlLaunchTool(args: any) {
     );
   }
 }
+
+export const SIMCTL_LAUNCH_DOCS = `
+# simctl-launch
+
+Launch an iOS app on a simulator with support for custom arguments and environment variables.
+
+## What it does
+
+Starts an iOS app on a booted simulator, optionally passing command-line arguments and
+environment variables. Returns the process ID of the launched app for tracking.
+
+## Parameters
+
+- **udid** (string, required): Simulator UDID (from simctl-list)
+- **bundleId** (string, required): App bundle ID (e.g., com.example.MyApp)
+- **arguments** (string[], optional): Command-line arguments to pass to the app
+- **environment** (object, optional): Environment variables to set (automatically prefixed with SIMCTL_CHILD_)
+
+## Returns
+
+JSON response with:
+- Process ID of the launched app
+- Launch status and command executed
+- Guidance for next steps (terminating, opening URLs, checking container)
+
+## Examples
+
+### Simple app launch
+\`\`\`typescript
+await simctlLaunchTool({
+  udid: 'device-123',
+  bundleId: 'com.example.MyApp'
+})
+\`\`\`
+
+### Launch with debug arguments
+\`\`\`typescript
+await simctlLaunchTool({
+  udid: 'device-123',
+  bundleId: 'com.example.MyApp',
+  arguments: ['--verbose', '--debug']
+})
+\`\`\`
+
+### Launch with environment variables
+\`\`\`typescript
+await simctlLaunchTool({
+  udid: 'device-123',
+  bundleId: 'com.example.MyApp',
+  environment: { DEBUG: '1', API_URL: 'https://staging.example.com' }
+})
+\`\`\`
+
+## Common Use Cases
+
+1. **Debug launches**: Start app with debug flags enabled
+2. **API environment switching**: Set staging/production API URLs
+3. **Feature flags**: Enable experimental features via environment
+4. **Test scenarios**: Configure app behavior for specific test cases
+5. **Deep link testing**: Launch app then open URLs with simctl-openurl
+
+## Important Notes
+
+- **Simulator must be booted**: Use simctl-boot first if simulator is not running
+- **App must be installed**: Use simctl-install to install app first
+- **Environment variables**: Automatically prefixed with SIMCTL_CHILD_ for simctl compatibility
+- **Process ID tracking**: Returned PID can be used to monitor or terminate the app
+
+## Error Handling
+
+- **App not installed**: Returns error if app bundle is not found
+- **Simulator not booted**: Indicates simulator must be booted first
+- **Invalid bundle ID**: Validates bundle ID format (must contain '.')
+- **Simulator not found**: Validates simulator exists in cache
+
+## Next Steps After Launch
+
+1. **Terminate app**: \`simctl-terminate <udid> <bundleId>\`
+2. **Open URL/deep link**: \`simctl-openurl <udid> myapp://deeplink\`
+3. **Check app container**: \`simctl-get-app-container <udid> <bundleId>\`
+4. **Send push notification**: \`simctl-push <udid> <bundleId> <payload>\`
+`;
+
