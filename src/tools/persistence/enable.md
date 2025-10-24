@@ -1,35 +1,40 @@
 # persistence-enable
 
-🔒 **Enable Opt-in Persistent State Management** - File-based persistence for cache data across server restarts.
-**Privacy First**: Disabled by default. Only usage patterns, build preferences, and performance metrics are stored. No source code, credentials, or personal information is persisted.
-Storage Location Priority:
+🔋 **Enable opt-in persistent state management for learning across server restarts** - Activate persistence.
+
+Activates file-based persistence for XC-MCP's intelligent caching systems. Stores usage patterns, build preferences, simulator performance metrics, and cached responses to disk. Enables the system to learn and improve over time, remembering successful configurations across server restarts. Privacy-first design: NO source code, credentials, or personal information is persisted.
 
 ## Advantages
 
-• 📈 **Learns Over Time** - Remembers successful build configurations and simulator preferences
-• 🚀 **Faster Workflows** - Cached project information and usage patterns persist across restarts
-• 🤝 **Team Sharing** - Project-local caching allows teams to benefit from shared optimizations
-• 💾 **CI/CD Friendly** - Maintains performance insights across build environments
+• Retain learned build configurations and simulator preferences across restarts
+• Accelerate repeated workflows by persisting successful operation patterns
+• Enable team collaboration with shared project-local cache optimizations
+• Maintain performance insights across CI/CD pipeline runs
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
+- (None)
 
 ### Optional
-- (See implementation for optional parameters)
+- cacheDir (string): Custom directory for cache storage. If omitted, uses intelligent location selection
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+- Tool execution results with persistence activation confirmation
+- Cache directory location (resolved or custom)
+- Storage information and writability status
+- Privacy notice and next steps
 
 ## Related Tools
 
-- See MCP server documentation for related tools
+- persistence-disable: Turn off persistence
+- persistence-status: View persistence system status
 
 ## Notes
 
 - Tool is auto-registered with MCP server
-- Full documentation in persistence_enable.ts
+- Privacy-first design - only patterns and preferences stored
+- Enables team sharing via project-local cache
+- Automatically selects best cache location if not specified
+

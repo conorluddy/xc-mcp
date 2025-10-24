@@ -1,32 +1,40 @@
 # cache-get-config
 
-Get current cache configuration settings
+🔍 **Get current cache retention configuration settings** - View cache policies.
 
-## Description
+Retrieves the current cache retention policies for simulator, project, and response caches. Shows both millisecond values and human-readable durations. Essential for understanding your current cache configuration before making adjustments or troubleshooting performance.
 
-Retrieve the current cache configuration parameters including cache type, max age, and retention policies.
+## Advantages
+
+• Verify cache retention settings before tuning for specific workflows
+• Understand current configuration when troubleshooting stale data issues
+• Document cache settings for team collaboration or CI/CD configuration
+• Compare settings across different environments (development vs production)
 
 ## Parameters
 
+### Required
+- (None)
+
 ### Optional
-- `cacheType` (string, default: 'all'): Which cache configuration to retrieve
-  - Options: 'simulator', 'project', 'response', 'all'
+- cacheType (string): Which cache config to retrieve - "simulator", "project", "response", or "all". Defaults to "all"
 
 ## Returns
 
-- Current cache configuration for specified cache type
-- Max age/TTL in milliseconds
-- Cache type information
-- Settings summary
+- Tool execution results with current cache configuration
+- Retention times in both milliseconds and human-readable format
+- Fixed response cache duration (30 minutes)
 
 ## Related Tools
 
-- `cache-set-config` - Modify cache configuration
-- `cache-get-stats` - View cache performance statistics
-- `cache-clear` - Clear specific caches
+- cache-set-config: Configure cache retention times
+- cache-get-stats: Monitor cache performance
+- cache-clear: Clear cached data
 
 ## Notes
 
-- Returns read-only configuration information
-- Use `cache-set-config` to modify settings
-- All cache types are documented in cache management module
+- Tool is auto-registered with MCP server
+- Shows default configurations before any customization
+- Response cache duration is fixed at 30 minutes
+- Use to verify config changes after using cache-set-config
+

@@ -49,17 +49,13 @@ import { idbLaunchTool } from './tools/idb/launch.js';
 import { idbTerminateTool } from './tools/idb/terminate.js';
 import { idbUninstallTool } from './tools/idb/uninstall.js';
 import { listCachedResponsesTool } from './tools/cache/list-cached.js';
-import {
-  getCacheStatsTool,
-  setCacheConfigTool,
-  clearCacheTool,
-  getCacheConfigTool,
-} from './tools/cache/cache-management.js';
-import {
-  persistenceEnableTool,
-  persistenceDisableTool,
-  persistenceStatusTool,
-} from './tools/persistence/persistence-tools.js';
+import { getCacheStatsTool } from './tools/cache/get-stats.js';
+import { setCacheConfigTool } from './tools/cache/set-config.js';
+import { clearCacheTool } from './tools/cache/clear.js';
+import { getCacheConfigTool } from './tools/cache/get-config.js';
+import { persistenceEnableTool } from './tools/persistence/enable.js';
+import { persistenceDisableTool } from './tools/persistence/disable.js';
+import { persistenceStatusTool } from './tools/persistence/status.js';
 import { debugWorkflowPrompt } from './tools/prompts/debug-workflow.js';
 import { validateXcodeInstallation } from './utils/validation.js';
 
