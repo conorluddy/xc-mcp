@@ -7,6 +7,7 @@ import {
   validateDeviceCoordinates,
   type CoordinateTransform,
 } from '../../utils/coordinate-transform.js';
+import { toInt } from '../../types/coordinates.js';
 
 interface IdbUiTapArgs {
   udid?: string;
@@ -232,9 +233,11 @@ async function executeTapCommand(
   numberOfTaps: number,
   duration?: number
 ): Promise<{ success: boolean; output: string; error?: string }> {
-  // Build IDB tap command
-  // Format: idb ui tap --udid <UDID> <x> <y> [--duration <ms>]
-  let command = `idb ui tap --udid "${udid}" ${coords.x} ${coords.y}`;
+  // Build IDB tap command with integer coordinates
+  // Why: IDB CLI requires integers, not floats
+  const x = toInt(coords.x);
+  const y = toInt(coords.y);
+  let command = `idb ui tap --udid "${udid}" ${x} ${y}`;
 
   // Add duration for long press
   if (duration && duration > 0) {

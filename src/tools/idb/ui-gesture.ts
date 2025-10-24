@@ -2,6 +2,7 @@ import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
 import { IDBTargetCache } from '../../state/idb-target-cache.js';
+import { calculateSwipeCoordinates, toInt } from '../../types/coordinates.js';
 
 interface IdbUiGestureArgs {
   udid?: string;
@@ -219,62 +220,42 @@ async function executeSwipeCommand(
   let swipePath: any;
 
   if (direction) {
-    // Directional swipe: Convert direction to coordinates
-    // Why: IDB CLI expects numeric coordinates, not direction strings
+    // Directional swipe: Convert direction to integer coordinates
+    // Why: IDB CLI requires integers, not floats like "964.8000000000001"
     const screenW = target.screenDimensions.width;
     const screenH = target.screenDimensions.height;
-    const centerX = screenW / 2;
-    const centerY = screenH / 2;
 
-    let x1: number, y1: number, x2: number, y2: number;
+    const coords = calculateSwipeCoordinates(
+      direction as 'up' | 'down' | 'left' | 'right',
+      screenW,
+      screenH
+    );
+    const x1 = coords.start.x;
+    const y1 = coords.start.y;
+    const x2 = coords.end.x;
+    const y2 = coords.end.y;
 
-    switch (direction) {
-      case 'up':
-        x1 = centerX;
-        y1 = screenH * 0.8;
-        x2 = centerX;
-        y2 = screenH * 0.2;
-        swipePath = { start: [x1, y1], end: [x2, y2] };
-        break;
-      case 'down':
-        x1 = centerX;
-        y1 = screenH * 0.2;
-        x2 = centerX;
-        y2 = screenH * 0.8;
-        swipePath = { start: [x1, y1], end: [x2, y2] };
-        break;
-      case 'left':
-        x1 = screenW * 0.8;
-        y1 = centerY;
-        x2 = screenW * 0.2;
-        y2 = centerY;
-        swipePath = { start: [x1, y1], end: [x2, y2] };
-        break;
-      case 'right':
-        x1 = screenW * 0.2;
-        y1 = centerY;
-        x2 = screenW * 0.8;
-        y2 = centerY;
-        swipePath = { start: [x1, y1], end: [x2, y2] };
-        break;
-      default:
-        throw new Error(`Invalid direction: ${direction}`);
-    }
+    swipePath = { start: [x1, y1], end: [x2, y2] };
 
-    // Build IDB command with coordinates (not direction string)
+    // Build IDB command with integer coordinates
     command = `idb ui swipe --udid "${udid}" ${x1} ${y1} ${x2} ${y2}`;
     if (duration !== 500) {
       // Only add if non-default
       command += ` --duration ${duration}`;
     }
   } else {
-    // Custom path swipe: idb ui swipe --udid <UDID> <x1> <y1> <x2> <y2> [--duration <ms>]
-    command = `idb ui swipe --udid "${udid}" ${startX} ${startY} ${endX} ${endY}`;
+    // Custom path swipe: Ensure integers for coordinates
+    const x1 = toInt(startX!);
+    const y1 = toInt(startY!);
+    const x2 = toInt(endX!);
+    const y2 = toInt(endY!);
+
+    command = `idb ui swipe --udid "${udid}" ${x1} ${y1} ${x2} ${y2}`;
     if (duration !== 500) {
       command += ` --duration ${duration}`;
     }
 
-    swipePath = { start: [startX, startY], end: [endX, endY] };
+    swipePath = { start: [x1, y1], end: [x2, y2] };
   }
 
   console.error(`[idb-ui-gesture] Executing: ${command}`);

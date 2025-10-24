@@ -183,6 +183,10 @@ async function executeDescribeAllOperation(
   // Extract summary information
   const summary = extractUiTreeSummary(lines);
 
+  // Assess data richness for hybrid approach
+  const isRichData = summary.tappableCount > 3 || summary.textFieldCount > 0;
+  const isMinimalData = summary.elementCount <= 1 || summary.tappableCount === 0;
+
   return {
     success: true,
     operation: 'all',
@@ -194,6 +198,7 @@ async function executeDescribeAllOperation(
       elementTypes: summary.elementTypes,
       tappableElements: summary.tappableCount,
       textFields: summary.textFieldCount,
+      dataQuality: isRichData ? 'rich' : isMinimalData ? 'minimal' : 'moderate',
     },
     // Progressive disclosure: provide cache ID for full tree
     uiTreeId,
@@ -202,30 +207,55 @@ async function executeDescribeAllOperation(
     purposeDescription: context.purposeDescription,
     // Preview: Top 20 interactive elements
     interactiveElementsPreview: summary.interactiveElements.slice(0, 20),
-    guidance: [
-      `✅ UI tree queried successfully`,
-      ``,
-      `Summary:`,
-      `• Total elements: ${summary.elementCount}`,
-      `• Tappable elements: ${summary.tappableCount}`,
-      `• Text fields: ${summary.textFieldCount}`,
-      `• Element types: ${Object.keys(summary.elementTypes).length} unique types`,
-      ``,
-      `Progressive disclosure:`,
-      `• Preview shows top 20 interactive elements`,
-      `• Full tree cached with ID: ${uiTreeId}`,
-      `• Retrieve full tree: idb-ui-get-details --uiTreeId ${uiTreeId}`,
-      ``,
-      `Next steps:`,
-      summary.tappableCount > 0
-        ? `• Tap element: idb-ui-tap --x ${summary.interactiveElements[0]?.x || 200} --y ${summary.interactiveElements[0]?.y || 400}`
-        : undefined,
-      summary.textFieldCount > 0
-        ? `• Focus first text field and type: idb-ui-tap + idb-ui-input`
-        : undefined,
-      `• Take screenshot: simctl-screenshot-inline --udid ${udid}`,
-      `• Query specific point: idb-ui-describe --operation point --x 200 --y 400`,
-    ].filter(Boolean),
+    guidance: isRichData
+      ? [
+          `✅ Rich accessibility data available - USE THIS for navigation`,
+          ``,
+          `Summary:`,
+          `• Total elements: ${summary.elementCount}`,
+          `• Tappable elements: ${summary.tappableCount} ✅ (sufficient for automation)`,
+          `• Text fields: ${summary.textFieldCount}`,
+          `• Element types: ${Object.keys(summary.elementTypes).length} unique types`,
+          ``,
+          `✅ Recommended: Use accessibility tree for precise element targeting`,
+          ``,
+          `Progressive disclosure:`,
+          `• Preview shows top 20 interactive elements`,
+          `• Full tree cached with ID: ${uiTreeId}`,
+          `• Retrieve full tree: idb-ui-get-details --uiTreeId ${uiTreeId}`,
+          ``,
+          `Next steps (prioritized):`,
+          summary.tappableCount > 0
+            ? `1. Tap element: idb-ui-tap --x ${summary.interactiveElements[0]?.x || 200} --y ${summary.interactiveElements[0]?.y || 400}`
+            : undefined,
+          summary.textFieldCount > 0 ? `2. Focus text field: idb-ui-tap + idb-ui-input` : undefined,
+          `3. Screenshot (verification only): simctl-screenshot-inline --udid ${udid}`,
+        ].filter(Boolean)
+      : [
+          isMinimalData
+            ? `⚠️ Minimal accessibility data - FALL BACK to screenshots`
+            : `⚠️ Limited accessibility data - consider screenshot approach`,
+          ``,
+          `Summary:`,
+          `• Total elements: ${summary.elementCount}`,
+          `• Tappable elements: ${summary.tappableCount} ${summary.tappableCount === 0 ? '❌ (insufficient)' : '⚠️ (limited)'}`,
+          `• Text fields: ${summary.textFieldCount}`,
+          `• Element types: ${Object.keys(summary.elementTypes).length} unique types`,
+          ``,
+          isMinimalData
+            ? `❌ Data too limited for reliable automation - use screenshot approach:`
+            : `⚠️ Limited data quality - screenshot approach recommended:`,
+          ``,
+          `Recommended workflow:`,
+          `1. Take screenshot: simctl-screenshot-inline --udid ${udid} --size half`,
+          `2. Analyze visual layout from screenshot`,
+          `3. Use coordinate-based taps: idb-ui-tap --x <x> --y <y>`,
+          `4. Verify with screenshots after each action`,
+          ``,
+          `Alternative (if accessibility improves):`,
+          `• Retrieve full tree: idb-ui-get-details --uiTreeId ${uiTreeId}`,
+          `• Query specific point: idb-ui-describe --operation point --x 200 --y 400`,
+        ].filter(Boolean),
   };
 }
 
