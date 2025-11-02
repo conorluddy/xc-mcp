@@ -11,6 +11,66 @@ The xc-mcp repository uses a **dual-package architecture** to optimize for diffe
 
 Both packages are published from the same Git repository and share the same tool implementations. The only difference is which tools are registered in the MCP server.
 
+## Automated Publishing (Recommended)
+
+**The easiest way to publish both packages is to create a GitHub release.**
+
+### Quick Start: Automated Publishing
+
+1. **Bump version** in `package.json`:
+   ```bash
+   # Update version (e.g., 1.2.0 -> 1.3.0)
+   npm version patch  # or minor, or major
+   ```
+
+2. **Commit and push** the version bump:
+   ```bash
+   git add package.json
+   git commit -m "chore: bump version to $(node -p "require('./package.json').version")"
+   git push
+   ```
+
+3. **Create a GitHub release**:
+   - Go to https://github.com/conorluddy/xc-mcp/releases/new
+   - Create a new tag matching the version (e.g., `v1.3.0`)
+   - Write release notes
+   - Publish the release
+
+4. **GitHub Actions automatically publishes both packages in parallel**:
+   - `xc-mcp@1.3.0` (full variant with aliases)
+   - `xc-mini-mcp@1.3.0` (mini variant)
+
+That's it! Both packages will be published to npm automatically.
+
+### How the Automation Works
+
+The `.github/workflows/publish.yml` workflow triggers on GitHub releases and:
+
+1. **Runs tests** to ensure everything works
+2. **Publishes in parallel**:
+   - `publish-full` job: Publishes `xc-mcp`, `xcmcp`, and `xcode-mcp` aliases
+   - `publish-mini` job: Builds mini variant and publishes `xc-mini-mcp`
+3. **Uses npm provenance** for secure, verified packages
+4. **Supports dry-run mode** for testing without actually publishing
+
+### Monitoring the Workflow
+
+After creating a release, you can monitor progress at:
+https://github.com/conorluddy/xc-mcp/actions
+
+You'll see:
+- ✅ Test suite running
+- ✅ Full variant publishing (3 aliases)
+- ✅ Mini variant publishing
+
+Both packages should appear on npm within 2-3 minutes.
+
+---
+
+## Manual Publishing (Advanced)
+
+For manual control or local testing, you can publish packages manually.
+
 ## Why This Approach?
 
 ### Alternatives Considered

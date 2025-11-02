@@ -59,6 +59,18 @@ New minimal package with 3 core build/test tools optimized for AI agent workflow
 - Updated `clean` script to remove both `dist/` and `dist-mini/`
 - Added `publish:mini` and `publish:full` publishing scripts
 
+#### CI/CD Automation
+- **Automated dual-package publishing** — GitHub Actions workflow publishes both packages in parallel
+- Workflow triggers on GitHub releases (e.g., creating `v1.3.0` tag)
+- Publishes 4 packages automatically:
+  - `xc-mcp@<version>` (full variant - primary)
+  - `xcmcp@<version>` (alias)
+  - `xcode-mcp@<version>` (alias)
+  - `xc-mini-mcp@<version>` (mini variant)
+- Uses npm provenance for secure, verified packages
+- Supports dry-run mode for testing without publishing
+- See `.github/workflows/publish.yml` for implementation
+
 ### 📚 Technical Details
 
 **Script-Based Publishing Rationale:**
