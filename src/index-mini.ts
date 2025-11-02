@@ -226,10 +226,6 @@ Advantages: Learns test configs, detailed metrics with token-safe disclosure, st
   // ============================================================================
 
   private setupErrorHandling() {
-    this.server.onerror = error => {
-      console.error('[MCP Error]', error);
-    };
-
     process.on('SIGINT', async () => {
       await this.server.close();
       process.exit(0);
