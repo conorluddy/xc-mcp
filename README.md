@@ -3,12 +3,27 @@
 [![npm version](https://img.shields.io/npm/v/xc-mcp.svg)](https://www.npmjs.com/package/xc-mcp)
 [![npm downloads](https://img.shields.io/npm/dm/xc-mcp.svg)](https://www.npmjs.com/package/xc-mcp)
 [![Node.js version](https://img.shields.io/node/v/xc-mcp.svg)](https://nodejs.org)
-[![codecov](https://codecov.io/gh/conorluddy/xc-mcp/graph/badge.svg?token=4CKBMDTENZ)](https://codecov.io/gh/conorluddy/xc-mcp) 
+[![codecov](https://codecov.io/gh/conorluddy/xc-mcp/graph/badge.svg?token=4CKBMDTENZ)](https://codecov.io/gh/conorluddy/xc-mcp)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/conorluddy/xc-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Problem**: MCP clients can't effectively use Xcode CLI tools because the build and simulator listing commands return more than 50,000 tokens, exceeding MCP limits.  
-**Solution**: Progressive disclosure with intelligent caching returns 2,000 tokens instead, achieving 96% reduction.  
+> **📦 Two Packages, One Repository**
+>
+> This repository publishes two npm packages optimized for different workflows:
+>
+> - **[xc-mcp](https://www.npmjs.com/package/xc-mcp)** (51 tools) — Full-featured package with simulator control, screenshots, UI automation, and advanced testing. Best for comprehensive iOS development and UI verification workflows.
+>
+> - **[xc-mini-mcp](https://www.npmjs.com/package/xc-mini-mcp)** (3 tools) — Minimal package with just build, test, and error investigation. Optimized for AI agents focused on coding tasks and build verification. **94% smaller context footprint.**
+>
+> **Choose mini for**: Build/test workflows, TDD cycles, CI verification, quick iteration
+> **Choose full for**: UI automation, simulator management, screenshot verification, advanced testing
+>
+> Both packages share the same codebase and use identical tool implementations. See [Package Variants](#package-variants) below for detailed comparison.
+
+---
+
+**Problem**: MCP clients can't effectively use Xcode CLI tools because the build and simulator listing commands return more than 50,000 tokens, exceeding MCP limits.
+**Solution**: Progressive disclosure with intelligent caching returns 2,000 tokens instead, achieving 96% reduction.
 **Result**: Full Xcode tooling functionality without token overflow, 90% faster workflows.
 
 ![gh-social](https://github.com/user-attachments/assets/dd23b1e5-ed8c-40c0-b44d-7c92f3b5d5aa)
@@ -56,20 +71,86 @@ The repository implements **52 specialized tools** across 9 categories, solving 
 - Enables permission validation and auto-configuration
 - 1-hour retention prevents repeated expensive operations
 
-## Quick Start
+## Package Variants
+
+### xc-mini-mcp (Recommended for Most Users)
+
+**3 core tools optimized for build/test workflows**
+
+```bash
+npm install -g xc-mini-mcp
+```
+
+**Tools included:**
+- `xcodebuild-build` — Build projects with smart defaults and auto-simulator selection
+- `xcodebuild-test` — Run tests with intelligent caching
+- `xcodebuild-get-details` — Progressive disclosure for error investigation
+
+**Why mini?**
+- 94% smaller context footprint (3 tools vs 51)
+- Covers 95% of typical development workflows
+- Build and test tools auto-invoke simulator management internally
+- No manual simulator selection needed
+- Faster agent response times due to reduced tool discovery overhead
+
+**Best for:** TDD cycles, build verification, CI pipelines, focused coding sessions
+
+**MCP Configuration** (Claude Desktop):
+```json
+{
+  "mcpServers": {
+    "xc-mini": {
+      "command": "npx",
+      "args": ["xc-mini-mcp"]
+    }
+  }
+}
+```
+
+### xc-mcp (Full Feature Set)
+
+**51 specialized tools for comprehensive iOS workflows**
+
+```bash
+npm install -g xc-mcp
+```
+
+**Additional capabilities beyond mini:**
+- Simulator lifecycle management (boot, shutdown, create, delete, erase, clone)
+- Screenshot capture with vision optimization
+- UI automation via IDB (tap, input, gestures, accessibility tree)
+- Advanced testing (permissions, push notifications, clipboard, status bar)
+- Cache management and persistence controls
+- App management (install, launch, terminate, container access)
+
+**Best for:** UI automation, screenshot verification, simulator management, advanced testing scenarios
+
+**MCP Configuration** (Claude Desktop):
+```json
+{
+  "mcpServers": {
+    "xc-full": {
+      "command": "npx",
+      "args": ["xc-mcp"]
+    }
+  }
+}
+```
+
+### Quick Start (Mini Variant)
 
 ```bash
 # Install and run
-npm install -g xc-mcp
-xc-mcp
+npm install -g xc-mini-mcp
+xc-mini-mcp
 
 # Or use without installation
-npx xc-mcp
+npx xc-mini-mcp
 ```
 
 **MCP Configuration** (Claude Desktop):
 ```bash
-claude mcp add xc-mcp -s user "npx xc-mcp"
+claude mcp add xc-mini -s user "npx xc-mini-mcp"
 ```
 
 ## Why This Exists
