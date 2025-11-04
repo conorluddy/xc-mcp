@@ -1,13 +1,13 @@
 # Publishing Guide: Dual Package Workflow
 
-This document explains how to publish both `xc-mcp` (full) and `xc-mini-mcp` (mini) packages from the same repository.
+This document explains how to publish both `xc-mcp` (full) and `xc-mcp-mini` (mini) packages from the same repository.
 
 ## Overview
 
 The xc-mcp repository uses a **dual-package architecture** to optimize for different use cases:
 
 - **xc-mcp** (51 tools) — Comprehensive iOS development tooling
-- **xc-mini-mcp** (3 tools) — Minimal build/test workflow optimization
+- **xc-mcp-mini** (3 tools) — Minimal build/test workflow optimization
 
 Both packages are published from the same Git repository and share the same tool implementations. The only difference is which tools are registered in the MCP server.
 
@@ -38,7 +38,7 @@ Both packages are published from the same Git repository and share the same tool
 
 4. **GitHub Actions automatically publishes both packages in parallel**:
    - `xc-mcp@1.3.0` (full variant with aliases)
-   - `xc-mini-mcp@1.3.0` (mini variant)
+   - `xc-mcp-mini@1.3.0` (mini variant)
 
 That's it! Both packages will be published to npm automatically.
 
@@ -49,7 +49,7 @@ The `.github/workflows/publish.yml` workflow triggers on GitHub releases and:
 1. **Runs tests** to ensure everything works
 2. **Publishes in parallel**:
    - `publish-full` job: Publishes `xc-mcp`, `xcmcp`, and `xcode-mcp` aliases
-   - `publish-mini` job: Builds mini variant and publishes `xc-mini-mcp`
+   - `publish-mini` job: Builds mini variant and publishes `xc-mcp-mini`
 3. **Uses npm provenance** for secure, verified packages
 4. **Supports dry-run mode** for testing without actually publishing
 
@@ -93,7 +93,7 @@ For manual control or local testing, you can publish packages manually.
 1. Backup `package.json`
 2. Modify metadata for mini variant
 3. Build mini entry point
-4. Publish to npm as `xc-mini-mcp`
+4. Publish to npm as `xc-mcp-mini`
 5. Restore original `package.json` and build artifacts
 
 ## Publishing Workflow
@@ -145,7 +145,7 @@ npm publish
 - `prepublishOnly` script runs tests and lint automatically
 - Published as `xc-mcp@<version>` on npm
 
-### Publishing xc-mini-mcp (Mini Variant)
+### Publishing xc-mcp-mini (Mini Variant)
 
 This uses the automated script:
 
@@ -165,10 +165,10 @@ npm run publish:mini
 2. **Modify package.json** — Changes:
    ```json
    {
-     "name": "xc-mini-mcp",
+     "name": "xc-mcp-mini",
      "version": "1.0.0",
      "main": "dist/index-mini.js",
-     "bin": { "xc-mini-mcp": "./dist/index-mini.js" }
+     "bin": { "xc-mcp-mini": "./dist/index-mini.js" }
    }
    ```
 
@@ -178,7 +178,7 @@ npm run publish:mini
 
 5. **Restore** — Reverts `package.json` and rebuilds full variant
 
-**Published as:** `xc-mini-mcp@<version>` on npm
+**Published as:** `xc-mcp-mini@<version>` on npm
 
 ### Manual Recovery
 
@@ -214,12 +214,12 @@ Version is managed in root `package.json`:
 - Bump version before publishing
 - Tag releases in Git: `git tag v1.2.0`
 
-### Mini Variant (xc-mini-mcp)
+### Mini Variant (xc-mcp-mini)
 
 Version is managed in `scripts/publish-mini.sh`:
 
 ```bash
-jq '.name = "xc-mini-mcp" |
+jq '.name = "xc-mcp-mini" |
     .version = "1.0.0" |
     ...
 ```
@@ -255,8 +255,8 @@ jq '.name = "xc-mini-mcp" |
 
 ### After Publishing Both Variants
 
-- [ ] Verify on npm: `npm info xc-mcp` and `npm info xc-mini-mcp`
-- [ ] Test installation: `npm install -g xc-mcp` and `npm install -g xc-mini-mcp`
+- [ ] Verify on npm: `npm info xc-mcp` and `npm info xc-mcp-mini`
+- [ ] Test installation: `npm install -g xc-mcp` and `npm install -g xc-mcp-mini`
 - [ ] Verify tool counts: Run both servers and check tool lists
 - [ ] Update documentation with new version numbers if needed
 - [ ] Create Git tag for release: `git tag v1.2.0 && git push --tags`
@@ -276,14 +276,14 @@ xc-mcp --help
 # Add to MCP config, verify 51 tools appear
 ```
 
-### Test xc-mini-mcp (Mini)
+### Test xc-mcp-mini (Mini)
 
 ```bash
 # Install globally
-npm install -g xc-mini-mcp
+npm install -g xc-mcp-mini
 
 # Verify installation
-xc-mini-mcp --help
+xc-mcp-mini --help
 
 # Test in Claude Desktop
 # Add to MCP config, verify only 3 tools appear:
@@ -316,7 +316,7 @@ npm run publish:mini
 **Solution:**
 ```bash
 # Deprecate wrong version on npm
-npm deprecate xc-mini-mcp@<version> "Accidental publish, use <correct-version>"
+npm deprecate xc-mcp-mini@<version> "Accidental publish, use <correct-version>"
 
 # Bump version and republish
 # Edit scripts/publish-mini.sh

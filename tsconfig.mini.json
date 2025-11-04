@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist-mini"
+  },
+  "include": ["src/index-mini.ts", "src/**/*"],
+  "exclude": ["node_modules", "dist", "dist-mini", "**/*.test.ts"]
+}

@@ -6,7 +6,7 @@ All notable changes to XC-MCP are documented in this file. This project adheres 
 
 ### 🚀 Major Features
 
-#### xc-mini-mcp Package Variant
+#### xc-mcp-mini Package Variant
 New minimal package with 3 core build/test tools optimized for AI agent workflows:
 
 **What's Included:**
@@ -66,7 +66,7 @@ New minimal package with 3 core build/test tools optimized for AI agent workflow
   - `xc-mcp@<version>` (full variant - primary)
   - `xcmcp@<version>` (alias)
   - `xcode-mcp@<version>` (alias)
-  - `xc-mini-mcp@<version>` (mini variant)
+  - `xc-mcp-mini@<version>` (mini variant)
 - Uses npm provenance for secure, verified packages
 - Supports dry-run mode for testing without publishing
 - See `.github/workflows/publish.yml` for implementation

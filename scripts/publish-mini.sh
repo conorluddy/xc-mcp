@@ -1,12 +1,12 @@
 #!/bin/bash
 #
-# Publish xc-mini-mcp to npm from the same repository
+# Publish xc-mcp-mini to npm from the same repository
 #
 # This script:
 # 1. Backs up the original package.json
 # 2. Modifies package metadata for mini variant
 # 3. Builds the mini version
-# 4. Publishes to npm as "xc-mini-mcp"
+# 4. Publishes to npm as "xc-mcp-mini"
 # 5. Restores original package.json and build artifacts
 #
 # Why this approach:
@@ -17,7 +17,7 @@
 
 set -e  # Exit on error
 
-echo "🔧 Publishing xc-mini-mcp variant..."
+echo "🔧 Publishing xc-mcp-mini variant..."
 
 # ============================================================================
 # STEP 1: Backup original package.json
@@ -38,11 +38,11 @@ echo "✅ Backed up package.json"
 
 # Use jq if available, otherwise use sed
 if command -v jq &> /dev/null; then
-  jq '.name = "xc-mini-mcp" |
+  jq '.name = "xc-mcp-mini" |
       .version = "1.0.0" |
       .description = "Minimal iOS build/test MCP server - 3 core tools optimized for AI agents" |
       .main = "dist/index.js" |
-      .bin."xc-mini-mcp" = "./dist/index.js" |
+      .bin."xc-mcp-mini" = "./dist/index.js" |
       del(.bin."xc-mcp") |
       .keywords += ["minimal", "agent-optimized", "context-efficient"]' \
     package.json > package.json.tmp
@@ -50,9 +50,9 @@ if command -v jq &> /dev/null; then
   echo "✅ Modified package.json (using jq)"
 else
   # Fallback to sed for systems without jq
-  sed -i.tmp 's/"name": "xc-mcp"/"name": "xc-mini-mcp"/' package.json
+  sed -i.tmp 's/"name": "xc-mcp"/"name": "xc-mcp-mini"/' package.json
   sed -i.tmp 's/"version": "1.2.0"/"version": "1.0.0"/' package.json
-  sed -i.tmp 's/"xc-mcp": ".\/dist\/index.js"/"xc-mini-mcp": ".\/dist\/index.js"/' package.json
+  sed -i.tmp 's/"xc-mcp": ".\/dist\/index.js"/"xc-mcp-mini": ".\/dist\/index.js"/' package.json
   rm -f package.json.tmp
   echo "✅ Modified package.json (using sed)"
 fi
@@ -76,12 +76,12 @@ chmod +x dist/index-mini.js
 # Update package.json to point to mini entry point
 if command -v jq &> /dev/null; then
   jq '.main = "dist/index-mini.js" |
-      .bin."xc-mini-mcp" = "./dist/index-mini.js"' \
+      .bin."xc-mcp-mini" = "./dist/index-mini.js"' \
     package.json > package.json.tmp
   mv package.json.tmp package.json
 else
   sed -i.tmp 's/"main": "dist\/index.js"/"main": "dist\/index-mini.js"/' package.json
-  sed -i.tmp 's/"xc-mini-mcp": ".\/dist\/index.js"/"xc-mini-mcp": ".\/dist\/index-mini.js"/' package.json
+  sed -i.tmp 's/"xc-mcp-mini": ".\/dist\/index.js"/"xc-mcp-mini": ".\/dist\/index-mini.js"/' package.json
   rm -f package.json.tmp
 fi
 
@@ -91,10 +91,10 @@ echo "✅ Built mini variant"
 # STEP 4: Publish to npm
 # ============================================================================
 
-echo "📦 Publishing xc-mini-mcp to npm..."
+echo "📦 Publishing xc-mcp-mini to npm..."
 npm publish
 
-echo "✅ Published xc-mini-mcp successfully!"
+echo "✅ Published xc-mcp-mini successfully!"
 
 # ============================================================================
 # STEP 5: Restore original state
@@ -116,10 +116,10 @@ fi
 
 echo "✅ Restored original state"
 echo ""
-echo "🎉 xc-mini-mcp published successfully!"
-echo "   Users can now: npm install xc-mini-mcp"
+echo "🎉 xc-mcp-mini published successfully!"
+echo "   Users can now: npm install xc-mcp-mini"
 echo ""
 echo "📝 Next steps:"
-echo "   - Test installation: npm install -g xc-mini-mcp"
+echo "   - Test installation: npm install -g xc-mcp-mini"
 echo "   - Verify 3 tools registered"
 echo "   - Update documentation with new version number"

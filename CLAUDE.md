@@ -15,7 +15,7 @@ This repository publishes **two npm packages** from the same codebase:
    - Comprehensive iOS development tooling
    - Simulator lifecycle, UI automation, screenshots, advanced testing
 
-2. **xc-mini-mcp** (Mini Package - 3 tools)
+2. **xc-mcp-mini** (Mini Package - 3 tools)
    - Entry point: `src/index-mini.ts`
    - Minimal build/test workflow optimization
    - 94% smaller agent context footprint
@@ -29,7 +29,7 @@ This repository publishes **two npm packages** from the same codebase:
 
 **Publishing workflow:**
 - `npm run publish:full` — Publish xc-mcp (full variant)
-- `npm run publish:mini` — Publish xc-mini-mcp (mini variant) via `scripts/publish-mini.sh`
+- `npm run publish:mini` — Publish xc-mcp-mini (mini variant) via `scripts/publish-mini.sh`
 - Both packages share tool implementations from `src/tools/`
 - See `docs/PUBLISHING.md` for detailed publishing instructions
 
@@ -44,7 +44,7 @@ This repository publishes **two npm packages** from the same codebase:
 
 ### Publishing
 - **npm run publish:full** - Publish xc-mcp (full variant) to npm
-- **npm run publish:mini** - Publish xc-mini-mcp (mini variant) via script
+- **npm run publish:mini** - Publish xc-mcp-mini (mini variant) via script
 - See `docs/PUBLISHING.md` for step-by-step publishing guide
 
 ### Code Quality and Testing

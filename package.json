@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "build:mini": "tsc src/index-mini.ts --outDir dist-mini",
+    "build:mini": "tsc --project tsconfig.mini.json",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
     "test": "jest",

@@ -13,7 +13,7 @@
 >
 > - **[xc-mcp](https://www.npmjs.com/package/xc-mcp)** (51 tools) — Full-featured package with simulator control, screenshots, UI automation, and advanced testing. Best for comprehensive iOS development and UI verification workflows.
 >
-> - **[xc-mini-mcp](https://www.npmjs.com/package/xc-mini-mcp)** (3 tools) — Minimal package with just build, test, and error investigation. Optimized for AI agents focused on coding tasks and build verification. **94% smaller context footprint.**
+> - **[xc-mcp-mini](https://www.npmjs.com/package/xc-mcp-mini)** (3 tools) — Minimal package with just build, test, and error investigation. Optimized for AI agents focused on coding tasks and build verification. **94% smaller context footprint.**
 >
 > **Choose mini for**: Build/test workflows, TDD cycles, CI verification, quick iteration
 > **Choose full for**: UI automation, simulator management, screenshot verification, advanced testing
@@ -73,12 +73,12 @@ The repository implements **52 specialized tools** across 9 categories, solving 
 
 ## Package Variants
 
-### xc-mini-mcp (Recommended for Most Users)
+### xc-mcp-mini (Recommended for Most Users)
 
 **3 core tools optimized for build/test workflows**
 
 ```bash
-npm install -g xc-mini-mcp
+npm install -g xc-mcp-mini
 ```
 
 **Tools included:**
@@ -101,7 +101,7 @@ npm install -g xc-mini-mcp
   "mcpServers": {
     "xc-mini": {
       "command": "npx",
-      "args": ["xc-mini-mcp"]
+      "args": ["xc-mcp-mini"]
     }
   }
 }
@@ -141,16 +141,16 @@ npm install -g xc-mcp
 
 ```bash
 # Install and run
-npm install -g xc-mini-mcp
-xc-mini-mcp
+npm install -g xc-mcp-mini
+xc-mcp-mini
 
 # Or use without installation
-npx xc-mini-mcp
+npx xc-mcp-mini
 ```
 
 **MCP Configuration** (Claude Desktop):
 ```bash
-claude mcp add xc-mini -s user "npx xc-mini-mcp"
+claude mcp add xc-mini -s user "npx xc-mcp-mini"
 ```
 
 ## Why This Exists

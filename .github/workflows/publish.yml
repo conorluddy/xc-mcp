@@ -100,7 +100,7 @@ jobs:
           echo "  - xcode-mcp@${{ steps.version.outputs.version }}"
 
   publish-mini:
-    name: Publish xc-mini-mcp (Mini)
+    name: Publish xc-mcp-mini (Mini)
     needs: test
     runs-on: macos-latest
     permissions:
@@ -135,11 +135,11 @@ jobs:
 
           # Create temporary package.json for mini variant
           jq --arg version "${{ steps.version.outputs.version }}" \
-             '.name = "xc-mini-mcp" |
+             '.name = "xc-mcp-mini" |
               .version = $version |
               .description = "Minimal iOS build/test MCP server - 3 core tools optimized for AI agents" |
               .main = "dist/index-mini.js" |
-              .bin."xc-mini-mcp" = "./dist/index-mini.js" |
+              .bin."xc-mcp-mini" = "./dist/index-mini.js" |
               del(.bin."xc-mcp") |
               .keywords += ["minimal", "agent-optimized", "context-efficient"]' \
             package.json > package.mini.json
@@ -152,10 +152,10 @@ jobs:
           mv package.json package.full.json
           mv package.mini.json package.json
 
-      - name: Publish to NPM - xc-mini-mcp
+      - name: Publish to NPM - xc-mcp-mini
         if: ${{ github.event_name == 'release' || github.event.inputs.dry_run == 'false' }}
         run: |
-          echo "Publishing xc-mini-mcp@${{ steps.version.outputs.version }}"
+          echo "Publishing xc-mcp-mini@${{ steps.version.outputs.version }}"
           npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -164,4 +164,4 @@ jobs:
         if: ${{ github.event.inputs.dry_run == 'true' }}
         run: |
           echo "🚀 Dry run complete! Would have published (mini variant):"
-          echo "  - xc-mini-mcp@${{ steps.version.outputs.version }}"
+          echo "  - xc-mcp-mini@${{ steps.version.outputs.version }}"

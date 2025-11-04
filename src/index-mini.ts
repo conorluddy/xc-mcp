@@ -9,7 +9,7 @@ import { z } from 'zod';
 // MINI VARIANT: CORE BUILD/TEST TOOLS ONLY
 // ============================================================================
 //
-// This is the minimal xc-mini-mcp variant providing only 3 core tools:
+// This is the minimal xc-mcp-mini variant providing only 3 core tools:
 // - xcodebuild-build: Build projects with smart defaults
 // - xcodebuild-test: Run tests with intelligent caching
 // - xcodebuild-get-details: Progressive disclosure for build/test logs
@@ -33,7 +33,7 @@ class XcodeMiniMCPServer {
   constructor() {
     this.server = new McpServer(
       {
-        name: 'xc-mini-mcp',
+        name: 'xc-mcp-mini',
         version: '1.0.0',
         description:
           'Minimal iOS build/test MCP server with 3 core tools. ' +
@@ -240,7 +240,7 @@ Advantages: Learns test configs, detailed metrics with token-safe disclosure, st
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
 
-    console.error('xc-mini-mcp MCP server running on stdio');
+    console.error('xc-mcp-mini MCP server running on stdio');
     console.error('Mini variant with 3 core build/test tools');
     console.error('For full feature set (51 tools), use xc-mcp package');
   }
