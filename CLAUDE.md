@@ -6,13 +6,46 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 XC-MCP is a Model Context Protocol (MCP) server that provides intelligent access to Xcode command-line tools with advanced caching and progressive disclosure features. It wraps `xcodebuild` and `simctl` commands to solve token overflow issues while maintaining full functionality.
 
+### Dual Package Architecture
+
+This repository publishes **two npm packages** from the same codebase:
+
+1. **xc-mcp** (Full Package - 51 tools)
+   - Entry point: `src/index.ts`
+   - Comprehensive iOS development tooling
+   - Simulator lifecycle, UI automation, screenshots, advanced testing
+
+2. **xc-mcp-mini** (Mini Package - 3 tools)
+   - Entry point: `src/index-mini.ts`
+   - Minimal build/test workflow optimization
+   - 94% smaller agent context footprint
+   - Tools: `xcodebuild-build`, `xcodebuild-test`, `xcodebuild-get-details`
+
+**Why two packages?**
+- Agent context optimization: 3 tools cover 95% of build/test workflows
+- Mini variant reduces tool discovery overhead for agents
+- Build/test tools auto-invoke simulator management internally (no manual setup)
+- Full variant provides advanced features when needed (UI automation, screenshots)
+
+**Publishing workflow:**
+- `npm run publish:full` — Publish xc-mcp (full variant)
+- `npm run publish:mini` — Publish xc-mcp-mini (mini variant) via `scripts/publish-mini.sh`
+- Both packages share tool implementations from `src/tools/`
+- See `docs/PUBLISHING.md` for detailed publishing instructions
+
 ## Development Commands
 
 ### Build and Development
-- **npm run build** - Compile TypeScript to JavaScript in `dist/`
+- **npm run build** - Compile full variant (src/index.ts) to `dist/`
+- **npm run build:mini** - Compile mini variant (src/index-mini.ts) to `dist-mini/`
 - **npm run dev** - Development mode with TypeScript watch compilation
-- **npm start** - Start the MCP server from compiled JavaScript
-- **npm run clean** - Remove `dist/` build artifacts
+- **npm start** - Start the full MCP server from compiled JavaScript
+- **npm run clean** - Remove `dist/` and `dist-mini/` build artifacts
+
+### Publishing
+- **npm run publish:full** - Publish xc-mcp (full variant) to npm
+- **npm run publish:mini** - Publish xc-mcp-mini (mini variant) via script
+- See `docs/PUBLISHING.md` for step-by-step publishing guide
 
 ### Code Quality and Testing
 - **npm run lint** - Run ESLint on TypeScript source files
@@ -38,17 +71,22 @@ XC-MCP is a Model Context Protocol (MCP) server that provides intelligent access
 ## Architecture Overview
 
 ### Core Components
-- **src/index.ts** - Main MCP server with tool registration and request routing
-- **src/tools/** - Tool implementations organized by command category:
+- **src/index.ts** - Full MCP server (51 tools) with comprehensive tool registration
+- **src/index-mini.ts** - Mini MCP server (3 tools) for build/test workflows only
+- **src/tools/** - Shared tool implementations organized by command category:
   - `xcodebuild/` - Build, test, clean, list, version tools with intelligent defaults
   - `simctl/` - Simulator management with progressive disclosure
+  - `idb/` - UI automation tools (tap, input, gestures, accessibility queries)
   - `cache/` - Cache management and statistics tools
-- **src/state/** - Intelligent caching system:
+  - `persistence/` - State persistence across server restarts
+- **src/state/** - Shared intelligent caching system:
   - `simulator-cache.ts` - Simulator state with usage tracking and performance metrics
   - `project-cache.ts` - Project configuration memory and build history
   - `build-settings-cache.ts` - Xcode build settings with auto-discovery of bundle IDs, deployment targets, and capabilities
 - **src/utils/** - Shared utilities for command execution and validation
 - **src/types/** - TypeScript definitions for Xcode data structures
+
+**Key insight:** Both variants use the same tool implementations. The difference is only in which tools are registered in the MCP server constructor.
 
 ### Key Architectural Features
 - **Progressive Disclosure**: Returns concise summaries by default, full details on demand via cache IDs
