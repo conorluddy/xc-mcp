@@ -28,7 +28,7 @@ import { simctlPbcopyTool } from './tools/simctl/pbcopy.js';
 import { simctlStatusBarTool } from './tools/simctl/status-bar.js';
 import { simctlScreenshotInlineTool } from './tools/simctl/screenshot-inline.js';
 import { simctlHealthCheckTool } from './tools/simctl/health-check.js';
-import { idbTargetsToolUnified } from './tools/idb/targets/index.js';
+import { idbTargetsRouter } from './tools/idb/targets/index.js';
 import { idbUiTapTool } from './tools/idb/ui-tap.js';
 import { idbUiInputTool } from './tools/idb/ui-input.js';
 import { idbUiGestureTool } from './tools/idb/ui-gesture.js';
@@ -649,7 +649,7 @@ class XcodeCLIMCPServer {
           type: z.enum(['device', 'simulator']).optional(),
         },
       },
-      async args => idbTargetsToolUnified(args)
+      async args => idbTargetsRouter(args)
     );
 
     this.server.registerTool(

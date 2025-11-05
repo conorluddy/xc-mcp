@@ -27,7 +27,7 @@ interface IdbTargetsToolArgs {
  * @returns Tool result with operation status
  * @throws McpError for invalid operation or execution failure
  */
-export async function idbTargetsToolUnified(args: any) {
+export async function idbTargetsRouter(args: any) {
   const typedArgs = args as IdbTargetsToolArgs;
 
   try {
