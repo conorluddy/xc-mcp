@@ -1,9 +1,7 @@
 import { jest } from '@jest/globals';
-import {
-  persistenceEnableTool,
-  persistenceDisableTool,
-  persistenceStatusTool,
-} from '../../../src/tools/persistence/persistence-tools.js';
+import { persistenceEnableTool } from '../../../src/tools/persistence/enable.js';
+import { persistenceDisableTool } from '../../../src/tools/persistence/disable.js';
+import { persistenceStatusTool } from '../../../src/tools/persistence/status.js';
 import { persistenceManager } from '../../../src/utils/persistence.js';
 
 // Mock the persistence manager

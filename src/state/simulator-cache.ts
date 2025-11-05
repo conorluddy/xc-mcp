@@ -313,6 +313,137 @@ export class SimulatorCache {
   }
 
   /**
+   * Get suggested simulators ranked by multiple criteria
+   *
+   * Scoring Algorithm:
+   * - Recent usage (40% weight): Most recent first
+   * - iOS version (30% weight): Latest versions preferred
+   * - Common models (20% weight): Popular models ranked higher
+   * - Boot performance (10% weight): Faster boots preferred
+   */
+  async getSuggestedSimulators(
+    projectPath?: string,
+    deviceType?: string,
+    maxSuggestions = 4
+  ): Promise<
+    Array<{
+      simulator: SimulatorInfo;
+      score: number;
+      reasons: string[];
+    }>
+  > {
+    const available = await this.getAvailableSimulators(deviceType);
+
+    if (available.length === 0) {
+      return [];
+    }
+
+    // Common device models ranked by popularity
+    const commonModels = [
+      'iPhone 16 Pro',
+      'iPhone 16',
+      'iPhone 15 Pro',
+      'iPhone 15',
+      'iPhone SE',
+      'iPad Pro',
+      'iPad',
+      'iPad mini',
+    ];
+
+    // Get recently used devices
+    const recentlyUsed = Array.from(this.lastUsed.entries())
+      .sort(([, dateA], [, dateB]) => dateB.getTime() - dateA.getTime())
+      .slice(0, 3)
+      .map(([udid]) => udid);
+
+    // Score each device
+    const scored = available.map(device => {
+      let score = 0;
+      const reasons: string[] = [];
+
+      // Recent usage (40%)
+      if (projectPath) {
+        const preferredUdid = this.preferredByProject.get(projectPath);
+        if (device.udid === preferredUdid) {
+          score += 40;
+          reasons.push(`Project preference`);
+        }
+      }
+
+      if (recentlyUsed.includes(device.udid)) {
+        const recentBonus = 40 * (1 - recentlyUsed.indexOf(device.udid) / 3);
+        score += recentBonus;
+        reasons.push(`Recently used`);
+      }
+
+      // iOS version (30%) - prefer latest
+      const versionMatch = device.deviceTypeIdentifier.match(/(\d+)/);
+      if (versionMatch) {
+        const version = parseInt(versionMatch[1], 10);
+        const versionBonus = Math.min(30, (version / 18) * 30); // 30 points for iOS 18+
+        score += versionBonus;
+        reasons.push(`iOS ${version}`);
+      }
+
+      // Common models (20%)
+      const modelIndex = commonModels.findIndex(model => device.name.includes(model));
+      if (modelIndex !== -1) {
+        const modelBonus = Math.max(0, 20 - modelIndex * 2);
+        score += modelBonus;
+        reasons.push(`Common model: #${modelIndex + 1}`);
+      } else {
+        reasons.push(`Custom device`);
+      }
+
+      // Boot performance (10%) - faster is better
+      if (device.performanceMetrics?.avgBootTime) {
+        const avgBootTime = device.performanceMetrics.avgBootTime;
+        // Assume 60s is average, normalize to 10 points
+        const performanceBonus = Math.max(0, 10 * (1 - Math.min(1, avgBootTime / 60000)));
+        score += performanceBonus;
+        reasons.push(`Boot: ${Math.round(avgBootTime)}ms avg`);
+      } else {
+        reasons.push('No boot data yet');
+      }
+
+      return {
+        simulator: device,
+        score,
+        reasons,
+      };
+    });
+
+    // Sort by score descending
+    return scored.sort((a, b) => b.score - a.score).slice(0, maxSuggestions);
+  }
+
+  /**
+   * Get best simulator for a project
+   * Considers: project preference, recent usage, boot performance, availability
+   */
+  async getBestSimulator(
+    projectPath?: string,
+    deviceType?: string
+  ): Promise<{
+    simulator: SimulatorInfo;
+    score: number;
+    reason: string;
+  } | null> {
+    const suggestions = await this.getSuggestedSimulators(projectPath, deviceType, 1);
+
+    if (suggestions.length === 0) {
+      return null;
+    }
+
+    const top = suggestions[0];
+    return {
+      simulator: top.simulator,
+      score: top.score,
+      reason: top.reasons[0] || 'Available simulator',
+    };
+  }
+
+  /**
    * Load persisted state from disk
    */
   private async loadPersistedState(): Promise<void> {
