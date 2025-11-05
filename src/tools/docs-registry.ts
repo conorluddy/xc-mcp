@@ -17,25 +17,14 @@ import { XCODEBUILD_VERSION_DOCS } from './xcodebuild/version.js';
 import { XCODEBUILD_GET_DETAILS_DOCS } from './xcodebuild/get-details.js';
 import { XCODEBUILD_TEST_DOCS } from './xcodebuild/xcodebuild-test.js';
 
-// Simctl lifecycle documentation
+// Simctl lifecycle documentation (non-consolidated only)
 import { SIMCTL_LIST_DOCS } from './simctl/list.js';
 import { SIMCTL_GET_DETAILS_DOCS } from './simctl/get-details.js';
-import { SIMCTL_BOOT_DOCS } from './simctl/boot.js';
-import { SIMCTL_SHUTDOWN_DOCS } from './simctl/shutdown.js';
 import { SIMCTL_SUGGEST_DOCS } from './simctl/suggest.js';
-import { SIMCTL_CREATE_DOCS } from './simctl/create.js';
-import { SIMCTL_DELETE_DOCS } from './simctl/delete.js';
-import { SIMCTL_ERASE_DOCS } from './simctl/erase.js';
-import { SIMCTL_CLONE_DOCS } from './simctl/clone.js';
-import { SIMCTL_RENAME_DOCS } from './simctl/rename.js';
 import { SIMCTL_HEALTH_CHECK_DOCS } from './simctl/health-check.js';
 
-// Simctl app management documentation
-import { SIMCTL_INSTALL_DOCS } from './simctl/install.js';
-import { SIMCTL_UNINSTALL_DOCS } from './simctl/uninstall.js';
+// Simctl app management documentation (non-consolidated only)
 import { SIMCTL_GET_APP_CONTAINER_DOCS } from './simctl/get-app-container.js';
-import { SIMCTL_LAUNCH_DOCS } from './simctl/launch.js';
-import { SIMCTL_TERMINATE_DOCS } from './simctl/terminate.js';
 import { SIMCTL_OPENURL_DOCS } from './simctl/openurl.js';
 
 // Simctl I/O and testing documentation
@@ -48,30 +37,23 @@ import { SIMCTL_STATUS_BAR_DOCS } from './simctl/status-bar.js';
 import { SIMCTL_SCREENSHOT_INLINE_DOCS } from './simctl/screenshot-inline.js';
 import { SIMCTL_STREAM_LOGS_DOCS } from './simctl/stream-logs.js';
 
-// IDB documentation
+// IDB documentation (non-consolidated only)
 import { IDB_TARGETS_DOCS } from './idb/targets.js';
-import { IDB_CONNECT_DOCS } from './idb/connect.js';
 import { IDB_UI_TAP_DOCS } from './idb/ui-tap.js';
 import { IDB_UI_INPUT_DOCS } from './idb/ui-input.js';
 import { IDB_UI_GESTURE_DOCS } from './idb/ui-gesture.js';
 import { IDB_UI_DESCRIBE_DOCS } from './idb/ui-describe.js';
 import { IDB_LIST_APPS_DOCS } from './idb/list-apps.js';
-import { IDB_INSTALL_DOCS } from './idb/install.js';
-import { IDB_LAUNCH_DOCS } from './idb/launch.js';
-import { IDB_TERMINATE_DOCS } from './idb/terminate.js';
-import { IDB_UNINSTALL_DOCS } from './idb/uninstall.js';
 
-// Cache documentation
+// Cache documentation (non-consolidated only)
 import { CACHE_LIST_CACHED_RESPONSES_DOCS } from './cache/list-cached.js';
-import { CACHE_GET_STATS_DOCS } from './cache/get-stats.js';
-import { CACHE_GET_CONFIG_DOCS } from './cache/get-config.js';
-import { CACHE_SET_CONFIG_DOCS } from './cache/set-config.js';
-import { CACHE_CLEAR_DOCS } from './cache/clear.js';
 
-// Persistence documentation
-import { PERSISTENCE_ENABLE_DOCS } from './persistence/enable.js';
-import { PERSISTENCE_DISABLE_DOCS } from './persistence/disable.js';
-import { PERSISTENCE_STATUS_DOCS } from './persistence/status.js';
+// Consolidated router documentation (v2.0+)
+import { SIMCTL_DEVICE_DOCS } from './simctl/device/index.js';
+import { SIMCTL_APP_DOCS } from './simctl/app/index.js';
+import { IDB_APP_DOCS } from './idb/app/index.js';
+import { CACHE_DOCS } from './cache/index.js';
+import { PERSISTENCE_DOCS } from './persistence/index.js';
 
 // ============================================================================
 // RTFM AND SCREENSHOT-SAVE TOOL DOCS
@@ -212,7 +194,11 @@ export const RTFM_DOCS = `
 
 ## Overview
 
-The rtfm tool provides access to comprehensive documentation for any of the 51 tools in this MCP server. This implements progressive disclosure: tool descriptions in the main list stay concise (300-400 tokens), while full documentation with examples, parameters, and usage guidance is available on demand.
+The rtfm tool provides access to comprehensive documentation for any of the 33 consolidated tools in this MCP server (v2.0+). This implements progressive disclosure: tool descriptions in the main list stay concise (~1,980 tokens total), while full documentation with examples, parameters, and usage guidance is available on demand.
+
+**Version History:**
+- v1.x: 51 individual tools (~3,060 tokens)
+- v2.0+: 33 consolidated tools (~1,980 tokens) - 40% reduction via operation enums
 
 ## Why rtfm?
 
@@ -222,22 +208,41 @@ The rtfm tool provides access to comprehensive documentation for any of the 51 t
 
 ## Parameters
 
-- **toolName** (required): Name of the tool to get documentation for
-  - Examples: "xcodebuild-build", "simctl-boot", "idb-ui-tap", "rtfm"
+- **toolName** (optional): Name of specific tool to get documentation for
+  - Examples: "xcodebuild-build", "simctl-device", "idb-app", "cache", "persistence"
   - Case-sensitive, must match exact tool registration name
+- **categoryName** (optional): Browse tools in a specific category
+  - Examples: "build", "simulator", "app", "idb", "cache", "system"
+  - Omit both parameters to see all categories
 
 ## Examples
 
 \`\`\`typescript
-// Get documentation for xcodebuild-build
-rtfm({ toolName: "xcodebuild-build" })
+// Get documentation for consolidated simulator device tool
+rtfm({ toolName: "simctl-device" })
 
-// Get documentation for simctl-boot
-rtfm({ toolName: "simctl-boot" })
+// Get documentation for consolidated app management tool
+rtfm({ toolName: "idb-app" })
 
-// Get documentation for this tool (meta!)
-rtfm({ toolName: "rtfm" })
+// Browse all tools in the cache category
+rtfm({ categoryName: "cache" })
+
+// View all categories (no parameters)
+rtfm({})
 \`\`\`
+
+## Migration from v1.x to v2.0
+
+**Old individual tools are now consolidated into single tools with operation parameters:**
+
+- \`simctl-boot\`, \`simctl-shutdown\`, \`simctl-create\`, \`simctl-delete\`, \`simctl-erase\`, \`simctl-clone\`, \`simctl-rename\` → **simctl-device** (operation enum)
+- \`simctl-install\`, \`simctl-uninstall\`, \`simctl-launch\`, \`simctl-terminate\` → **simctl-app** (operation enum)
+- \`idb-install\`, \`idb-uninstall\`, \`idb-launch\`, \`idb-terminate\` → **idb-app** (operation enum)
+- \`cache-get-stats\`, \`cache-get-config\`, \`cache-set-config\`, \`cache-clear\` → **cache** (operation enum)
+- \`persistence-enable\`, \`persistence-disable\`, \`persistence-status\` → **persistence** (operation enum)
+- \`idb-targets\` extended with \`idb-connect\` and \`idb-disconnect\` operations
+
+For detailed examples and parameter specifications for each operation, use \`rtfm({ toolName: "simctl-device" })\` etc.
 
 ## Response Format
 
@@ -264,43 +269,45 @@ Did you mean one of these?
   - simctl-boot
   - simctl-shutdown
 
-Available tools (51 total):
-  - cache-clear
-  - cache-get-config
-  ...
+Available tools (33 total):
+  - xcodebuild-*
+  - simctl-*
+  - idb-*
+  - cache
+  - persistence
+  - rtfm
 \`\`\`
 
-## Available Tool Categories
+## Available Tool Categories (v2.0)
 
 **Xcodebuild Tools (7)**
 - xcodebuild-version, xcodebuild-list, xcodebuild-showsdks
 - xcodebuild-build, xcodebuild-clean, xcodebuild-test
 - xcodebuild-get-details
 
-**Simctl Lifecycle Tools (11)**
-- simctl-list, simctl-get-details, simctl-boot, simctl-shutdown
-- simctl-suggest, simctl-create, simctl-delete, simctl-erase
-- simctl-clone, simctl-rename, simctl-health-check
+**Simctl Lifecycle Tools (6)**
+- simctl-list, simctl-get-details, **simctl-device** (consolidated: boot/shutdown/create/delete/erase/clone/rename)
+- simctl-suggest, simctl-health-check
 
-**Simctl App Management Tools (6)**
-- simctl-install, simctl-uninstall, simctl-get-app-container
-- simctl-launch, simctl-terminate, simctl-openurl
+**Simctl App Management Tools (3)**
+- **simctl-app** (consolidated: install/uninstall/launch/terminate)
+- simctl-get-app-container, simctl-openurl
 
 **Simctl I/O & Testing Tools (7)**
 - simctl-io, simctl-addmedia, simctl-privacy, simctl-push
 - simctl-pbcopy, simctl-status-bar, screenshot
 
-**IDB Tools (11)**
-- idb-targets, idb-connect
-- idb-ui-tap, idb-ui-input, idb-ui-gesture, idb-ui-describe
-- idb-list-apps, idb-install, idb-launch, idb-terminate, idb-uninstall
+**IDB Tools (6)**
+- **idb-targets** (extended: list/describe/focus/connect/disconnect)
+- idb-ui-tap, idb-ui-input, idb-ui-gesture, idb-ui-describe, idb-list-apps
+- **idb-app** (consolidated: install/uninstall/launch/terminate)
 
-**Cache Management Tools (5)**
-- list-cached-responses, cache-get-stats, cache-get-config
-- cache-set-config, cache-clear
+**Cache Management Tools (2)**
+- list-cached-responses
+- **cache** (consolidated: get-stats/get-config/set-config/clear)
 
-**Persistence Tools (3)**
-- persistence-enable, persistence-disable, persistence-status
+**Persistence Tools (1)**
+- **persistence** (consolidated: enable/disable/status)
 
 **Documentation Tool (1)**
 - rtfm (this tool!)
@@ -523,25 +530,14 @@ export const TOOL_DOCS: Record<string, string> = {
   'xcodebuild-get-details': XCODEBUILD_GET_DETAILS_DOCS,
   'xcodebuild-test': XCODEBUILD_TEST_DOCS,
 
-  // Simctl lifecycle tools
+  // Simctl lifecycle tools (non-consolidated)
   'simctl-list': SIMCTL_LIST_DOCS,
   'simctl-get-details': SIMCTL_GET_DETAILS_DOCS,
-  'simctl-boot': SIMCTL_BOOT_DOCS,
-  'simctl-shutdown': SIMCTL_SHUTDOWN_DOCS,
   'simctl-suggest': SIMCTL_SUGGEST_DOCS,
-  'simctl-create': SIMCTL_CREATE_DOCS,
-  'simctl-delete': SIMCTL_DELETE_DOCS,
-  'simctl-erase': SIMCTL_ERASE_DOCS,
-  'simctl-clone': SIMCTL_CLONE_DOCS,
-  'simctl-rename': SIMCTL_RENAME_DOCS,
   'simctl-health-check': SIMCTL_HEALTH_CHECK_DOCS,
 
-  // Simctl app management tools
-  'simctl-install': SIMCTL_INSTALL_DOCS,
-  'simctl-uninstall': SIMCTL_UNINSTALL_DOCS,
+  // Simctl app management tools (non-consolidated)
   'simctl-get-app-container': SIMCTL_GET_APP_CONTAINER_DOCS,
-  'simctl-launch': SIMCTL_LAUNCH_DOCS,
-  'simctl-terminate': SIMCTL_TERMINATE_DOCS,
   'simctl-openurl': SIMCTL_OPENURL_DOCS,
 
   // Simctl I/O and testing tools
@@ -554,33 +550,59 @@ export const TOOL_DOCS: Record<string, string> = {
   screenshot: SIMCTL_SCREENSHOT_INLINE_DOCS,
   'simctl-stream-logs': SIMCTL_STREAM_LOGS_DOCS,
 
-  // IDB tools
+  // IDB tools (non-consolidated)
   'idb-targets': IDB_TARGETS_DOCS,
-  'idb-connect': IDB_CONNECT_DOCS,
   'idb-ui-tap': IDB_UI_TAP_DOCS,
   'idb-ui-input': IDB_UI_INPUT_DOCS,
   'idb-ui-gesture': IDB_UI_GESTURE_DOCS,
   'idb-ui-describe': IDB_UI_DESCRIBE_DOCS,
   'idb-list-apps': IDB_LIST_APPS_DOCS,
-  'idb-install': IDB_INSTALL_DOCS,
-  'idb-launch': IDB_LAUNCH_DOCS,
-  'idb-terminate': IDB_TERMINATE_DOCS,
-  'idb-uninstall': IDB_UNINSTALL_DOCS,
 
-  // Cache tools
+  // Cache tools (non-consolidated)
   'list-cached-responses': CACHE_LIST_CACHED_RESPONSES_DOCS,
-  'cache-get-stats': CACHE_GET_STATS_DOCS,
-  'cache-get-config': CACHE_GET_CONFIG_DOCS,
-  'cache-set-config': CACHE_SET_CONFIG_DOCS,
-  'cache-clear': CACHE_CLEAR_DOCS,
 
-  // Persistence tools
-  'persistence-enable': PERSISTENCE_ENABLE_DOCS,
-  'persistence-disable': PERSISTENCE_DISABLE_DOCS,
-  'persistence-status': PERSISTENCE_STATUS_DOCS,
+  // Consolidated router documentation (v2.0+)
+  'simctl-device': SIMCTL_DEVICE_DOCS,
+  'simctl-app': SIMCTL_APP_DOCS,
+  'idb-app': IDB_APP_DOCS,
+  cache: CACHE_DOCS,
+  persistence: PERSISTENCE_DOCS,
 
   // Documentation tool
   rtfm: RTFM_DOCS,
+
+  // Backwards compatibility aliases (v1.x tools → v2.0 consolidated tools)
+  // Simctl device consolidation
+  'simctl-boot': SIMCTL_DEVICE_DOCS,
+  'simctl-shutdown': SIMCTL_DEVICE_DOCS,
+  'simctl-create': SIMCTL_DEVICE_DOCS,
+  'simctl-delete': SIMCTL_DEVICE_DOCS,
+  'simctl-erase': SIMCTL_DEVICE_DOCS,
+  'simctl-clone': SIMCTL_DEVICE_DOCS,
+  'simctl-rename': SIMCTL_DEVICE_DOCS,
+
+  // Simctl app consolidation
+  'simctl-install': SIMCTL_APP_DOCS,
+  'simctl-uninstall': SIMCTL_APP_DOCS,
+  'simctl-launch': SIMCTL_APP_DOCS,
+  'simctl-terminate': SIMCTL_APP_DOCS,
+
+  // IDB app consolidation
+  'idb-install': IDB_APP_DOCS,
+  'idb-uninstall': IDB_APP_DOCS,
+  'idb-launch': IDB_APP_DOCS,
+  'idb-terminate': IDB_APP_DOCS,
+
+  // Cache consolidation
+  'cache-get-stats': CACHE_DOCS,
+  'cache-get-config': CACHE_DOCS,
+  'cache-set-config': CACHE_DOCS,
+  'cache-clear': CACHE_DOCS,
+
+  // Persistence consolidation
+  'persistence-enable': PERSISTENCE_DOCS,
+  'persistence-disable': PERSISTENCE_DOCS,
+  'persistence-status': PERSISTENCE_DOCS,
 
   // Tool aliases
   'screenshot-save': SCREENSHOT_SAVE_DOCS,

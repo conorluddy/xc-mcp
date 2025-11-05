@@ -27,6 +27,7 @@ import { simctlPushTool } from './tools/simctl/push.js';
 import { simctlPbcopyTool } from './tools/simctl/pbcopy.js';
 import { simctlStatusBarTool } from './tools/simctl/status-bar.js';
 import { simctlScreenshotInlineTool } from './tools/simctl/screenshot-inline.js';
+import { simctlHealthCheckTool } from './tools/simctl/health-check.js';
 import { idbTargetsToolUnified } from './tools/idb/targets/index.js';
 import { idbUiTapTool } from './tools/idb/ui-tap.js';
 import { idbUiInputTool } from './tools/idb/ui-input.js';
@@ -302,41 +303,25 @@ class XcodeCLIMCPServer {
     );
 
     this.server.registerTool(
-      'simctl-boot',
+      'simctl-device',
       {
-        description: 'Boot simulator.',
+        description: 'Manage simulator devices.',
         inputSchema: {
-          deviceId: z.string(),
+          operation: z.enum(['boot', 'shutdown', 'create', 'delete', 'erase', 'clone', 'rename']),
+          deviceId: z.string().optional(),
           waitForBoot: z.boolean().default(true),
           openGui: z.boolean().default(true),
+          name: z.string().optional(),
+          deviceType: z.string().optional(),
+          runtime: z.string().optional(),
+          force: z.boolean().default(false),
+          newName: z.string().optional(),
         },
       },
       async args => {
         try {
           await validateXcodeInstallation();
-          return await simctlBootTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'simctl-shutdown',
-      {
-        description: 'Shutdown simulator.',
-        inputSchema: {
-          deviceId: z.string(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlShutdownTool(args);
+          return await simctlDeviceTool(args);
         } catch (error) {
           if (error instanceof McpError) throw error;
           throw new McpError(
@@ -373,121 +358,6 @@ class XcodeCLIMCPServer {
     );
 
     this.server.registerTool(
-      'simctl-create',
-      {
-        description: 'Create simulator device.',
-        inputSchema: {
-          name: z.string(),
-          deviceType: z.string(),
-          runtime: z.string().optional(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlCreateTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'simctl-delete',
-      {
-        description: 'Delete simulator device.',
-        inputSchema: {
-          deviceId: z.string(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlDeleteTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'simctl-erase',
-      {
-        description: 'Reset simulator to factory settings.',
-        inputSchema: {
-          deviceId: z.string(),
-          force: z.boolean().default(false),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlEraseTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'simctl-clone',
-      {
-        description: 'Clone simulator.',
-        inputSchema: {
-          deviceId: z.string(),
-          newName: z.string(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlCloneTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'simctl-rename',
-      {
-        description: 'Rename simulator.',
-        inputSchema: {
-          deviceId: z.string(),
-          newName: z.string(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlRenameTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
       'simctl-health-check',
       {
         description: 'Validate iOS development environment.',
@@ -507,44 +377,25 @@ class XcodeCLIMCPServer {
       }
     );
 
-    // Phase 3: App Lifecycle & Testing Tools (11 total)
-    // App Management Tools
+    // Phase 3: App Lifecycle & Testing Tools
+    // Consolidated App Management Tool
     this.server.registerTool(
-      'simctl-install',
+      'simctl-app',
       {
-        description: 'Install app on simulator.',
+        description: 'Manage apps on simulators.',
         inputSchema: {
-          udid: z.string(),
-          appPath: z.string(),
+          operation: z.enum(['install', 'uninstall', 'launch', 'terminate']),
+          udid: z.string().optional(),
+          bundleId: z.string().optional(),
+          appPath: z.string().optional(),
+          arguments: z.array(z.string()).optional(),
+          environment: z.record(z.string()).optional(),
         },
       },
       async args => {
         try {
           await validateXcodeInstallation();
-          return await simctlInstallTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'simctl-uninstall',
-      {
-        description: 'Uninstall app from simulator.',
-        inputSchema: {
-          udid: z.string(),
-          bundleId: z.string(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlUninstallTool(args);
+          return await simctlAppTool(args);
         } catch (error) {
           if (error instanceof McpError) throw error;
           throw new McpError(
@@ -569,55 +420,6 @@ class XcodeCLIMCPServer {
         try {
           await validateXcodeInstallation();
           return await simctlGetAppContainerTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    // App Control Tools
-    this.server.registerTool(
-      'simctl-launch',
-      {
-        description: 'Launch app.',
-        inputSchema: {
-          udid: z.string(),
-          bundleId: z.string(),
-          arguments: z.array(z.string()).optional(),
-          environment: z.record(z.string()).optional(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlLaunchTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'simctl-terminate',
-      {
-        description: 'Terminate running app.',
-        inputSchema: {
-          udid: z.string(),
-          bundleId: z.string(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlTerminateTool(args);
         } catch (error) {
           if (error instanceof McpError) throw error;
           throw new McpError(
@@ -835,31 +637,19 @@ class XcodeCLIMCPServer {
       }
     );
 
-    // IDB Tools (11 total) - iOS Development Bridge for UI Automation & App Management
+    // IDB Tools - iOS Development Bridge for UI Automation & App Management
     this.server.registerTool(
       'idb-targets',
       {
-        description: 'Query iOS targets.',
+        description: 'Query and manage IDB targets.',
         inputSchema: {
-          operation: z.enum(['list', 'describe', 'focus']),
+          operation: z.enum(['list', 'describe', 'focus', 'connect', 'disconnect']),
           udid: z.string().optional(),
           state: z.enum(['Booted', 'Shutdown']).optional(),
           type: z.enum(['device', 'simulator']).optional(),
         },
       },
-      async args => idbTargetsTool(args)
-    );
-
-    this.server.registerTool(
-      'idb-connect',
-      {
-        description: 'Manage IDB connections.',
-        inputSchema: {
-          udid: z.string().optional(),
-          operation: z.enum(['connect', 'disconnect']).default('connect'),
-        },
-      },
-      async args => idbConnectTool(args)
+      async args => idbTargetsToolUnified(args)
     );
 
     this.server.registerTool(
@@ -972,57 +762,23 @@ class XcodeCLIMCPServer {
     );
 
     this.server.registerTool(
-      'idb-install',
+      'idb-app',
       {
-        description: 'Install app.',
+        description: 'Manage apps via IDB.',
         inputSchema: {
+          operation: z.enum(['install', 'uninstall', 'launch', 'terminate']),
           udid: z.string().optional(),
-          appPath: z.string(),
-        },
-      },
-      async args => idbInstallTool(args)
-    );
-
-    this.server.registerTool(
-      'idb-launch',
-      {
-        description: 'Launch app.',
-        inputSchema: {
-          udid: z.string().optional(),
-          bundleId: z.string(),
+          bundleId: z.string().optional(),
+          appPath: z.string().optional(),
           streamOutput: z.boolean().optional(),
           arguments: z.array(z.string()).optional(),
           environment: z.record(z.string()).optional(),
         },
       },
-      async args => idbLaunchTool(args)
+      async args => idbAppTool(args)
     );
 
-    this.server.registerTool(
-      'idb-terminate',
-      {
-        description: 'Terminate app.',
-        inputSchema: {
-          udid: z.string().optional(),
-          bundleId: z.string(),
-        },
-      },
-      async args => idbTerminateTool(args)
-    );
-
-    this.server.registerTool(
-      'idb-uninstall',
-      {
-        description: 'Uninstall app.',
-        inputSchema: {
-          udid: z.string().optional(),
-          bundleId: z.string(),
-        },
-      },
-      async args => idbUninstallTool(args)
-    );
-
-    // Cache Management Tools (5 total)
+    // Cache Management Tools
     this.server.registerTool(
       'list-cached-responses',
       {
@@ -1047,53 +803,12 @@ class XcodeCLIMCPServer {
     );
 
     this.server.registerTool(
-      'cache-get-stats',
+      'cache',
       {
-        description: 'Get cache statistics.',
-        inputSchema: {},
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return (await getCacheStatsTool(args)) as any;
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'cache-get-config',
-      {
-        description: 'Get cache configuration.',
+        description: 'Manage cache configuration.',
         inputSchema: {
-          cacheType: z.enum(['simulator', 'project', 'response', 'all']).default('all'),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return (await getCacheConfigTool(args)) as any;
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'cache-set-config',
-      {
-        description: 'Configure cache settings.',
-        inputSchema: {
-          cacheType: z.enum(['simulator', 'project', 'response', 'all']),
+          operation: z.enum(['get-stats', 'get-config', 'set-config', 'clear']),
+          cacheType: z.enum(['simulator', 'project', 'response', 'all']).optional(),
           maxAgeMs: z.number().optional(),
           maxAgeMinutes: z.number().optional(),
           maxAgeHours: z.number().optional(),
@@ -1102,7 +817,7 @@ class XcodeCLIMCPServer {
       async args => {
         try {
           await validateXcodeInstallation();
-          return (await setCacheConfigTool(args)) as any;
+          return (await cacheTool(args)) as any;
         } catch (error) {
           if (error instanceof McpError) throw error;
           throw new McpError(
@@ -1113,85 +828,22 @@ class XcodeCLIMCPServer {
       }
     );
 
+    // Persistence Tools
     this.server.registerTool(
-      'cache-clear',
+      'persistence',
       {
-        description: 'Clear cached data.',
+        description: 'Manage cache persistence.',
         inputSchema: {
-          cacheType: z.enum(['simulator', 'project', 'response', 'all']),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return (await clearCacheTool(args)) as any;
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    // Persistence Tools (3 total)
-    this.server.registerTool(
-      'persistence-enable',
-      {
-        description: 'Enable persistence.',
-        inputSchema: {
+          operation: z.enum(['enable', 'disable', 'status']),
           cacheDir: z.string().optional(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return (await persistenceEnableTool(args)) as any;
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'persistence-disable',
-      {
-        description: 'Disable persistence.',
-        inputSchema: {
           clearData: z.boolean().default(false),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return (await persistenceDisableTool(args)) as any;
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'persistence-status',
-      {
-        description: 'Get persistence status.',
-        inputSchema: {
           includeStorageInfo: z.boolean().default(true),
         },
       },
       async args => {
         try {
           await validateXcodeInstallation();
-          return (await persistenceStatusTool(args)) as any;
+          return (await persistenceTool(args)) as any;
         } catch (error) {
           if (error instanceof McpError) throw error;
           throw new McpError(
@@ -1216,35 +868,6 @@ class XcodeCLIMCPServer {
       async args => {
         try {
           return (await getToolDocsTool(args)) as any;
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    // Screenshot save alias (file-based variant)
-    this.server.registerTool(
-      'screenshot-save',
-      {
-        description: 'Save screenshot to file.',
-        inputSchema: {
-          udid: z.string().optional(),
-          operation: z.enum(['screenshot', 'video']),
-          appName: z.string().optional(),
-          screenName: z.string().optional(),
-          state: z.string().optional(),
-          outputPath: z.string().optional(),
-          codec: z.enum(['h264', 'hevc', 'prores']).optional(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlIoTool(args);
         } catch (error) {
           if (error instanceof McpError) throw error;
           throw new McpError(

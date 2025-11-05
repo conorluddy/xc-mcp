@@ -66,10 +66,22 @@ async function routeOperation(args: IdbAppToolArgs) {
 
   switch (operation) {
     case 'install':
+      if (!args.appPath) {
+        throw new McpError(ErrorCode.InvalidRequest, 'appPath is required for install operation');
+      }
       return idbInstallTool({ appPath: args.appPath, udid: args.udid });
     case 'uninstall':
+      if (!args.bundleId) {
+        throw new McpError(
+          ErrorCode.InvalidRequest,
+          'bundleId is required for uninstall operation'
+        );
+      }
       return idbUninstallTool({ bundleId: args.bundleId, udid: args.udid });
     case 'launch':
+      if (!args.bundleId) {
+        throw new McpError(ErrorCode.InvalidRequest, 'bundleId is required for launch operation');
+      }
       return idbLaunchTool({
         bundleId: args.bundleId,
         udid: args.udid,
@@ -78,6 +90,12 @@ async function routeOperation(args: IdbAppToolArgs) {
         streamOutput: args.streamOutput,
       });
     case 'terminate':
+      if (!args.bundleId) {
+        throw new McpError(
+          ErrorCode.InvalidRequest,
+          'bundleId is required for terminate operation'
+        );
+      }
       return idbTerminateTool({ bundleId: args.bundleId, udid: args.udid });
     default:
       throw new McpError(
