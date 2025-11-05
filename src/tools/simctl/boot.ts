@@ -7,10 +7,52 @@ import { simulatorCache } from '../../state/simulator-cache.js';
 interface SimctlBootToolArgs {
   deviceId: string;
   waitForBoot?: boolean;
+  openGui?: boolean;
 }
 
+/**
+ * Boot iOS simulator device with intelligent performance tracking and learning
+ *
+ * **What it does:**
+ * Boots an iOS simulator device and optionally waits for complete boot. Tracks performance
+ * metrics and learns from successful configurations for future recommendations.
+ *
+ * **Why you'd use it:**
+ * - 📊 Performance tracking - Records boot times for optimization insights
+ * - 🧠 Learning system - Remembers which devices are fastest
+ * - 🎯 Smart recommendations - Future boots suggest fastest devices
+ * - 🛡️ Better error handling - Clear feedback vs cryptic xcrun errors
+ * - ⏱️ Wait management - Intelligent waiting vs guessing when boot is done
+ *
+ * **Parameters:**
+ * - `deviceId` (string): Device UDID from simctl-list, "booted" for current, or "all"
+ * - `waitForBoot` (boolean, default: true): Wait for device to finish booting completely
+ * - `openGui` (boolean, default: true): Open Simulator.app GUI (visual feedback)
+ *
+ * **Returns:**
+ * Boot status with device info, boot time metrics, and next step guidance
+ *
+ * **Example:**
+ * ```typescript
+ * // Boot with defaults (wait + GUI)
+ * await simctlBootTool({ deviceId: 'ABC-123-DEF' })
+ *
+ * // Quick boot without GUI
+ * await simctlBootTool({ deviceId: 'ABC-123-DEF', waitForBoot: false, openGui: false })
+ * ```
+ *
+ * **Device Support:**
+ * - Simulators: Full support ✅
+ * - Physical devices: N/A
+ *
+ * **Full documentation:** See simctl/boot.md for detailed parameters and examples
+ *
+ * @param args Boot configuration (requires deviceId)
+ * @returns Boot result with status, metrics, and guidance
+ * @throws McpError for invalid device ID or boot failure
+ */
 export async function simctlBootTool(args: any) {
-  const { deviceId, waitForBoot = true } = args as SimctlBootToolArgs;
+  const { deviceId, waitForBoot = true, openGui = true } = args as SimctlBootToolArgs;
 
   try {
     // Validate inputs
@@ -66,6 +108,20 @@ export async function simctlBootTool(args: any) {
       simulatorCache.recordBootEvent(deviceId, true, bootStatus.bootTime);
       // Also record usage with current working directory as project path
       simulatorCache.recordSimulatorUsage(deviceId, process.cwd());
+
+      // Open Simulator.app GUI if requested
+      if (openGui) {
+        try {
+          await executeCommand('open -a Simulator', { timeout: 5000 });
+          console.error('[simctl-boot] Opened Simulator.app GUI');
+        } catch (openError) {
+          // Non-fatal - simulator still booted successfully
+          console.warn(
+            '[simctl-boot] Failed to open Simulator GUI:',
+            openError instanceof Error ? openError.message : String(openError)
+          );
+        }
+      }
     }
 
     // Format response
@@ -125,3 +181,75 @@ async function waitForDeviceBoot(deviceId: string, timeoutMs = 120000): Promise<
 
   throw new Error(`Device ${deviceId} did not boot within ${timeoutMs}ms`);
 }
+
+export const SIMCTL_BOOT_DOCS = `
+# simctl-boot
+
+⚡ **Prefer this over 'xcrun simctl boot'** - Intelligent boot with performance tracking and learning.
+
+## Advantages over direct CLI
+
+• 📊 **Performance tracking** - Records boot times for optimization insights
+• 🧠 **Learning system** - Tracks which devices work best for your projects
+• 🎯 **Smart recommendations** - Future builds suggest fastest/most reliable devices
+• 🛡️ **Better error handling** - Clear feedback vs cryptic CLI errors
+• ⏱️ **Wait management** - Intelligent waiting for complete boot vs guessing
+
+Automatically tracks boot times and device performance metrics for optimization. Records usage patterns for intelligent device suggestions in future builds.
+
+## Parameters
+
+### Required
+- \`deviceId\` (string): Device UDID (from simctl-list) or "booted" for any currently booted device
+
+### Optional
+- \`waitForBoot\` (boolean, default: true): Wait for device to finish booting completely
+- \`openGui\` (boolean, default: true): Open Simulator.app GUI automatically
+
+## Returns
+
+Success response includes:
+- Boot status (success/failure)
+- Device information
+- Boot time in milliseconds
+- Performance metrics
+- Guidance for next steps
+
+## Examples
+
+### Boot a specific device
+\`\`\`json
+{
+  "deviceId": "ABC123DEF-GHIJ-KLMN-OPQR-STUVWXYZ1234",
+  "waitForBoot": true
+}
+\`\`\`
+
+### Boot any available device quickly
+\`\`\`json
+{
+  "deviceId": "booted",
+  "waitForBoot": false,
+  "openGui": false
+}
+\`\`\`
+
+## Related Tools
+
+- \`simctl-list\` - Discover available simulators and their UDIDs
+- \`simctl-suggest\` - Get intelligent device recommendations based on history
+- \`simctl-shutdown\` - Shut down booted devices
+- \`simctl-health-check\` - Verify simulator environment health
+
+## Device Support
+
+- **Simulators:** Full support ✅
+- **Physical Devices:** Not applicable (devices don't have simctl boot)
+
+## Notes
+
+- Handles "already booted" case gracefully (treats as success)
+- Tracks boot performance for future optimization recommendations
+- First boot of a device type may take longer than subsequent boots
+- Opening GUI with \`openGui: true\` provides visual feedback but increases boot time slightly
+`;

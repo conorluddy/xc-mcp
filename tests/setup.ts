@@ -2,7 +2,7 @@ import { jest } from '@jest/globals';
 
 // Mock Node.js built-in modules
 jest.mock('child_process');
-jest.mock('path');
+// Note: path module is NOT mocked as tests need real path operations
 
 // Global test setup
 beforeEach(() => {
