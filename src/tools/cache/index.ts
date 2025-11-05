@@ -64,8 +64,20 @@ async function routeOperation(args: CacheToolArgs) {
     case 'get-stats':
       return getCacheStatsTool({});
     case 'get-config':
+      if (!args.cacheType) {
+        throw new McpError(
+          ErrorCode.InvalidRequest,
+          'cacheType is required for get-config operation'
+        );
+      }
       return getCacheConfigTool({ cacheType: args.cacheType });
     case 'set-config':
+      if (!args.cacheType) {
+        throw new McpError(
+          ErrorCode.InvalidRequest,
+          'cacheType is required for set-config operation'
+        );
+      }
       return setCacheConfigTool({
         cacheType: args.cacheType,
         maxAgeMs: args.maxAgeMs,
@@ -73,6 +85,9 @@ async function routeOperation(args: CacheToolArgs) {
         maxAgeHours: args.maxAgeHours,
       });
     case 'clear':
+      if (!args.cacheType) {
+        throw new McpError(ErrorCode.InvalidRequest, 'cacheType is required for clear operation');
+      }
       return clearCacheTool({ cacheType: args.cacheType });
     default:
       throw new McpError(

@@ -62,11 +62,14 @@ async function routeOperation(args: PersistenceToolArgs) {
 
   switch (operation) {
     case 'enable':
+      if (!args.cacheDir) {
+        throw new McpError(ErrorCode.InvalidRequest, 'cacheDir is required for enable operation');
+      }
       return persistenceEnableTool({ cacheDir: args.cacheDir });
     case 'disable':
-      return persistenceDisableTool({ clearData: args.clearData });
+      return persistenceDisableTool({ clearData: args.clearData ?? false });
     case 'status':
-      return persistenceStatusTool({ includeStorageInfo: args.includeStorageInfo });
+      return persistenceStatusTool({ includeStorageInfo: args.includeStorageInfo ?? true });
     default:
       throw new McpError(
         ErrorCode.InvalidRequest,

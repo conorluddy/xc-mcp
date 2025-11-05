@@ -73,18 +73,59 @@ async function routeOperation(args: SimctlDeviceToolArgs) {
 
   switch (operation) {
     case 'boot':
-      return simctlBootTool({ deviceId: args.deviceId, waitForBoot: args.waitForBoot, openGui: args.openGui });
+      if (!args.deviceId) {
+        throw new McpError(ErrorCode.InvalidRequest, 'deviceId is required for boot operation');
+      }
+      return simctlBootTool({
+        deviceId: args.deviceId,
+        waitForBoot: args.waitForBoot,
+        openGui: args.openGui,
+      });
     case 'shutdown':
+      if (!args.deviceId) {
+        throw new McpError(ErrorCode.InvalidRequest, 'deviceId is required for shutdown operation');
+      }
       return simctlShutdownTool({ deviceId: args.deviceId });
     case 'create':
-      return simctlCreateTool({ name: args.name, deviceType: args.deviceType, runtime: args.runtime });
+      if (!args.name) {
+        throw new McpError(ErrorCode.InvalidRequest, 'name is required for create operation');
+      }
+      if (!args.deviceType) {
+        throw new McpError(ErrorCode.InvalidRequest, 'deviceType is required for create operation');
+      }
+      if (!args.runtime) {
+        throw new McpError(ErrorCode.InvalidRequest, 'runtime is required for create operation');
+      }
+      return simctlCreateTool({
+        name: args.name,
+        deviceType: args.deviceType,
+        runtime: args.runtime,
+      });
     case 'delete':
+      if (!args.deviceId) {
+        throw new McpError(ErrorCode.InvalidRequest, 'deviceId is required for delete operation');
+      }
       return simctlDeleteTool({ deviceId: args.deviceId });
     case 'erase':
+      if (!args.deviceId) {
+        throw new McpError(ErrorCode.InvalidRequest, 'deviceId is required for erase operation');
+      }
       return simctlEraseTool({ deviceId: args.deviceId, force: args.force });
     case 'clone':
+      if (!args.deviceId) {
+        throw new McpError(ErrorCode.InvalidRequest, 'deviceId is required for clone operation');
+      }
+      if (!args.newName) {
+        throw new McpError(ErrorCode.InvalidRequest, 'newName is required for clone operation');
+      }
       return simctlCloneTool({ deviceId: args.deviceId, newName: args.newName });
     case 'rename':
+      if (!args.deviceId) {
+        throw new McpError(ErrorCode.InvalidRequest, 'deviceId is required for rename operation');
+      }
+      if (!args.newName) {
+        throw new McpError(ErrorCode.InvalidRequest, 'newName is required for rename operation');
+      }
       return simctlRenameTool({ deviceId: args.deviceId, newName: args.newName });
     default:
       throw new McpError(

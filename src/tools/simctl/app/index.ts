@@ -65,10 +65,22 @@ async function routeOperation(args: SimctlAppToolArgs) {
 
   switch (operation) {
     case 'install':
+      if (!args.appPath) {
+        throw new McpError(ErrorCode.InvalidRequest, 'appPath is required for install operation');
+      }
       return simctlInstallTool({ udid: args.udid, appPath: args.appPath });
     case 'uninstall':
+      if (!args.bundleId) {
+        throw new McpError(
+          ErrorCode.InvalidRequest,
+          'bundleId is required for uninstall operation'
+        );
+      }
       return simctlUninstallTool({ udid: args.udid, bundleId: args.bundleId });
     case 'launch':
+      if (!args.bundleId) {
+        throw new McpError(ErrorCode.InvalidRequest, 'bundleId is required for launch operation');
+      }
       return simctlLaunchTool({
         udid: args.udid,
         bundleId: args.bundleId,
@@ -76,6 +88,12 @@ async function routeOperation(args: SimctlAppToolArgs) {
         environment: args.environment,
       });
     case 'terminate':
+      if (!args.bundleId) {
+        throw new McpError(
+          ErrorCode.InvalidRequest,
+          'bundleId is required for terminate operation'
+        );
+      }
       return simctlTerminateTool({ udid: args.udid, bundleId: args.bundleId });
     default:
       throw new McpError(
