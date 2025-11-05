@@ -241,36 +241,56 @@ function parseVersion(versionStr: string): number {
 export const SIMCTL_CREATE_DOCS = `
 # simctl-create
 
-⚙️ **Create New Simulator** - Create iOS simulator devices dynamically.
-Creates a new simulator device that persists until deleted.
+Create new iOS simulator devices dynamically.
 
-## Advantages
+## Overview
 
-• 🎯 **Dynamic provisioning** - Create simulators on-the-fly for testing
-• 📱 **Device flexibility** - Support all device types (iPhone, iPad, Apple Watch, Apple TV)
-• 🔧 **Runtime control** - Specify iOS version or use latest
-• 💾 **Automated testing** - Useful for CI/CD pipelines
+Creates a new iOS simulator device with specified device type and runtime version. Automatically validates device types and runtimes against available options, defaulting to the latest iOS version if no runtime is specified. Supports all device types including iPhone, iPad, Apple Watch, and Apple TV.
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
+- **name** (string): Display name for the new simulator (e.g., "MyTestDevice")
+- **deviceType** (string): Device type identifier (e.g., "iPhone 16 Pro", "iPad Pro")
 
 ### Optional
-- (See implementation for optional parameters)
+- **runtime** (string): iOS/runtime version (e.g., "17.0") - defaults to latest available
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+Creation status with new device UDID, device type, runtime version, success indicator, command output, and guidance for next steps (boot, delete, erase).
+
+## Examples
+
+### Create iPhone with latest iOS
+\`\`\`typescript
+await simctlCreateTool({
+  name: "TestiPhone",
+  deviceType: "iPhone 16 Pro"
+});
+\`\`\`
+
+### Create iPad with specific iOS version
+\`\`\`typescript
+await simctlCreateTool({
+  name: "TestiPad",
+  deviceType: "iPad Pro (12.9-inch)",
+  runtime: "17.0"
+});
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
+- simctl-list: See available device types and runtimes
+- simctl-boot: Boot newly created device
+- simctl-delete: Remove created device when done
 
 ## Notes
 
-- Tool is auto-registered with MCP server
-- Full documentation in simctl_create.ts
+- Device types: iPhone, iPad, Apple Watch, Apple TV
+- Runtime defaults to latest available iOS version
+- Created device persists until explicitly deleted
+- UDID is auto-generated and returned in response
+- Useful for CI/CD pipelines and automated testing
+- Device type can be partial match (e.g., "iPhone 16" matches "iPhone 16 Pro")
 `;

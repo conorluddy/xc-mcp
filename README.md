@@ -7,8 +7,26 @@
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/conorluddy/xc-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Problem**: MCP clients can't effectively use Xcode CLI tools because the build and simulator listing commands return more than 50,000 tokens, exceeding MCP limits.  
-**Solution**: Progressive disclosure with intelligent caching returns 2,000 tokens instead, achieving 96% reduction.  
+## 🎯 Massive Toolkit, Minimal Tokens
+
+**51 specialized iOS development tools consuming just ~30,000 tokens** — that's ~590 tokens per tool on average.
+
+XC-MCP achieves extreme token efficiency through **progressive disclosure via RTFM**: ultra-minimal tool descriptions (10 words max) and parameter schemas with RTFM references. Full comprehensive documentation is available on-demand across 8 organized categories.
+
+**Token efficiency vs traditional verbose MCP servers:**
+- **XC-MCP:** ~30k tokens for 51 tools (descriptions + schemas)
+- **Traditional:** ~50k+ tokens for 51 tools (verbose descriptions + verbose schemas)
+- **Savings: 40% reduction in MCP tool overhead**
+
+**What's optimized:**
+- Tool descriptions: 10 words max + "Use rtfm for details"
+- Parameter descriptions: Tool-specific RTFM references
+- Full docs: Available via `rtfm({ toolName: "tool-name" })` on demand
+
+---
+
+**Problem**: MCP clients can't effectively use Xcode CLI tools because the build and simulator listing commands return more than 50,000 tokens, exceeding MCP limits.
+**Solution**: Progressive disclosure with intelligent caching returns 2,000 tokens instead, achieving 96% reduction.
 **Result**: Full Xcode tooling functionality without token overflow, 90% faster workflows.
 
 ![gh-social](https://github.com/user-attachments/assets/dd23b1e5-ed8c-40c0-b44d-7c92f3b5d5aa)

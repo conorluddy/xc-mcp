@@ -142,30 +142,58 @@ export async function simctlUninstallTool(args: any) {
 export const SIMCTL_UNINSTALL_DOCS = `
 # simctl-uninstall
 
-🗑️ **Uninstall App from Simulator** - Remove apps from simulators.
-Uninstalls an app identified by bundle ID from the specified simulator.
-Returns: Uninstall status and guidance for reinstalling or managing apps.
+Uninstall iOS apps from simulators.
+
+## Overview
+
+Removes an installed app from a simulator by its bundle ID. This cleans up all app data, preferences, and the app bundle itself from the simulator. Useful for clean testing, data removal, space management, and workflow automation.
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
-
-### Optional
-- (See implementation for optional parameters)
+- **udid** (string): Simulator UDID (from simctl-list)
+- **bundleId** (string): App bundle ID (e.g., com.example.MyApp)
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+Uninstall status with bundle ID, simulator info (name, state, availability), success indicator, command output, and guidance for reinstallation or app management.
+
+## Examples
+
+### Uninstall app from simulator
+\`\`\`typescript
+await simctlUninstallTool({
+  udid: 'ABC-123-DEF',
+  bundleId: 'com.example.MyApp'
+});
+\`\`\`
+
+### Clean install workflow
+\`\`\`typescript
+// Uninstall old version
+await simctlUninstallTool({
+  udid: 'TEST-DEVICE',
+  bundleId: 'com.example.MyApp'
+});
+// Then reinstall
+await simctlInstallTool({
+  udid: 'TEST-DEVICE',
+  appPath: '/path/to/MyApp.app'
+});
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
+- simctl-install: Reinstall app after uninstall
+- simctl-list: Find simulator UDID
+- simctl-get-app-container: Check app container before uninstall
 
 ## Notes
 
-- Tool is auto-registered with MCP server
-- Full documentation in simctl_uninstall.ts
+- Bundle ID must follow format: com.company.appname
+- Removes app and all associated data/preferences
+- Validates simulator exists before attempting uninstall
+- Useful for clean testing workflows
+- Frees simulator disk space by removing unused apps
+- Test cycles requiring clean app installs benefit from uninstall automation
 `;

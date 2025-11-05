@@ -233,31 +233,52 @@ function formatErrorGuidance(bundleId: string, condensedError: string, udid: str
 export const IDB_TERMINATE_DOCS = `
 # idb-terminate
 
-⏹️ Terminate (kill) running application on iOS target
-Behavior:
-- Immediately stops the running app
-- Equivalent to force-quitting
+Terminate running application - force-quit apps for clean state testing and debugging.
+
+## Overview
+
+Force-terminates running applications by bundle ID with immediate stop (no graceful shutdown). Idempotent operation that succeeds even if app not running. Detects whether app was actually running from output parsing to provide accurate status. Essential for resetting app state between test runs and preparing for reinstallation.
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
+- **bundleId** (string): App bundle identifier to terminate
 
 ### Optional
-- (See implementation for optional parameters)
+- **udid** (string): Target identifier - auto-detects if omitted
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+Termination status with success indicator, bundle ID, wasRunning flag (parsed from output to distinguish actual termination from no-op), command output, error details if failed, and next steps guidance (relaunch, reinstall, verification).
+
+## Examples
+
+### Force-quit app before reinstall
+\`\`\`typescript
+const result = await idbTerminateTool({
+  bundleId: 'com.example.MyApp'
+});
+\`\`\`
+
+### Stop app on specific device
+\`\`\`typescript
+await idbTerminateTool({
+  bundleId: 'com.example.MyApp',
+  udid: 'DEVICE-UDID-123'
+});
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
+- idb-launch: Relaunch app after termination
+- idb-list-apps: Verify running status before/after termination
+- idb-uninstall: Remove app after termination for clean install
 
 ## Notes
 
-- Tool is auto-registered with MCP server
-- Full documentation in idb_terminate.ts
+- This is a force-kill operation (not graceful shutdown)
+- Idempotent - succeeds even if app not running
+- IDB terminate sends termination signal to running app
+- wasRunning flag indicates if app was actually terminated vs already stopped
+- Safe to call multiple times - no error if app already stopped
 `;

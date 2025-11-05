@@ -128,35 +128,44 @@ export async function simctlDeleteTool(args: any) {
 export const SIMCTL_DELETE_DOCS = `
 # simctl-delete
 
-🗑️ **Delete Simulator** - Permanently remove a simulator device.
-⚠️ This action cannot be undone.
+Permanently delete iOS simulator devices.
 
-## Advantages
+## Overview
 
-• 🧹 **Clean up** - Remove unused simulators to save disk space
-• ⚡ **Quick operation** - Fast permanent deletion
-• 💡 **Safety checks** - Prevents accidental deletion of booted devices
+Permanently removes a simulator device and all its data from the system. This action cannot be undone. The simulator must be shut down before deletion. Useful for cleaning up unused simulators to save disk space (simulators can be 5-10GB each).
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
-
-### Optional
-- (See implementation for optional parameters)
+- **deviceId** (string): Device UDID to delete (from simctl-list)
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+Deletion status with device information, confirmation that action is permanent, success indicator, command output, and guidance emphasizing permanent nature of deletion.
+
+## Examples
+
+### Delete specific simulator
+\`\`\`typescript
+await simctlDeleteTool({ deviceId: 'ABC-123-DEF' });
+\`\`\`
+
+### Clean up old test device
+\`\`\`typescript
+await simctlDeleteTool({ deviceId: 'OLD-TEST-DEVICE-UDID' });
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
+- simctl-list: Find device UDID to delete
+- simctl-shutdown: Shutdown device before deletion (required)
+- simctl-create: Create new simulator after deletion
 
 ## Notes
 
-- Tool is auto-registered with MCP server
-- Full documentation in simctl_delete.ts
+- This action cannot be undone - device and all data permanently removed
+- Device must be shut down before deletion (safety check)
+- Simulators can be 5-10GB each - deletion frees significant disk space
+- Use simctl-erase instead if you want to keep device but reset state
+- Fast operation - completes in seconds
 `;

@@ -365,31 +365,59 @@ function formatGuidance(
 export const IDB_UI_INPUT_DOCS = `
 # idb-ui-input
 
-⌨️ Input text and keyboard commands on iOS target
-Operations:
-- text: Type text string (requires focused text field)
-- key: Press single special key (home, return, etc.)
+⌨️ **Input text and keyboard commands** - automated text entry and special key presses for form automation
+
+## What it does
+
+Sends text input and keyboard commands to focused elements on iOS targets. Types text strings into active text fields, presses special keys (home, return, delete, arrows), and executes key sequences for complex input workflows. Automatically redacts sensitive data (passwords) in responses and provides semantic field context tracking for test documentation.
+
+## Why you'd use it
+
+- Automate form filling without manual keyboard interaction - login flows, search, data entry
+- Execute keyboard shortcuts and navigation (tab, return, arrows) for multi-field workflows
+- Safely handle sensitive data with automatic redaction in tool responses and logs
+- Track input operations with semantic metadata (actionName, fieldContext, expectedOutcome)
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
+- **operation** (string): "text" | "key" | "key-sequence"
+
+### Operation-specific parameters
+- **text** (string, required for text operation): String to type into focused field
+- **key** (string, required for key operation): Special key name (home, return, delete, tab, arrows, etc.)
+- **keySequence** (string[], required for key-sequence operation): Array of key names to press in order
 
 ### Optional
-- (See implementation for optional parameters)
+- **udid** (string): Target identifier - auto-detects if omitted
+- **actionName** (string): Semantic action name (e.g., "Enter Email")
+- **fieldContext** (string): Field name for context (e.g., "Email TextField")
+- **expectedOutcome** (string): Expected result (e.g., "Email field populated")
+- **isSensitive** (boolean): Mark as sensitive to redact from output
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+Input execution status with operation details (redacted if sensitive), duration, input context metadata for test tracking, error details if failed, and troubleshooting guidance specific to text vs. key operations.
+
+## Examples
+
+### Type email into focused field
+\`\`\`typescript
+const result = await idbUiInputTool({
+  operation: 'text',
+  text: 'user@example.com',
+  actionName: 'Enter Email',
+  fieldContext: 'Email TextField'
+});
+\`\`\`
+
+### Press return to submit
+\`\`\`typescript
+await idbUiInputTool({ operation: 'key', key: 'return' });
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
-
-## Notes
-
-- Tool is auto-registered with MCP server
-- Full documentation in idb_ui_input.ts
+- idb-ui-tap: Tap to focus text fields before typing
+- idb-ui-describe: Find text field coordinates
 `;

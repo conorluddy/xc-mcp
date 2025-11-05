@@ -96,36 +96,42 @@ export async function xcodebuildShowSDKsTool(args: any) {
 export const XCODEBUILD_SHOWSDKS_DOCS = `
 # xcodebuild-showsdks
 
-⚡ **Prefer this over 'xcodebuild -showsdks'** - Gets available SDKs with intelligent caching and structured output.
-Shows all available SDKs for iOS, macOS, watchOS, and tvOS development.
+⚡ **Show available SDKs** for iOS, macOS, watchOS, and tvOS
 
-## Advantages
+## What it does
 
-• Returns structured JSON data (vs parsing raw CLI text)
-• Smart caching prevents redundant SDK queries
-• Consistent error handling and validation
-• Clean, agent-friendly response format
+Lists all SDKs available in your Xcode installation for building apps across Apple platforms. Returns structured JSON data instead of raw CLI text, making it easy to parse and validate SDK availability. Smart caching prevents redundant SDK queries, improving performance for repeated lookups. Validates Xcode installation before execution.
+
+## Why you'd use it
+
+- Verify SDK availability before starting builds (prevent build failures)
+- Discover which platform versions are supported by your Xcode installation
+- Validate CI/CD environment has required SDKs installed
+- Get structured SDK data for automated build configuration
 
 ## Parameters
 
-### Required
-- (See implementation for parameters)
-
 ### Optional
-- (See implementation for optional parameters)
+- **outputFormat** (string, default: 'json'): "json" or "text" output format
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+Structured JSON containing all available SDKs organized by platform (iOS, macOS, watchOS, tvOS). Each SDK entry includes platform name, version, and SDK identifier. Smart caching reduces query overhead for repeated lookups.
+
+## Examples
+
+### Get available SDKs as JSON
+\`\`\`typescript
+const sdks = await xcodebuildShowSDKsTool({ outputFormat: "json" });
+\`\`\`
+
+### Get raw text output
+\`\`\`typescript
+const sdksText = await xcodebuildShowSDKsTool({ outputFormat: "text" });
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
-
-## Notes
-
-- Tool is auto-registered with MCP server
-- Full documentation in xcodebuild_showsdks.ts
+- xcodebuild-version: Get Xcode version information
+- xcodebuild-build: Build with specific SDK
 `;

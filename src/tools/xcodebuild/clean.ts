@@ -115,36 +115,53 @@ export async function xcodebuildCleanTool(args: any) {
 export const XCODEBUILD_CLEAN_DOCS = `
 # xcodebuild-clean
 
-⚡ **Prefer this over 'xcodebuild clean'** - Intelligent cleaning with validation and structured output.
-Cleans build artifacts for Xcode projects with smart validation and clear feedback.
+⚡ **Clean build artifacts** with validation and structured output
 
-## Advantages
+## What it does
 
-• Pre-validates project exists and Xcode is installed
-• Structured JSON responses (vs parsing CLI output)
-• Better error messages and troubleshooting context
-• Consistent response format across project types
+Removes build artifacts and intermediate files for an Xcode project or workspace. Pre-validates that the project exists and Xcode is properly installed before executing, providing clear error messages if something is misconfigured. Returns structured JSON responses with execution status, duration, and any errors encountered during the clean operation.
+
+## Why you'd use it
+
+- Resolve build issues by removing stale or corrupted build artifacts
+- Free up disk space occupied by intermediate build files
+- Ensure clean builds from scratch without cached compilation results
+- Get structured feedback with execution time and success status
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
+- **projectPath** (string): Path to .xcodeproj or .xcworkspace file
+- **scheme** (string): Build scheme name to clean
 
 ### Optional
-- (See implementation for optional parameters)
+- **configuration** (string): Build configuration to clean (e.g., "Debug", "Release")
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+Structured JSON response containing success status, command executed, execution duration, output messages, and exit code. Includes both stdout and stderr for comprehensive debugging. Operation typically completes in under 3 minutes.
+
+## Examples
+
+### Clean default configuration
+\`\`\`typescript
+const result = await xcodebuildCleanTool({
+  projectPath: "/path/to/MyApp.xcodeproj",
+  scheme: "MyApp"
+});
+\`\`\`
+
+### Clean specific configuration
+\`\`\`typescript
+const cleanRelease = await xcodebuildCleanTool({
+  projectPath: "/path/to/MyApp.xcworkspace",
+  scheme: "MyApp",
+  configuration: "Release"
+});
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
-
-## Notes
-
-- Tool is auto-registered with MCP server
-- Full documentation in xcodebuild_clean.ts
+- xcodebuild-build: Build after cleaning
+- xcodebuild-list: Discover available schemes
 `;

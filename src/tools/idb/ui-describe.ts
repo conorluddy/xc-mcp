@@ -589,31 +589,64 @@ function parseElementInfo(output: string): {
 export const IDB_UI_DESCRIBE_DOCS = `
 # idb-ui-describe
 
-🔍 Query UI accessibility tree for element discovery
-Operations:
-- all: Get full accessibility tree (uses progressive disclosure)
-- point: Get element at specific coordinates
+🔍 **Query UI accessibility tree** - discover tappable elements and text fields for precise automation
+
+## What it does
+
+Queries iOS accessibility tree to discover UI elements, their properties (type, label, enabled state), coordinates (frame, centerX, centerY), and accessibility identifiers. Returns full tree with progressive disclosure (summary + cache ID for full data), element-at-point queries for tap validation, and data quality assessment (rich/moderate/minimal) to guide automation strategy. Automatically parses NDJSON output to extract all elements (not just first), includes AXFrame coordinate parsing for precise tapping, and caches large outputs to prevent token overflow.
+
+## Why you'd use it
+
+- Discover all tappable elements from accessibility tree - buttons, cells, links identified by JSON element objects
+- Get precise tap coordinates (centerX, centerY) for elements without needing screenshots
+- Assess data quality before choosing automation approach - rich data enables precise targeting, minimal data requires screenshots
+- Validate tap coordinates by querying elements at specific points before execution
+- Progressive disclosure prevents token overflow on complex UIs - get summary first, full tree on demand
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
+- **operation** (string): "all" | "point"
+
+### Point operation parameters
+- **x** (number, required for point operation): X coordinate to query
+- **y** (number, required for point operation): Y coordinate to query
 
 ### Optional
-- (See implementation for optional parameters)
+- **udid** (string): Target identifier - auto-detects if omitted
+- **screenContext** (string): Screen name for context (e.g., "LoginScreen")
+- **purposeDescription** (string): Query purpose (e.g., "Find tappable button")
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+**For "all":** UI tree summary with element counts (total, tappable, text fields), data quality assessment (rich/moderate/minimal), top 20 interactive elements preview with centerX/centerY coordinates, uiTreeId for full tree retrieval, and guidance on automation strategy based on data richness.
+
+**For "point":** Element details at coordinates including type, label, value, identifier, frame coordinates (x, y, centerX, centerY), enabled state, and tappability.
+
+## Examples
+
+### Query full UI tree with coordinate data
+\`\`\`typescript
+const result = await idbUiDescribeTool({
+  operation: 'all',
+  screenContext: 'LoginScreen',
+  purposeDescription: 'Find email and password fields'
+});
+// Result includes elements with centerX, centerY for direct tapping
+\`\`\`
+
+### Validate element at tap coordinates
+\`\`\`typescript
+const element = await idbUiDescribeTool({
+  operation: 'point',
+  x: 200,
+  y: 400
+});
+// Element includes frame coordinates if available
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
-
-## Notes
-
-- Tool is auto-registered with MCP server
-- Full documentation in idb_ui_describe.ts
+- idb-ui-tap: Tap discovered elements using centerX/centerY coordinates
+- screenshot: Capture screenshot for visual element identification
 `;

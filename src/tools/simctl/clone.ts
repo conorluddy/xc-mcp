@@ -151,36 +151,51 @@ export async function simctlCloneTool(args: any) {
 export const SIMCTL_CLONE_DOCS = `
 # simctl-clone
 
-📋 **Clone Simulator** - Create a duplicate of an existing simulator.
-Creates a new simulator with same configuration and data as source.
+Clone iOS simulator devices with complete state preservation.
 
-## Advantages
+## Overview
 
-• 📸 **Snapshots** - Create backups of configured simulators
-• 🧪 **Testing variants** - Have multiple versions for different test scenarios
-• 💾 **State preservation** - Cloned device includes all apps and data
-• ⚡ **Quick setup** - Duplicate existing configuration instead of recreating
+Creates an exact duplicate of an existing simulator including all settings, installed apps, and current state. The cloned simulator gets a new UDID but preserves all configuration. Useful for creating backups of configured simulators before experiments or maintaining multiple test variants.
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
-
-### Optional
-- (See implementation for optional parameters)
+- **deviceId** (string): Source device UDID to clone (from simctl-list)
+- **newName** (string): Display name for the cloned simulator
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+Clone status with both source and new device information, including new UDID, success indicator, command output, and guidance for managing the cloned device.
+
+## Examples
+
+### Clone simulator for testing
+\`\`\`typescript
+await simctlCloneTool({
+  deviceId: 'ABC-123-DEF',
+  newName: 'TestDevice-Snapshot'
+});
+\`\`\`
+
+### Create backup before experiments
+\`\`\`typescript
+await simctlCloneTool({
+  deviceId: 'PRODUCTION-UDID',
+  newName: 'Production Test Backup'
+});
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
+- simctl-list: Find source device UDID to clone
+- simctl-boot: Boot cloned device after creation
+- simctl-delete: Remove cloned device when no longer needed
 
 ## Notes
 
-- Tool is auto-registered with MCP server
-- Full documentation in simctl_clone.ts
+- Cloned device includes all apps and data from source
+- New UDID is generated automatically
+- Cloning can take 1-2 minutes depending on data size
+- Source device name and configuration are preserved
+- Device can be in any state (booted, shutdown) during clone
 `;

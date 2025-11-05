@@ -371,34 +371,58 @@ async function performAutoInstall(args: AutoInstallArgs): Promise<any> {
 export const XCODEBUILD_BUILD_DOCS = `
 # xcodebuild-build
 
-⚡ **Prefer this over raw 'xcodebuild'** - Intelligent building with learning and performance tracking.
+⚡ **Build Xcode projects** with intelligent defaults and performance tracking
 
-## Advantages
+## What it does
 
-• 🧠 Learns successful configs & suggests optimal simulators per project
-• 📊 Tracks build performance & provides progressive disclosure for large logs
-• ⚡ Caches intelligently & provides structured errors vs raw CLI stderr
+Builds Xcode projects and workspaces with advanced learning capabilities that remember successful configurations and suggest optimal simulators per project. Uses progressive disclosure to provide concise summaries by default, with full build logs available on demand. Tracks build performance metrics (duration, errors, warnings) and learns from successful builds to improve future build suggestions.
+
+## Why you'd use it
+
+- Automatic smart defaults: remembers which simulator and config worked last time
+- Progressive disclosure: concise summaries prevent token overflow, full logs on demand
+- Performance tracking: measures build times and provides optimization insights
+- Structured errors: clear error messages instead of raw CLI stderr
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
+- **projectPath** (string): Path to .xcodeproj or .xcworkspace file
+- **scheme** (string): Build scheme name (use xcodebuild-list to discover)
 
 ### Optional
-- (See implementation for optional parameters)
+- **configuration** (string, default: 'Debug'): Build configuration (Debug/Release, defaults to cached or "Debug")
+- **destination** (string): Build destination (e.g., "platform=iOS Simulator,id=<UDID>")
+- **sdk** (string): SDK to build against (e.g., "iphonesimulator", "iphoneos")
+- **derivedDataPath** (string): Custom derived data path for build artifacts
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+Structured JSON response with buildId (for progressive disclosure), success status, build summary (errors, warnings, duration), and intelligence metadata showing which smart defaults were applied. Use xcodebuild-get-details with buildId to retrieve full logs.
+
+## Examples
+
+### Minimal build with smart defaults
+\`\`\`typescript
+const result = await xcodebuildBuildTool({
+  projectPath: "/path/to/MyApp.xcodeproj",
+  scheme: "MyApp"
+});
+\`\`\`
+
+### Explicit configuration
+\`\`\`typescript
+const release = await xcodebuildBuildTool({
+  projectPath: "/path/to/MyApp.xcworkspace",
+  scheme: "MyApp",
+  configuration: "Release",
+  destination: "platform=iOS Simulator,id=ABC-123"
+});
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
-
-## Notes
-
-- Tool is auto-registered with MCP server
-- Full documentation in xcodebuild_build.ts
+- xcodebuild-test: Run tests after building
+- xcodebuild-clean: Clean build artifacts
+- xcodebuild-get-details: Get full build logs (use with buildId)
 `;

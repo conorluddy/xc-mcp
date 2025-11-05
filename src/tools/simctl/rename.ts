@@ -148,35 +148,52 @@ export async function simctlRenameTool(args: any) {
 export const SIMCTL_RENAME_DOCS = `
 # simctl-rename
 
-✏️ **Rename Simulator** - Change a simulator's display name.
-Renames device while preserving all configuration and data.
+Rename iOS simulator devices for better organization.
 
-## Advantages
+## Overview
 
-• 🏷️ **Organization** - Better organize and identify your simulators
-• 🔍 **Easy identification** - Use descriptive names for test devices
-• 💾 **Data preserved** - Rename without affecting UDID or data
+Changes the display name of a simulator without affecting its UDID or any data. Useful for organizing and identifying simulators with descriptive names. Quick operation completes instantly with no side effects.
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
-
-### Optional
-- (See implementation for optional parameters)
+- **deviceId** (string): Device UDID to rename (from simctl-list)
+- **newName** (string): New display name for the simulator
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+Rename status showing old name, new name, confirmation that UDID is unchanged, success indicator, command output, and guidance emphasizing data preservation.
+
+## Examples
+
+### Rename simulator for clarity
+\`\`\`typescript
+await simctlRenameTool({
+  deviceId: 'ABC-123-DEF',
+  newName: 'Production Test Device'
+});
+\`\`\`
+
+### Organize test devices
+\`\`\`typescript
+await simctlRenameTool({
+  deviceId: 'TEST-UDID',
+  newName: 'UI Tests - iPhone 16 Pro'
+});
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
+- simctl-list: Find device UDID to rename
+- simctl-create: Create new simulator with specific name
+- simctl-clone: Clone simulator with new name
 
 ## Notes
 
-- Tool is auto-registered with MCP server
-- Full documentation in simctl_rename.ts
+- UDID remains unchanged - only display name is modified
+- All data and configuration preserved
+- Quick operation - completes instantly
+- New name must be unique - cannot duplicate existing names
+- Use descriptive names for better organization and identification
+- Perfect for organizing test devices by purpose or team
 `;

@@ -217,35 +217,61 @@ function filterCachedSimulatorList(
 export const SIMCTL_LIST_DOCS = `
 # simctl-list
 
-⚡ **Essential: Use this instead of 'xcrun simctl list'** - Prevents token overflow with progressive disclosure.
-Returns summaries by default. Use simctl-get-details with cacheId for full device lists.
+List iOS simulators with intelligent progressive disclosure and caching.
 
-## Advantages
+## Overview
 
-• 🔥 Prevents token overflow (raw output = 10k+ tokens) via concise summaries & cache IDs
-• 🧠 Shows booted devices, recently used simulators & smart recommendations first
-• ⚡ 1-hour caching + usage tracking for faster workflows & better suggestions
+Retrieves comprehensive simulator information including devices, runtimes, and device types. Returns concise summaries by default with cache IDs for progressive access to full details, preventing token overflow while maintaining complete functionality. Shows booted devices and recently used simulators first for faster workflows.
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
+None - all parameters are optional
 
 ### Optional
-- (See implementation for optional parameters)
+- **deviceType** (string): Filter by device type (e.g., "iPhone", "iPad")
+- **runtime** (string): Filter by iOS runtime version (e.g., "17", "iOS 17.0")
+- **availability** (string, default: "available"): Filter by availability ("available", "unavailable", "all")
+- **outputFormat** (string, default: "json"): Output format ("json" or "text")
+- **concise** (boolean, default: true): Return concise summary with cache ID
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+- Concise mode: Summary with cacheId for detailed retrieval via simctl-get-details
+- Full mode: Complete simulator list with all device information
+
+## Examples
+
+### Get concise summary (default - prevents token overflow)
+\`\`\`typescript
+await simctlListTool({});
+\`\`\`
+
+### Get full list for iPhone devices
+\`\`\`typescript
+await simctlListTool({
+  deviceType: "iPhone",
+  concise: false
+});
+\`\`\`
+
+### Filter by iOS version
+\`\`\`typescript
+await simctlListTool({ runtime: "17.0" });
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
+- simctl-get-details: Retrieve full device list using cache ID
+- simctl-suggest: Get intelligent simulator recommendations
+- simctl-boot: Boot simulator from list
 
 ## Notes
 
-- Tool is auto-registered with MCP server
-- Full documentation in simctl_list.ts
+- Prevents token overflow (raw output = 10k+ tokens) via concise summaries
+- 1-hour intelligent caching eliminates redundant queries
+- Shows booted devices and recently used simulators first
+- Use simctl-get-details with cacheId for progressive access to full data
+- Smart filtering by device type, runtime, and availability
+- Essential: Use this instead of 'xcrun simctl list' for better performance
 `;

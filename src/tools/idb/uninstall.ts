@@ -208,31 +208,52 @@ function formatErrorGuidance(bundleId: string, condensedError: string, udid: str
 export const IDB_UNINSTALL_DOCS = `
 # idb-uninstall
 
-🗑️ Uninstall (remove) application from iOS target
-Behavior:
-- Removes app from device/simulator
-- Deletes app data and preferences
+Uninstall application from iOS target - remove apps with complete data deletion for clean installs.
+
+## Overview
+
+Removes installed applications by bundle ID with complete data and preferences deletion. Automatically terminates running apps before uninstall. Cannot remove system apps (user-installed only). Provides detailed error guidance for common failures (app not found, system app protection, uninstall errors).
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
+- **bundleId** (string): App bundle identifier to uninstall
 
 ### Optional
-- (See implementation for optional parameters)
+- **udid** (string): Target identifier - auto-detects if omitted
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+Uninstallation status with success indicator, bundle ID, command output, error details if failed, and troubleshooting guidance (app not found, system app protection, termination advice, alternative tools).
+
+## Examples
+
+### Uninstall app for clean reinstall
+\`\`\`typescript
+const result = await idbUninstallTool({
+  bundleId: 'com.example.MyApp'
+});
+\`\`\`
+
+### Uninstall from specific device
+\`\`\`typescript
+await idbUninstallTool({
+  bundleId: 'com.example.MyApp',
+  udid: 'DEVICE-UDID-123'
+});
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
+- idb-install: Reinstall app after uninstall
+- idb-terminate: Stop app before uninstall (auto-handled)
+- idb-list-apps: Verify app is removed after uninstall
 
 ## Notes
 
-- Tool is auto-registered with MCP server
-- Full documentation in idb_uninstall.ts
+- Removes app from target system completely
+- Deletes all app data and preferences
+- Automatically terminates app if running
+- Only user-installed apps can be uninstalled (system apps protected)
+- Clean install testing workflow: uninstall -> install -> test
 `;
