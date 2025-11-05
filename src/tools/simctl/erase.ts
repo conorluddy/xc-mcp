@@ -138,36 +138,51 @@ export async function simctlEraseTool(args: any) {
 export const SIMCTL_ERASE_DOCS = `
 # simctl-erase
 
-🔄 **Erase Simulator** - Reset simulator to factory settings.
-Resets device to clean state while keeping it available.
+Reset iOS simulator devices to factory settings.
 
-## Advantages
+## Overview
 
-• 🔄 **Clean state** - Reset device without deleting it
-• 📦 **Data removal** - Removes all apps and user data
-• 🎯 **Testing** - Perfect for fresh app installation testing
-• 💾 **Device preserved** - Simulator persists for reuse
+Resets a simulator to clean factory state without deleting the device itself. All apps and data are removed, but the simulator persists and can be immediately reused. Useful for clean state testing and fresh app installation workflows.
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
+- **deviceId** (string): Device UDID to erase (from simctl-list)
 
 ### Optional
-- (See implementation for optional parameters)
+- **force** (boolean, default: false): Force erase even if device is booted
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+Erase status with device information, confirmation that device persists, wasBooted flag indicating if device was running during erase, success indicator, and guidance for next steps.
+
+## Examples
+
+### Erase simulator to clean state
+\`\`\`typescript
+await simctlEraseTool({ deviceId: 'ABC-123-DEF' });
+\`\`\`
+
+### Force erase booted device
+\`\`\`typescript
+await simctlEraseTool({
+  deviceId: 'ABC-123-DEF',
+  force: true
+});
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
+- simctl-list: Find device UDID to erase
+- simctl-shutdown: Shutdown device before erase (if not using force)
+- simctl-boot: Boot device after erase to continue testing
 
 ## Notes
 
-- Tool is auto-registered with MCP server
-- Full documentation in simctl_erase.ts
+- Device persists after erase - only data is removed
+- All apps, preferences, and user data are deleted
+- Device returns to factory settings
+- Use force: true to erase booted device (otherwise must shutdown first)
+- Perfect for repeatable clean state testing
+- Faster than delete + create for reset workflows
 `;

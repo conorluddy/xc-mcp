@@ -308,38 +308,64 @@ function formatErrorGuidance(bundleId: string, condensedError: string, udid: str
 export const IDB_LAUNCH_DOCS = `
 # idb-launch
 
-🚀 Launch application on iOS target
-Output streaming (-w flag):
-- streamOutput: true enables stdout/stderr capture
-- Useful for debugging and behavior analysis
+Launch application on iOS target - start apps with optional output streaming and environment control.
 
-## Advantages
+## Overview
 
-- Simple launch or stream stdout/stderr
-- Pass command-line arguments to app
-- Set environment variables
-- Returns process ID for tracking
+Launches installed applications by bundle ID with optional stdout/stderr streaming, command-line arguments, and environment variables. Extracts process ID for tracking, streams app output when debugging is needed, and provides detailed error guidance for launch failures (app not installed, already running, crashed on launch).
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
+- **bundleId** (string): App bundle identifier (from idb-list-apps or app installation)
 
 ### Optional
-- (See implementation for optional parameters)
+- **udid** (string): Target identifier - auto-detects if omitted
+- **streamOutput** (boolean): Enable stdout/stderr capture with -w flag
+- **arguments** (string[]): Command-line arguments to pass to app
+- **environment** (object): Environment variables to set (KEY=VALUE format)
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+Launch status with success indicator, bundle ID, extracted process ID, streaming status, captured stdout/stderr (if streaming enabled), error details if failed, and troubleshooting guidance (app not found, already running, crash logs).
+
+## Examples
+
+### Simple launch for UI automation
+\`\`\`typescript
+const result = await idbLaunchTool({
+  bundleId: 'com.example.MyApp'
+});
+\`\`\`
+
+### Launch with debug output streaming
+\`\`\`typescript
+await idbLaunchTool({
+  bundleId: 'com.example.MyApp',
+  streamOutput: true,
+  environment: { DEBUG: '1', LOG_LEVEL: 'verbose' }
+});
+\`\`\`
+
+### Launch with arguments
+\`\`\`typescript
+await idbLaunchTool({
+  bundleId: 'com.example.MyApp',
+  arguments: ['--test-mode', '--skip-intro']
+});
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
+- idb-list-apps: Find bundle ID of installed apps
+- idb-terminate: Stop running app
+- idb-ui-tap: Interact with launched app UI
 
 ## Notes
 
-- Tool is auto-registered with MCP server
-- Full documentation in idb_launch.ts
+- With -w flag: Streams stdout/stderr (useful for debugging)
+- Without -w: Fire and forget (app runs in background)
+- Returns process ID for tracking app lifecycle
+- Supports command-line arguments and environment variables
+- IDB uses --env KEY=VALUE format for environment variables
 `;

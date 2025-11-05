@@ -338,31 +338,58 @@ function formatGuidance(
 export const IDB_LIST_APPS_DOCS = `
 # idb-list-apps
 
-📱 List installed applications on iOS target
-Output includes:
-- Bundle ID, app name, install type (system/user/internal)
-- Running status (which app is active)
+List installed applications - discover apps available for testing with bundle IDs and running status.
+
+## Overview
+
+Enumerates all installed applications on iOS targets with structured metadata including bundle ID, app name, install type (system/user/internal), running status, debuggability, and architecture. Filters apps by install type or running status to focus on user apps or active processes. Parses IDB's pipe-separated output into structured JSON for easy programmatic access.
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
+None - all parameters are optional
 
 ### Optional
-- (See implementation for optional parameters)
+- **udid** (string): Target identifier - auto-detects if omitted
+- **filterType** (string): Filter by install type ("system", "user", or "internal")
+- **runningOnly** (boolean): Show only currently running apps
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+Structured app list with summary counts (total, running, debuggable, by install type), separate arrays for running vs. installed apps, applied filter details, and actionable guidance for launching, terminating, installing, or debugging apps.
+
+## Examples
+
+### List user-installed apps to find test target
+\`\`\`typescript
+const result = await idbListAppsTool({
+  filterType: 'user'
+});
+\`\`\`
+
+### Find running app for UI automation
+\`\`\`typescript
+const running = await idbListAppsTool({ runningOnly: true });
+\`\`\`
+
+### List all apps on specific device
+\`\`\`typescript
+const all = await idbListAppsTool({
+  udid: 'DEVICE-UDID-123'
+});
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
+- idb-launch: Launch app by bundle ID discovered here
+- idb-terminate: Stop running app found in list
+- idb-install: Install new app to target
 
 ## Notes
 
-- Tool is auto-registered with MCP server
-- Full documentation in idb_list_apps.ts
+- IDB outputs pipe-separated text, converted to structured JSON
+- Output format: bundle_id | app_name | install_type | arch | running | debuggable
+- Filter by install type to focus on user apps vs system apps
+- Running status helps identify active processes for UI automation
+- Debuggable status indicates if debugger can be attached
 `;

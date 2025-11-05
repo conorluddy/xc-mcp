@@ -276,31 +276,53 @@ function formatErrorGuidance(appPath: string, condensedError: string, udid: stri
 export const IDB_INSTALL_DOCS = `
 # idb-install
 
-📦 Install application to iOS target
-Supported formats:
-- .app bundles (from Xcode build)
-- .ipa archives (signed/unsigned)
+Install application to iOS target - deploy .app bundles or .ipa archives for testing.
+
+## Overview
+
+Transfers and registers application bundles (.app) or archives (.ipa) to iOS targets. Validates app path format before transfer, handles installation process (transfer, registration, signature validation), extracts bundle ID from output for launching, and provides detailed error guidance for common failures (code signing, architecture mismatch, already installed).
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
+- **appPath** (string): Absolute path to .app bundle or .ipa archive
 
 ### Optional
-- (See implementation for optional parameters)
+- **udid** (string): Target identifier - auto-detects if omitted
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+Installation status with success indicator, app path, extracted bundle ID (if available), installation output, and context-specific troubleshooting guidance (code signing issues, architecture mismatches, already installed, file not found).
+
+## Examples
+
+### Install simulator build
+\`\`\`typescript
+const result = await idbInstallTool({
+  appPath: '/path/to/DerivedData/Build/Products/Debug-iphonesimulator/MyApp.app'
+});
+\`\`\`
+
+### Install signed IPA to physical device
+\`\`\`typescript
+await idbInstallTool({
+  appPath: '/path/to/MyApp.ipa',
+  udid: 'DEVICE-UDID-123'
+});
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
+- idb-list-apps: Find bundle ID after installation
+- idb-launch: Launch installed app by bundle ID
+- idb-uninstall: Remove app for clean reinstall
 
 ## Notes
 
-- Tool is auto-registered with MCP server
-- Full documentation in idb_install.ts
+- Supports .app bundles (from Xcode build) and .ipa archives (signed/unsigned)
+- Installation can take 10-60 seconds depending on app size
+- Simulators accept unsigned .app bundles
+- Physical devices require valid provisioning profile
+- Auto-terminates running apps before installation
+- Extracts bundle ID from output when available
 `;

@@ -145,30 +145,52 @@ export async function simctlInstallTool(args: any) {
 export const SIMCTL_INSTALL_DOCS = `
 # simctl-install
 
-📦 **Install App to Simulator** - Deploy built apps to simulators for testing.
-Installs an iOS app (.app bundle) to a specified simulator.
-Returns: Installation status, app name, and guidance for next steps.
+Install iOS apps to simulators for testing.
+
+## Overview
+
+Installs a built .app bundle to a simulator device, making it available for launching and testing. Validates the app bundle format and simulator state before installation. Fast installation completes in seconds for quick test iterations.
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
-
-### Optional
-- (See implementation for optional parameters)
+- **udid** (string): Simulator UDID (from simctl-list)
+- **appPath** (string): Path to .app bundle (e.g., /path/to/MyApp.app)
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+Installation status with app name, simulator info (name, state, availability), success indicator, command output, and guidance for next steps (launch, get container, uninstall).
+
+## Examples
+
+### Install from Xcode build output
+\`\`\`typescript
+await simctlInstallTool({
+  udid: 'ABC-123-DEF',
+  appPath: '/Users/dev/Library/Developer/Xcode/DerivedData/MyApp-xxx/Build/Products/Debug-iphonesimulator/MyApp.app'
+});
+\`\`\`
+
+### Install to specific simulator
+\`\`\`typescript
+await simctlInstallTool({
+  udid: 'TEST-DEVICE-UDID',
+  appPath: '/path/to/MyApp.app'
+});
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
+- simctl-launch: Launch installed app
+- simctl-uninstall: Remove app from simulator
+- simctl-get-app-container: Get app filesystem container path
 
 ## Notes
 
-- Tool is auto-registered with MCP server
-- Full documentation in simctl_install.ts
+- App path must point to .app bundle (not .ipa)
+- Fast installation - completes in seconds
+- Validates app bundle format and simulator state
+- Extracts app name from bundle path automatically
+- Deploys built apps directly from Xcode DerivedData
+- Use for quick test iterations and automated test pipelines
 `;

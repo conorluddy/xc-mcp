@@ -306,31 +306,48 @@ function generateGuidance(checks: any[]): string[] {
 export const SIMCTL_HEALTH_CHECK_DOCS = `
 # simctl-health-check
 
-🏥 **Health Check** - Comprehensive environment validation for iOS simulator development.
-Validates:
-• ✅ Xcode Command Line Tools installation
-• ✅ simctl availability and functionality
+Comprehensive iOS simulator environment health check.
+
+## Overview
+
+Performs a complete diagnostic check of your iOS development environment, validating Xcode tools, simulators, runtimes, and disk space. Returns actionable recommendations for any issues found. Checks 6 critical areas in seconds: Xcode Command Line Tools, simctl availability, available simulators, booted simulators, available runtimes, and disk space.
 
 ## Parameters
 
-### Required
-- (See implementation for parameters)
-
-### Optional
-- (See implementation for optional parameters)
+None - performs complete environment check automatically.
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+Health report with pass/fail status for each check, specific guidance for failures, summary of passed/failed checks, and overall healthy status indicator.
+
+## Examples
+
+### Run complete health check
+\`\`\`typescript
+await simctlHealthCheckTool();
+\`\`\`
+
+### Check before CI/CD pipeline
+\`\`\`typescript
+// Validate environment before running test suite
+const health = await simctlHealthCheckTool();
+if (!health.healthy) {
+  console.error('Environment issues detected');
+}
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
+- simctl-list: See available simulators after health check passes
+- simctl-create: Create simulators if none found
+- simctl-suggest: Get intelligent simulator recommendations
 
 ## Notes
 
-- Tool is auto-registered with MCP server
-- Full documentation in simctl_health_check.ts
+- Checks 6 critical areas: Xcode tools, simctl, simulators, booted devices, runtimes, disk space
+- Provides specific solutions for each failed check
+- Validates entire toolchain in seconds
+- Warns if disk usage over 80% (simulators require significant space)
+- Perfect for troubleshooting when operations fail unexpectedly
+- Use before CI/CD pipeline execution to ensure environment health
 `;

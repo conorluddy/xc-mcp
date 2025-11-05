@@ -171,37 +171,64 @@ export async function simctlSuggestTool(args: any) {
 export const SIMCTL_SUGGEST_DOCS = `
 # simctl-suggest
 
-🧠 **Intelligent Simulator Suggestion** - Recommends best simulators based on project history, performance, and popularity.
-Scoring algorithm considers: project preference (40%), recent usage (40%), iOS version (30%), popular model (20%), boot performance (10%).
+Intelligent simulator suggestion tool.
 
-## Advantages
+## Overview
 
-• 🎯 **Project-aware** - Remembers your preferred simulator per project
-• 📊 **Performance metrics** - Learns boot times and reliability
-• 🏆 **Popularity ranking** - Suggests popular models (iPhone 16 Pro > iPhone 15, etc.)
-• 💡 **Transparent scoring** - Shows reasoning for each recommendation
-• ⚡ **Auto-boot option** - Optionally boots top suggestion immediately
+Suggests the best simulators for your project based on project preferences (remembered from previous successful builds), recently used simulators, device popularity (iPhone 16 > iPhone 15), and boot performance metrics. Transparent scoring algorithm shows reasoning for each recommendation.
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
+None - all parameters are optional
 
 ### Optional
-- (See implementation for optional parameters)
+- **projectPath** (string): Project directory for project-specific ranking
+- **deviceType** (string): Filter suggestions by device type
+- **maxSuggestions** (number, default: 4): Maximum number of suggestions to return
+- **autoBootTopSuggestion** (boolean, default: false): Automatically boot top suggestion
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+Ranked suggestions with scores, reasoning, boot history, performance metrics, summary of scoring criteria, and guidance for next steps. Each suggestion includes simulator name, UDID, state, availability, score breakdown, and boot performance data.
+
+## Examples
+
+### Get project-specific suggestions
+\`\`\`typescript
+await simctlSuggestTool({
+  projectPath: '/path/to/project'
+});
+\`\`\`
+
+### Auto-boot top suggestion
+\`\`\`typescript
+await simctlSuggestTool({
+  projectPath: '/path/to/project',
+  autoBootTopSuggestion: true
+});
+\`\`\`
+
+### Filter by device type
+\`\`\`typescript
+await simctlSuggestTool({
+  deviceType: 'iPhone',
+  maxSuggestions: 3
+});
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
+- simctl-boot: Boot suggested simulator
+- simctl-list: See all available simulators
+- simctl-health-check: Validate environment health
 
 ## Notes
 
-- Tool is auto-registered with MCP server
-- Full documentation in simctl_suggest.ts
+- Scoring algorithm (100 point scale): Project preference (40), Recent usage (40), iOS version (30), Popular model (20), Boot performance (10)
+- Project-aware: Remembers preferred simulator per project
+- Performance metrics: Learns boot times and reliability from usage
+- Popularity ranking: Suggests popular models (iPhone 16 Pro > iPhone 15)
+- Transparent scoring: Shows reasoning for each recommendation
+- Auto-boot option: Optionally boots top suggestion immediately
 `;

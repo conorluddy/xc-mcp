@@ -111,32 +111,51 @@ export async function simctlShutdownTool(args: any) {
 export const SIMCTL_SHUTDOWN_DOCS = `
 # simctl-shutdown
 
-⚡ **Prefer this over 'xcrun simctl shutdown'** - Intelligent shutdown with better device management.
+Shutdown iOS simulator devices with intelligent device management.
 
-## Advantages
+## Overview
 
-• 🎯 **Smart device targeting** -
+Gracefully shuts down one or more iOS simulator devices. Supports shutting down specific devices, all currently booted devices, or all devices at once with smart targeting options. Better error handling with clear feedback when devices cannot be shut down.
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
-
-### Optional
-- (See implementation for optional parameters)
+- **deviceId** (string): Device UDID, "booted" for all booted devices, or "all" for all devices
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+Shutdown status with device information, duration, success indicator, command output, and next step guidance. Handles common scenarios like device already shutdown gracefully.
+
+## Examples
+
+### Shutdown specific device
+\`\`\`typescript
+await simctlShutdownTool({ deviceId: 'ABC-123-DEF' });
+\`\`\`
+
+### Shutdown all booted devices
+\`\`\`typescript
+await simctlShutdownTool({ deviceId: 'booted' });
+\`\`\`
+
+### Shutdown all devices
+\`\`\`typescript
+await simctlShutdownTool({ deviceId: 'all' });
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
+- simctl-boot: Boot device after shutdown
+- simctl-list: Find device UDID to shutdown
+- simctl-delete: Delete device after shutdown (required for deletion)
 
 ## Notes
 
-- Tool is auto-registered with MCP server
-- Full documentation in simctl_shutdown.ts
+- Smart device targeting: "booted", "all", or specific UDID
+- Graceful shutdown operation
+- Handles "already shutdown" scenario without error
+- State tracking updates internal device state for better recommendations
+- Batch operations efficiently handle multiple device shutdowns
+- Required before device deletion (safety check)
+- Use "booted" to quickly shutdown all running simulators
 `;

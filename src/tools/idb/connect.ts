@@ -220,30 +220,61 @@ async function executeDisconnectOperation(udid: string, target: any) {
 export const IDB_CONNECT_DOCS = `
 # idb-connect
 
-Manage IDB companion connections for persistent target access
-Why: IDB maintains persistent gRPC connections to targets.
-Connecting registers the companion for faster subsequent operations.
+Manage IDB companion connections for persistent target access.
+
+## Overview
+
+Manages persistent gRPC connections between IDB and iOS targets (simulators and physical devices). Establishes companion connections for faster subsequent operations, verifies connectivity, and cleanly disconnects when testing is complete. Auto-detects targets when UDID not provided and validates device readiness for physical devices (USB connection, trust status, companion service).
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
+None - all parameters are optional
 
 ### Optional
-- (See implementation for optional parameters)
+- **udid** (string): Target identifier - auto-detects if omitted
+- **operation** (string, default: "connect"): Connection operation ("connect" or "disconnect")
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+Connection status with success indicator, target metadata (name, type, connection type), companion output, error details if failed, and troubleshooting guidance specific to simulators vs. physical devices.
+
+## Examples
+
+### Auto-detect and connect to booted target
+\`\`\`typescript
+const result = await idbConnectTool({
+  operation: 'connect'
+});
+\`\`\`
+
+### Connect to specific physical device
+\`\`\`typescript
+const deviceConnect = await idbConnectTool({
+  udid: 'DEVICE-UDID-123',
+  operation: 'connect'
+});
+\`\`\`
+
+### Disconnect from target
+\`\`\`typescript
+const disconnect = await idbConnectTool({
+  udid: 'ABC-123-DEF',
+  operation: 'disconnect'
+});
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
+- idb-targets: List and manage iOS targets before connecting
+- idb-list-apps: Query installed apps after connection established
+- idb-install: Install apps after connection is ready
 
 ## Notes
 
-- Tool is auto-registered with MCP server
-- Full documentation in idb_connect.ts
+- IDB maintains persistent gRPC connections to targets
+- Connecting registers the companion for faster subsequent operations
+- Auto-starts by IDB CLI if not already running
+- Physical devices require USB connection or WiFi network, device trust, and idb_companion service
+- Simulators only require IDB installation and booted state
 `;
