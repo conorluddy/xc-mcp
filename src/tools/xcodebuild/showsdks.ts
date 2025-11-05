@@ -6,6 +6,43 @@ interface ShowSDKsToolArgs {
   outputFormat?: OutputFormat;
 }
 
+/**
+ * Show all available SDKs for iOS, macOS, watchOS, and tvOS development
+ *
+ * **What it does:**
+ * Lists all SDKs available in your Xcode installation for building apps across Apple platforms.
+ * Returns structured JSON data instead of raw CLI text, making it easy to parse and validate
+ * SDK availability. Smart caching prevents redundant SDK queries, improving performance for
+ * repeated lookups. Validates Xcode installation before execution.
+ *
+ * **Why you'd use it:**
+ * - Verify SDK availability before starting builds (prevent build failures)
+ * - Discover which platform versions are supported by your Xcode installation
+ * - Validate CI/CD environment has required SDKs installed
+ * - Get structured SDK data for automated build configuration
+ *
+ * **Parameters:**
+ * - outputFormat (string, optional): "json" (default) or "text" output format
+ *
+ * **Returns:**
+ * Structured JSON containing all available SDKs organized by platform (iOS, macOS, watchOS,
+ * tvOS). Each SDK entry includes platform name, version, and SDK identifier. Smart caching
+ * reduces query overhead for repeated lookups.
+ *
+ * **Example:**
+ * ```typescript
+ * // Get available SDKs as JSON
+ * const sdks = await xcodebuildShowSDKsTool({ outputFormat: "json" });
+ *
+ * // Get raw text output
+ * const sdksText = await xcodebuildShowSDKsTool({ outputFormat: "text" });
+ * ```
+ *
+ * **Full documentation:** See src/tools/xcodebuild/showsdks.md for detailed parameters
+ *
+ * @param args Tool arguments containing outputFormat
+ * @returns Tool result with available SDK information
+ */
 export async function xcodebuildShowSDKsTool(args: any) {
   const { outputFormat = 'json' } = args as ShowSDKsToolArgs;
 
@@ -55,3 +92,40 @@ export async function xcodebuildShowSDKsTool(args: any) {
     );
   }
 }
+
+export const XCODEBUILD_SHOWSDKS_DOCS = `
+# xcodebuild-showsdks
+
+⚡ **Prefer this over 'xcodebuild -showsdks'** - Gets available SDKs with intelligent caching and structured output.
+Shows all available SDKs for iOS, macOS, watchOS, and tvOS development.
+
+## Advantages
+
+• Returns structured JSON data (vs parsing raw CLI text)
+• Smart caching prevents redundant SDK queries
+• Consistent error handling and validation
+• Clean, agent-friendly response format
+
+## Parameters
+
+### Required
+- (See implementation for parameters)
+
+### Optional
+- (See implementation for optional parameters)
+
+## Returns
+
+- Tool execution results with structured output
+- Success/failure status
+- Guidance for next steps
+
+## Related Tools
+
+- See MCP server documentation for related tools
+
+## Notes
+
+- Tool is auto-registered with MCP server
+- Full documentation in xcodebuild_showsdks.ts
+`;

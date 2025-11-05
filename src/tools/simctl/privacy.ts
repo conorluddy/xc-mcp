@@ -1,0 +1,328 @@
+import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
+import { executeCommand } from '../../utils/command.js';
+import { simulatorCache } from '../../state/simulator-cache.js';
+
+interface SimctlPrivacyToolArgs {
+  udid: string;
+  bundleId: string;
+  action: 'grant' | 'revoke' | 'reset';
+  service: string;
+  // LLM optimization: audit trail and test context
+  scenario?: string;
+  step?: number;
+}
+
+/**
+ * Manage privacy permissions for apps on simulators
+ *
+ * Examples:
+ * - Grant permission: udid: "device-123", bundleId: "com.example.MyApp", action: "grant", service: "camera"
+ * - Revoke permission: udid: "device-123", bundleId: "com.example.MyApp", action: "revoke", service: "microphone"
+ * - Reset all: udid: "device-123", bundleId: "com.example.MyApp", action: "reset", service: "all"
+ * - With audit trail: udid: "device-123", bundleId: "com.example.MyApp", action: "grant", service: "location", scenario: "LocationTest", step: 1
+ *
+ * Supported services:
+ * - camera, microphone, location, contacts, photos, calendar
+ * - health, reminders, motion, keyboard, mediaLibrary, calls, siri
+ *
+ * LLM Optimization:
+ * Include scenario and step for structured permission audit trail tracking. Enables agents to track
+ * permission changes across test scenarios and verify state at each step.
+ *
+ * **Full documentation:** See simctl/privacy.md for detailed parameters and examples
+ */
+export async function simctlPrivacyTool(args: any) {
+  const { udid, bundleId, action, service, scenario, step } = args as SimctlPrivacyToolArgs;
+
+  try {
+    // Validate inputs
+    if (!udid || udid.trim().length === 0) {
+      throw new McpError(ErrorCode.InvalidRequest, 'UDID is required and cannot be empty');
+    }
+
+    if (!bundleId || bundleId.trim().length === 0) {
+      throw new McpError(ErrorCode.InvalidRequest, 'Bundle ID is required and cannot be empty');
+    }
+
+    if (!bundleId.includes('.')) {
+      throw new McpError(
+        ErrorCode.InvalidRequest,
+        'Bundle ID should follow the format: com.company.appname'
+      );
+    }
+
+    if (!action || !['grant', 'revoke', 'reset'].includes(action)) {
+      throw new McpError(ErrorCode.InvalidRequest, 'Action must be "grant", "revoke", or "reset"');
+    }
+
+    // Validate service
+    const validServices = [
+      'camera',
+      'microphone',
+      'location',
+      'contacts',
+      'photos',
+      'calendar',
+      'health',
+      'reminders',
+      'motion',
+      'keyboard',
+      'mediaLibrary',
+      'calls',
+      'siri',
+      'all',
+    ];
+
+    if (!service || !validServices.includes(service)) {
+      throw new McpError(
+        ErrorCode.InvalidRequest,
+        `Service must be one of: ${validServices.join(', ')}`
+      );
+    }
+
+    // Validate simulator exists
+    const simulator = await simulatorCache.findSimulatorByUdid(udid);
+    if (!simulator) {
+      throw new McpError(
+        ErrorCode.InvalidRequest,
+        `Simulator with UDID "${udid}" not found. Use simctl-list to see available simulators.`
+      );
+    }
+
+    // Execute privacy command
+    const command = `xcrun simctl privacy "${udid}" ${action} ${service} "${bundleId}"`;
+    console.error(`[simctl-privacy] Executing: ${command}`);
+
+    const result = await executeCommand(command, {
+      timeout: 10000,
+    });
+
+    const success = result.code === 0;
+
+    // Build guidance messages
+    const guidanceMessages: (string | undefined)[] = [];
+
+    if (success) {
+      guidanceMessages.push(
+        `✅ Privacy permission ${action}ed for "${service}" on "${bundleId}"`,
+        scenario ? `Scenario: ${scenario}` : undefined,
+        step !== undefined ? `Step: ${step}` : undefined,
+        `Action: ${action}`,
+        `Service: ${service}`,
+        `Verify in Settings app: simctl-launch ${udid} com.apple.Preferences`,
+        `Grant another permission: simctl-privacy ${udid} ${bundleId} grant microphone`
+      );
+    } else {
+      guidanceMessages.push(
+        `❌ Failed to ${action} permission: ${result.stderr || 'Unknown error'}`,
+        scenario ? `Scenario: ${scenario}` : undefined,
+        step !== undefined ? `Step: ${step}` : undefined,
+        `App may not be installed on this simulator`,
+        `Verify bundle ID: ${bundleId}`,
+        `Install app first: simctl-install ${udid} /path/to/App.app`
+      );
+    }
+
+    // Add warnings for simulator state regardless of success
+    if (simulator.state !== 'Booted') {
+      guidanceMessages.push(
+        `⚠️ Warning: Simulator is in ${simulator.state} state. Boot the simulator for optimal functionality: simctl-boot ${udid}`
+      );
+    }
+    if (simulator.isAvailable === false) {
+      guidanceMessages.push(
+        `⚠️ Warning: Simulator is marked as unavailable. This may cause issues with operations.`
+      );
+    }
+
+    const responseData = {
+      success,
+      udid,
+      bundleId,
+      action,
+      service,
+      simulatorInfo: {
+        name: simulator.name,
+        udid: simulator.udid,
+        state: simulator.state,
+        isAvailable: simulator.isAvailable,
+      },
+      // LLM optimization: audit trail entry for permission tracking
+      auditEntry: {
+        timestamp: new Date().toISOString(),
+        action,
+        service,
+        bundleId,
+        success,
+        // Context for test scenario tracking
+        testContext:
+          scenario || step !== undefined
+            ? {
+                scenario: scenario || undefined,
+                step: step !== undefined ? step : undefined,
+              }
+            : undefined,
+      },
+      command,
+      output: result.stdout,
+      error: result.stderr || undefined,
+      exitCode: result.code,
+      guidance: guidanceMessages.filter(Boolean),
+    };
+
+    const responseText = JSON.stringify(responseData, null, 2);
+
+    return {
+      content: [
+        {
+          type: 'text' as const,
+          text: responseText,
+        },
+      ],
+      isError: !success,
+    };
+  } catch (error) {
+    if (error instanceof McpError) {
+      throw error;
+    }
+    throw new McpError(
+      ErrorCode.InternalError,
+      `simctl-privacy failed: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
+
+export const SIMCTL_PRIVACY_DOCS = `
+# simctl-privacy
+
+Manage app privacy permissions on simulators with structured audit trail support.
+
+## What it does
+
+Grants, revokes, or resets privacy permissions for apps without requiring user interaction.
+Supports audit trail tracking for test scenario documentation and verification.
+
+## Parameters
+
+- **udid** (string, required): Simulator UDID (from simctl-list)
+- **bundleId** (string, required): App bundle ID (e.g., com.example.MyApp)
+- **action** (string, required): "grant", "revoke", or "reset"
+- **service** (string, required): Permission service to modify
+- **scenario** (string, optional): Test scenario name for audit trail
+- **step** (number, optional): Step number in test scenario
+
+## Supported Services
+
+- camera, microphone, location, contacts, photos
+- calendar, health, reminders, motion, keyboard
+- mediaLibrary, calls, siri, all (for reset)
+
+## LLM Optimization
+
+The **scenario** and **step** parameters enable structured permission audit trail tracking.
+This allows AI agents to track permission state changes across test scenarios and verify
+permissions at each step of a test workflow.
+
+## Returns
+
+JSON response with:
+- Permission modification status
+- Audit entry with timestamp and test context
+- Guidance for verification and next steps
+
+## Examples
+
+### Grant camera permission
+\`\`\`typescript
+await simctlPrivacyTool({
+  udid: 'device-123',
+  bundleId: 'com.example.MyApp',
+  action: 'grant',
+  service: 'camera'
+})
+\`\`\`
+
+### Revoke microphone permission
+\`\`\`typescript
+await simctlPrivacyTool({
+  udid: 'device-123',
+  bundleId: 'com.example.MyApp',
+  action: 'revoke',
+  service: 'microphone'
+})
+\`\`\`
+
+### Reset all permissions
+\`\`\`typescript
+await simctlPrivacyTool({
+  udid: 'device-123',
+  bundleId: 'com.example.MyApp',
+  action: 'reset',
+  service: 'all'
+})
+\`\`\`
+
+### Grant with audit trail tracking
+\`\`\`typescript
+await simctlPrivacyTool({
+  udid: 'device-123',
+  bundleId: 'com.example.MyApp',
+  action: 'grant',
+  service: 'location',
+  scenario: 'LocationTest',
+  step: 1
+})
+\`\`\`
+
+## Common Use Cases
+
+1. **Permission testing**: Verify app behavior with different permission states
+2. **Onboarding flows**: Test permission request flows without manual interaction
+3. **Denied permission handling**: Test app behavior when permissions are denied
+4. **Permission combinations**: Test apps with various permission combinations
+5. **Audit trail**: Track permission changes across automated test scenarios
+
+## Important Notes
+
+- **No user prompts**: Permissions are changed without showing system alerts
+- **Immediate effect**: Changes take effect immediately for running apps
+- **App restart**: Some permissions may require app restart to take effect
+- **Reset behavior**: "reset" with "all" service clears all permissions
+- **Audit trail**: scenario/step parameters create structured test documentation
+
+## Error Handling
+
+- **App not installed**: Error if app is not installed on simulator
+- **Invalid service**: Error if service name is not recognized
+- **Invalid action**: Error if action is not "grant", "revoke", or "reset"
+- **Invalid bundle ID**: Validates bundle ID format (must contain '.')
+
+## Testing Workflow
+
+1. **Reset permissions**: Start with clean slate
+2. **Grant permission**: \`simctl-privacy <udid> <bundleId> grant camera scenario:"CameraTest" step:1\`
+3. **Launch app**: \`simctl-launch <udid> <bundleId>\`
+4. **Test feature**: Use camera feature in app
+5. **Take screenshot**: \`simctl-io <udid> screenshot\` to verify UI
+6. **Revoke permission**: Test denied permission handling
+7. **Verify behavior**: Screenshot and check error handling
+
+## Permission Testing Strategies
+
+- **Happy path**: Grant all permissions, test full functionality
+- **Denial path**: Deny permissions, verify error handling
+- **Mixed state**: Some granted, some denied, test partial functionality
+- **Reset testing**: Test permission request flows from clean state
+- **Background permissions**: Test location "always" vs "when in use"
+
+## Audit Trail Usage
+
+The auditEntry in the response includes:
+- timestamp: When permission was changed
+- action, service, bundleId: What was changed
+- success: Whether change succeeded
+- testContext: scenario and step for test tracking
+
+This enables agents to maintain a complete history of permission changes during testing.
+`;
+

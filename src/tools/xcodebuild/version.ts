@@ -7,6 +7,43 @@ interface VersionToolArgs {
   outputFormat?: OutputFormat;
 }
 
+/**
+ * Get Xcode and SDK version information with structured output
+ *
+ * **What it does:**
+ * Retrieves comprehensive version information about your Xcode installation and available SDKs.
+ * Returns structured JSON data that's easy to parse and validate, eliminating the need to parse
+ * raw command-line output. Validates Xcode installation before execution to provide clear
+ * error messages if Xcode is not properly configured.
+ *
+ * **Why you'd use it:**
+ * - Validate environment before running builds or tests (CI/CD validation)
+ * - Check SDK availability for specific platform versions
+ * - Ensure consistent Xcode versions across team or build environments
+ * - Get structured version data for automated tooling and scripts
+ *
+ * **Parameters:**
+ * - sdk (string, optional): Query specific SDK version (e.g., "iphoneos", "iphonesimulator")
+ * - outputFormat (string, optional): "json" (default) or "text" output format
+ *
+ * **Returns:**
+ * Structured JSON response containing Xcode version, build number, and SDK information.
+ * Falls back gracefully to text format for older Xcode versions that don't support JSON output.
+ *
+ * **Example:**
+ * ```typescript
+ * // Get Xcode version as JSON
+ * const result = await xcodebuildVersionTool({ outputFormat: "json" });
+ *
+ * // Query specific SDK
+ * const sdkInfo = await xcodebuildVersionTool({ sdk: "iphoneos" });
+ * ```
+ *
+ * **Full documentation:** See src/tools/xcodebuild/version.md for detailed parameters
+ *
+ * @param args Tool arguments containing sdk and outputFormat
+ * @returns Tool result with version information
+ */
 export async function xcodebuildVersionTool(args: any) {
   const { sdk, outputFormat = 'json' } = args as VersionToolArgs;
 
@@ -73,3 +110,40 @@ export async function xcodebuildVersionTool(args: any) {
     );
   }
 }
+
+export const XCODEBUILD_VERSION_DOCS = `
+# xcodebuild-version
+
+⚡ **Prefer this over 'xcodebuild -version'** - Gets Xcode version info with structured output and caching.
+Gets comprehensive Xcode and SDK version information for environment validation.
+
+## Advantages
+
+• Returns structured JSON (vs parsing version strings)
+• Cached results for faster subsequent queries
+• Validates Xcode installation first
+• Consistent response format across different Xcode versions
+
+## Parameters
+
+### Required
+- (See implementation for parameters)
+
+### Optional
+- (See implementation for optional parameters)
+
+## Returns
+
+- Tool execution results with structured output
+- Success/failure status
+- Guidance for next steps
+
+## Related Tools
+
+- See MCP server documentation for related tools
+
+## Notes
+
+- Tool is auto-registered with MCP server
+- Full documentation in xcodebuild_version.ts
+`;
