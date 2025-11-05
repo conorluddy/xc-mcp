@@ -9,14 +9,19 @@
 
 ## 🎯 Massive Toolkit, Minimal Tokens
 
-**51 specialized iOS development tools consuming just ~3,000 tokens** — that's 60 tokens per tool on average.
+**51 specialized iOS development tools consuming just ~30,000 tokens** — that's ~590 tokens per tool on average.
 
-Traditional MCP servers bloat agent context with verbose tool descriptions. XC-MCP inverts this with **progressive disclosure via RTFM**: ultra-minimal tool descriptions (~1 sentence each) paired with comprehensive on-demand documentation across 8 organized categories. Agents discover tools efficiently, access full docs when needed, and preserve context budget for actual work.
+XC-MCP achieves extreme token efficiency through **progressive disclosure via RTFM**: ultra-minimal tool descriptions (10 words max) and parameter schemas with RTFM references. Full comprehensive documentation is available on-demand across 8 organized categories.
 
-**Token efficiency breakthrough:**
-- Tool discovery: ~3,000 tokens (51 tools)
-- Traditional approach: ~15,000 tokens (51 tools × 300 tokens/tool)
-- **Savings: 80% reduction in agent context overhead**
+**Token efficiency vs traditional verbose MCP servers:**
+- **XC-MCP:** ~30k tokens for 51 tools (descriptions + schemas)
+- **Traditional:** ~50k+ tokens for 51 tools (verbose descriptions + verbose schemas)
+- **Savings: 40% reduction in MCP tool overhead**
+
+**What's optimized:**
+- Tool descriptions: 10 words max + "Use rtfm for details"
+- Parameter descriptions: Tool-specific RTFM references
+- Full docs: Available via `rtfm({ toolName: "tool-name" })` on demand
 
 ---
 

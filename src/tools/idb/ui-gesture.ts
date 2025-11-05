@@ -496,31 +496,80 @@ function formatGuidance(
 export const IDB_UI_GESTURE_DOCS = `
 # idb-ui-gesture
 
-👆 Perform gestures and hardware button presses
-Operations:
-- swipe: Swipe gesture in direction or custom path
-- button: Press hardware button (HOME, LOCK, SIRI, etc.)
+👆 **Perform gestures and hardware button presses** - swipes, scrolls, and device controls for navigation
+
+## What it does
+
+Executes swipe gestures (directional or custom paths) and hardware button presses on iOS targets. Supports standard swipe directions (up, down, left, right) with automatic screen-relative path calculation using configurable profiles (flick, swipe, drag), custom swipe paths with precise start/end coordinates, and hardware button simulation (HOME, LOCK, SIRI, SCREENSHOT, APP_SWITCH). Automatically validates velocity to ensure iOS recognizes gestures as swipes (>6000 px/sec). Validates coordinates against device bounds and provides semantic action tracking.
+
+## Why you'd use it
+
+- Automate scroll and navigation gestures - swipe to reveal content, dismiss modals, page through carousels
+- Use optimized swipe profiles for different UIs - flick for fast page changes, swipe for standard scrolling, drag for slow interactions
+- Test hardware button interactions without physical device access - home button, lock, app switching
+- Execute precise custom swipe paths for complex gesture-based UIs (drawing, map navigation)
+- Track gesture-based test scenarios with semantic metadata (actionName, expectedOutcome)
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
+- **operation** (string): "swipe" | "button"
+
+### Swipe operation parameters
+- **direction** (string): "up" | "down" | "left" | "right" - auto-calculates screen-relative path
+- **profile** (string, default: "standard"): "standard" | "flick" | "gentle" - gesture profile
+- **startX, startY, endX, endY** (numbers): Precise POINT coordinates for custom swipe path
+- **duration** (number): Swipe duration in SECONDS (e.g., 0.20 for 200ms) - uses profile default if omitted
+
+### Button operation parameters
+- **buttonType** (string): "HOME" | "LOCK" | "SIDE_BUTTON" | "APPLE_PAY" | "SIRI" | "SCREENSHOT" | "APP_SWITCH"
 
 ### Optional
-- (See implementation for optional parameters)
+- **udid** (string): Target identifier - auto-detects if omitted
+- **actionName** (string): Semantic action name (e.g., "Scroll to Bottom")
+- **expectedOutcome** (string): Expected result (e.g., "Reveal footer content")
+
+## Swipe Profiles (Empirically Tested)
+
+- **standard**: Default balance (75% distance, 200ms, 1475 points/sec) - perfect for general navigation
+- **flick**: Fast page changes (85% distance, 120ms, 2775 points/sec) - use for carousel/rapid navigation
+- **gentle**: Slow scrolling (50% distance, 300ms, 653 points/sec) - reliable but near-minimum threshold
+
+All coordinates in POINT space (393×852 for iPhone 16 Pro), NOT pixel space. All profiles tested and verified working on iOS 18.5 home screen.
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+Gesture execution status with operation details (direction/button, path coordinates for swipes), duration, velocity info, gesture context metadata, error details if failed, and verification guidance.
+
+## Examples
+
+### Standard swipe up (default profile)
+\`\`\`typescript
+const result = await idbUiGestureTool({
+  operation: 'swipe',
+  direction: 'up',
+  actionName: 'Scroll to Bottom',
+  expectedOutcome: 'Reveal footer content'
+});
+\`\`\`
+
+### Flick swipe for fast page navigation
+\`\`\`typescript
+await idbUiGestureTool({
+  operation: 'swipe',
+  direction: 'left',
+  profile: 'flick',
+  actionName: 'Go to Next Page'
+});
+\`\`\`
+
+### Press home button
+\`\`\`typescript
+await idbUiGestureTool({ operation: 'button', buttonType: 'HOME' });
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
-
-## Notes
-
-- Tool is auto-registered with MCP server
-- Full documentation in idb_ui_gesture.ts
+- idb-ui-tap: For precise element tapping
+- idb-ui-describe: Find element coordinates
 `;

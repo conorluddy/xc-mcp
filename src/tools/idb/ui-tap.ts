@@ -349,31 +349,58 @@ function formatGuidance(
 export const IDB_UI_TAP_DOCS = `
 # idb-ui-tap
 
-🎯 Tap at coordinates on iOS simulator or physical device
-Coordinate System:
-- Absolute device coordinates (0,0 = top-left)
-- Use applyScreenshotScale for screenshot-based coordinates
+🎯 **Tap at coordinates on iOS screen** - core UI automation primitive with screenshot coordinate transformation
+
+## What it does
+
+Sends precise tap events to iOS targets at specified screen coordinates with automatic coordinate transformation from screenshot space to device space. Supports single tap, double tap, and long press gestures. Validates coordinates against device screen bounds and provides semantic action tracking for test documentation. Works on both simulators and physical devices over USB/WiFi.
+
+## Why you'd use it
+
+- Automate UI interactions from screenshot analysis - tap elements identified visually
+- Transform screenshot coordinates automatically when screenshots are resized for token efficiency
+- Validate tap coordinates against device bounds before execution to prevent out-of-range errors
+- Track test scenarios with semantic metadata (actionName, expectedOutcome, testScenario, step)
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
+- **x** (number): X coordinate (device coords or screenshot coords with applyScreenshotScale)
+- **y** (number): Y coordinate (device coords or screenshot coords with applyScreenshotScale)
 
 ### Optional
-- (See implementation for optional parameters)
+- **udid** (string): Target identifier - auto-detects if omitted
+- **numberOfTaps** (number, default: 1): Number of taps (set 2 for double-tap)
+- **duration** (number): Long press duration in milliseconds
+- **applyScreenshotScale** (boolean): Transform screenshot coords to device coords
+- **screenshotScaleX** (number): Scale factor for X axis from screenshot-inline
+- **screenshotScaleY** (number): Scale factor for Y axis from screenshot-inline
+- **actionName** (string): Semantic action name (e.g., "Login Button Tap")
+- **screenContext** (string): Screen name for context (e.g., "LoginScreen")
+- **expectedOutcome** (string): Expected result (e.g., "Navigate to HomeScreen")
+- **testScenario** (string): Test scenario name (e.g., "Happy Path Login")
+- **step** (number): Step number in test workflow
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+Tap execution status with transformed coordinates, input coordinate details (if transformed), action context metadata for test tracking, error details if failed, and verification guidance.
+
+## Examples
+
+### Tap from screenshot coordinates (auto-transformed)
+\`\`\`typescript
+const result = await idbUiTapTool({
+  x: 150, y: 300,
+  applyScreenshotScale: true,
+  screenshotScaleX: 2.0, screenshotScaleY: 2.0,
+  actionName: "Login Button Tap",
+  expectedOutcome: "Navigate to HomeScreen"
+});
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
-
-## Notes
-
-- Tool is auto-registered with MCP server
-- Full documentation in idb_ui_tap.ts
+- idb-ui-describe: Discover tappable elements and their coordinates
+- screenshot: Capture screenshot to identify tap targets
+- idb-ui-gesture: For swipes and hardware buttons
 `;

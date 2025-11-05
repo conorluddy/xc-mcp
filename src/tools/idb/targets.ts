@@ -325,31 +325,53 @@ async function executeFocusOperation(udid: string) {
 export const IDB_TARGETS_DOCS = `
 # idb-targets
 
-Query and manage iOS targets (simulators + devices)
-Operations:
-- list: Show available targets with filters
-- describe: Get detailed target information
+**Query and manage iOS targets** - discover simulators and physical devices available for testing
+
+## What it does
+
+Provides discovery and management for all iOS targets (simulators and devices) connected via IDB. Lists available targets with filtering by state (booted/shutdown) and type (device/simulator), retrieves detailed target metadata including screen dimensions for coordinate validation, and focuses simulator windows for interactive testing. Uses intelligent caching (IDBTargetCache) to avoid expensive IDB calls.
+
+## Why you'd use it
+
+- Discover available targets before starting automation workflows - no manual UDID lookup required
+- Filter booted targets for immediate testing vs. shutdown targets that need activation
+- Get screen dimensions for coordinate transformation and tap validation in UI automation
+- Focus simulator windows programmatically during multi-target test execution
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
+- **operation** (string): "list" | "describe" | "focus"
 
-### Optional
-- (See implementation for optional parameters)
+### Operation-specific parameters
+- **udid** (string, required for describe/focus): Target identifier
+- **state** (string, optional for list): "Booted" | "Shutdown" - filter by target state
+- **type** (string, optional for list): "device" | "simulator" - filter by target type
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+Structured target data with success status, summary counts, target arrays (booted/shutdown), usage statistics (last used time, successful operations count), cache diagnostics, and actionable guidance for next steps in automation workflow.
+
+## Examples
+
+### List all booted targets
+\`\`\`typescript
+const result = await idbTargetsTool({
+  operation: 'list',
+  state: 'Booted'
+});
+\`\`\`
+
+### Get detailed target info
+\`\`\`typescript
+const details = await idbTargetsTool({
+  operation: 'describe',
+  udid: 'ABC-123-DEF'
+});
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
-
-## Notes
-
-- Tool is auto-registered with MCP server
-- Full documentation in idb_targets.ts
+- idb-connect: Establish companion connection to target
+- idb-list-apps: List apps on target
 `;

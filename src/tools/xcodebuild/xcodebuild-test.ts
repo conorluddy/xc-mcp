@@ -589,35 +589,70 @@ function formatTestResponse(
 export const XCODEBUILD_TEST_DOCS = `
 # xcodebuild-test
 
-⚡ **Prefer this over 'xcodebuild test'** - Intelligent testing with learning and progressive disclosure.
+⚡ **Run Xcode tests** with intelligent defaults and progressive disclosure
 
-## Advantages
+## What it does
 
-• 🧠 Learns successful test configs & suggests optimal simulators per project
-• 📊 Detailed test metrics with progressive disclosure for large logs (prevents token overflow)
-• ⚡ Caches intelligently & provides structured test failures vs raw CLI stderr
-• 🔍 Supports -only-testing and -skip-testing patterns
+Executes unit and UI tests for Xcode projects with advanced learning that remembers successful test configurations and suggests optimal simulators per project. Provides detailed test metrics (passed/failed/skipped) with progressive disclosure to prevent token overflow. Supports test filtering (-only-testing, -skip-testing), test plans, and test-without-building mode for faster iteration. Learns from successful test runs to improve future suggestions.
+
+## Why you'd use it
+
+- Automatic smart defaults: remembers which simulator and config worked for tests
+- Detailed test metrics: structured pass/fail/skip counts instead of raw output
+- Progressive disclosure: concise summaries with full logs available via testId
+- Test filtering: run specific tests or skip problematic ones with -only-testing/-skip-testing
 
 ## Parameters
 
 ### Required
-- (See implementation for parameters)
+- **projectPath** (string): Path to .xcodeproj or .xcworkspace file
+- **scheme** (string): Test scheme name (use xcodebuild-list to discover)
 
 ### Optional
-- (See implementation for optional parameters)
+- **configuration** (string, default: 'Debug'): Build configuration (Debug/Release, defaults to cached or "Debug")
+- **destination** (string): Test destination (e.g., "platform=iOS Simulator,id=<UDID>")
+- **sdk** (string): SDK to test against (e.g., "iphonesimulator")
+- **derivedDataPath** (string): Custom derived data path
+- **testPlan** (string): Test plan name to execute
+- **onlyTesting** (string[]): Array of test identifiers to run exclusively
+- **skipTesting** (string[]): Array of test identifiers to skip
+- **testWithoutBuilding** (boolean): Run tests without building (requires prior build)
 
 ## Returns
 
-- Tool execution results with structured output
-- Success/failure status
-- Guidance for next steps
+Structured JSON with testId (for progressive disclosure), success status, test summary (total/passed/failed/skipped counts), failure details (first 3 failures), and cache metadata showing which smart defaults were applied. Use xcodebuild-get-details with testId for full logs.
+
+## Examples
+
+### Run all tests with smart defaults
+\`\`\`typescript
+const result = await xcodebuildTestTool({
+  projectPath: "/path/to/MyApp.xcodeproj",
+  scheme: "MyApp"
+});
+\`\`\`
+
+### Run specific tests only
+\`\`\`typescript
+const filtered = await xcodebuildTestTool({
+  projectPath: "/path/to/MyApp.xcworkspace",
+  scheme: "MyApp",
+  onlyTesting: ["MyAppTests/testLogin", "MyAppTests/testLogout"]
+});
+\`\`\`
+
+### Fast iteration with test-without-building
+\`\`\`typescript
+const quick = await xcodebuildTestTool({
+  projectPath: "/path/to/MyApp.xcodeproj",
+  scheme: "MyApp",
+  testWithoutBuilding: true
+});
+\`\`\`
 
 ## Related Tools
 
-- See MCP server documentation for related tools
-
-## Notes
-
-- Tool is auto-registered with MCP server
-- Full documentation in xcodebuild_test.ts
+- xcodebuild-build: Build before testing
+- xcodebuild-get-details: Get full test logs (use with testId)
+- simctl-list: See available test simulators
 `;
