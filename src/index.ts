@@ -67,7 +67,7 @@ class XcodeCLIMCPServer {
     this.server = new McpServer(
       {
         name: 'xc-mcp',
-        version: '1.2.0',
+        version: '1.3.0',
         description:
           'Intelligent iOS development MCP server providing advanced Xcode and simulator control. ' +
           'Features 51 specialized tools across 8 categories: build management, testing, simulator lifecycle, ' +
@@ -94,8 +94,6 @@ class XcodeCLIMCPServer {
       'xcodebuild-version',
       {
         description: `⚡ Get Xcode version info with structured output and caching.
-
-Advantages: Structured JSON response, intelligent caching, Xcode validation, consistent formatting across versions.
 
 📖 Use rtfm with toolName: "xcodebuild-version" for full documentation.`,
         inputSchema: {
@@ -125,8 +123,6 @@ Advantages: Structured JSON response, intelligent caching, Xcode validation, con
       {
         description: `⚡ List project targets, schemes, and configurations with intelligent caching.
 
-Advantages: Clean JSON output, 1-hour caching to avoid re-runs, Xcode validation, consistent formatting.
-
 📖 Use rtfm with toolName: "xcodebuild-list" for full documentation.`,
         inputSchema: {
           projectPath: z.string().describe('Path to .xcodeproj or .xcworkspace file'),
@@ -155,8 +151,6 @@ Advantages: Clean JSON output, 1-hour caching to avoid re-runs, Xcode validation
       {
         description: `⚡ Show available SDKs for iOS, macOS, watchOS, and tvOS with caching.
 
-Advantages: Structured JSON output, smart caching for SDK queries, consistent error handling, agent-friendly format.
-
 📖 Use rtfm with toolName: "xcodebuild-showsdks" for full documentation.`,
         inputSchema: {
           outputFormat: z
@@ -183,8 +177,6 @@ Advantages: Structured JSON output, smart caching for SDK queries, consistent er
       'xcodebuild-build',
       {
         description: `⚡ Build Xcode projects with intelligent caching and performance tracking.
-
-Advantages: Learns successful configs, tracks build performance, progressive disclosure for large logs, structured error output.
 
 📖 Use rtfm with toolName: "xcodebuild-build" for full documentation.`,
         inputSchema: {
@@ -226,8 +218,6 @@ Advantages: Learns successful configs, tracks build performance, progressive dis
       {
         description: `⚡ Clean build artifacts with validation and structured output.
 
-Advantages: Pre-validates project and Xcode, structured JSON responses, better error messages, consistent formatting.
-
 📖 Use rtfm with toolName: "xcodebuild-clean" for full documentation.`,
         inputSchema: {
           projectPath: z.string().describe('Path to .xcodeproj or .xcworkspace file'),
@@ -253,8 +243,6 @@ Advantages: Pre-validates project and Xcode, structured JSON responses, better e
       'xcodebuild-test',
       {
         description: `⚡ Run tests with intelligent caching and progressive disclosure.
-
-Advantages: Learns test configs, detailed metrics with token-safe disclosure, structured failures, supports test filtering patterns.
 
 📖 Use rtfm with toolName: "xcodebuild-test" for full documentation.`,
         inputSchema: {
@@ -340,8 +328,6 @@ Advantages: Learns test configs, detailed metrics with token-safe disclosure, st
       {
         description: `⚡ List simulators with progressive disclosure to prevent token overflow.
 
-Advantages: Token-safe summaries with cache IDs, shows booted/recent devices first, 1-hour caching with usage tracking.
-
 📖 Use rtfm with toolName: "simctl-list" for full documentation.`,
         inputSchema: {
           deviceType: z
@@ -385,8 +371,6 @@ Advantages: Token-safe summaries with cache IDs, shows booted/recent devices fir
       {
         description: `Get detailed information from cached simctl-list results.
 
-Advantages: Progressive disclosure for large device lists, filtering by type/runtime, configurable device limits.
-
 📖 Use rtfm with toolName: "simctl-get-details" for full documentation.`,
         inputSchema: {
           cacheId: z.string().describe('Cache ID from previous simctl-list call'),
@@ -416,8 +400,6 @@ Advantages: Progressive disclosure for large device lists, filtering by type/run
       'simctl-boot',
       {
         description: `⚡ Boot simulator with performance tracking and learning.
-
-Advantages: Tracks boot times and device performance, learns which devices work best per project, intelligent wait management, clear error handling.
 
 📖 Use rtfm with toolName: "simctl-boot" for full documentation.`,
         inputSchema: {
@@ -453,8 +435,6 @@ Advantages: Tracks boot times and device performance, learns which devices work 
       {
         description: `⚡ Shutdown simulator with intelligent device selection.
 
-Advantages: Smart targeting ("booted", "all" options), better error handling, state tracking for recommendations, batch operations support.
-
 📖 Use rtfm with toolName: "simctl-shutdown" for full documentation.`,
         inputSchema: {
           deviceId: z
@@ -480,8 +460,6 @@ Advantages: Smart targeting ("booted", "all" options), better error handling, st
       'simctl-suggest',
       {
         description: `🧠 Recommend best simulators based on project history, performance, and popularity.
-
-Advantages: Project-aware preferences, performance metrics tracking, popularity ranking, transparent scoring, optional auto-boot.
 
 📖 Use rtfm with toolName: "simctl-suggest" for full documentation.`,
         inputSchema: {
@@ -519,8 +497,6 @@ Advantages: Project-aware preferences, performance metrics tracking, popularity 
       {
         description: `⚙️ Create new simulator devices dynamically.
 
-Advantages: On-the-fly provisioning, support for all device types, runtime version control, CI/CD friendly.
-
 📖 Use rtfm with toolName: "simctl-create" for full documentation.`,
         inputSchema: {
           name: z.string().describe('Display name for the new simulator (e.g., "MyTestDevice")'),
@@ -552,8 +528,6 @@ Advantages: On-the-fly provisioning, support for all device types, runtime versi
       {
         description: `🗑️ Permanently delete a simulator device.
 
-Advantages: Free disk space, fast operation, safety checks prevent deleting booted devices. Warning: Cannot be undone.
-
 📖 Use rtfm with toolName: "simctl-delete" for full documentation.`,
         inputSchema: {
           deviceId: z.string().describe('Device UDID (from simctl-list)'),
@@ -577,8 +551,6 @@ Advantages: Free disk space, fast operation, safety checks prevent deleting boot
       'simctl-erase',
       {
         description: `🔄 Reset simulator to factory settings.
-
-Advantages: Clean state without deletion, removes all apps and data, perfect for fresh testing, device preserved for reuse.
 
 📖 Use rtfm with toolName: "simctl-erase" for full documentation.`,
         inputSchema: {
@@ -605,8 +577,6 @@ Advantages: Clean state without deletion, removes all apps and data, perfect for
       {
         description: `📋 Clone an existing simulator.
 
-Advantages: Create backups/snapshots, testing variants, state preservation with all apps and data, quick setup vs recreating.
-
 📖 Use rtfm with toolName: "simctl-clone" for full documentation.`,
         inputSchema: {
           deviceId: z.string().describe('Source device UDID (from simctl-list)'),
@@ -632,8 +602,6 @@ Advantages: Create backups/snapshots, testing variants, state preservation with 
       {
         description: `✏️ Change a simulator's display name.
 
-Advantages: Better organization and identification, descriptive names for test devices, preserves UDID and all data.
-
 📖 Use rtfm with toolName: "simctl-rename" for full documentation.`,
         inputSchema: {
           deviceId: z.string().describe('Device UDID (from simctl-list)'),
@@ -658,8 +626,6 @@ Advantages: Better organization and identification, descriptive names for test d
       'simctl-health-check',
       {
         description: `🏥 Comprehensive environment validation for iOS simulator development.
-
-Validates: Xcode CLI tools, simctl availability, simulators, runtimes, disk space. Returns diagnostics and actionable guidance.
 
 📖 Use rtfm with toolName: "simctl-health-check" for full documentation.`,
         inputSchema: {},
@@ -1625,14 +1591,21 @@ Returns state, cache directory, disk usage, timestamps, recommendations, health 
     this.server.registerTool(
       'rtfm',
       {
-        description: `📖 Read The Fuckin Manual - Get full documentation for any MCP tool.
+        description: `📖 Get full documentation for any tool or browse by category.
 
-Returns comprehensive markdown documentation including parameters, examples, and usage guidance. Use this to get detailed information about any of the 51 tools in this MCP server.`,
+📖 Use rtfm with toolName: "rtfm" for full documentation.`,
         inputSchema: {
           toolName: z
             .string()
+            .optional()
             .describe(
               'Name of the tool to get documentation for (e.g., "xcodebuild-build", "simctl-boot")'
+            ),
+          categoryName: z
+            .string()
+            .optional()
+            .describe(
+              'Browse tools by category (e.g., "build", "simulator", "idb", "cache", "testing")'
             ),
         },
       },

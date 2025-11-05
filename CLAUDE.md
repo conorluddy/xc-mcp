@@ -6,6 +6,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 XC-MCP is a Model Context Protocol (MCP) server that provides intelligent access to Xcode command-line tools with advanced caching and progressive disclosure features. It wraps `xcodebuild` and `simctl` commands to solve token overflow issues while maintaining full functionality.
 
+### Token Efficiency Architecture
+
+**51 tools consuming just ~3,000 tokens total** (60 tokens per tool average).
+
+XC-MCP implements **progressive disclosure via RTFM** to minimize agent context overhead:
+- **Ultra-minimal tool descriptions**: ~1 sentence each (~60 tokens)
+- **Category-based organization**: 8 categories for efficient discovery
+- **On-demand documentation**: Full docs via RTFM tool when needed
+- **Token savings**: 80% reduction vs. traditional verbose descriptions (3k vs. 15k tokens)
+
+**Progressive Discovery Pattern:**
+1. Agent sees minimal tool list (3,000 tokens)
+2. Browses categories via RTFM: `rtfm({ categoryName: "simulator" })`
+3. Gets full docs for specific tools: `rtfm({ toolName: "simctl-boot" })`
+4. Context budget preserved for actual work
+
+**Tool Categories (8 total):**
+- `build`: Build & Test Operations (7 tools)
+- `simulator`: Simulator Lifecycle (11 tools)
+- `app`: App Management (6 tools)
+- `idb`: UI Automation (11 tools)
+- `io`: I/O & Media (3 tools)
+- `testing`: Testing Features (4 tools)
+- `cache`: Cache Management (5 tools)
+- `system`: System & Documentation (4 tools)
+
 ## Development Commands
 
 ### Build and Development

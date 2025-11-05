@@ -384,6 +384,132 @@ rtfm({ toolName: "simctl" })  // Shows simctl-* suggestions
 `;
 
 /**
+ * Tool categories for progressive discovery
+ */
+export const TOOL_CATEGORIES: Record<string, string[]> = {
+  build: [
+    'xcodebuild-version',
+    'xcodebuild-list',
+    'xcodebuild-showsdks',
+    'xcodebuild-build',
+    'xcodebuild-clean',
+    'xcodebuild-test',
+    'xcodebuild-get-details',
+  ],
+  simulator: [
+    'simctl-list',
+    'simctl-get-details',
+    'simctl-boot',
+    'simctl-shutdown',
+    'simctl-suggest',
+    'simctl-create',
+    'simctl-delete',
+    'simctl-erase',
+    'simctl-clone',
+    'simctl-rename',
+    'simctl-health-check',
+  ],
+  app: [
+    'simctl-install',
+    'simctl-uninstall',
+    'simctl-get-app-container',
+    'simctl-launch',
+    'simctl-terminate',
+    'simctl-openurl',
+  ],
+  idb: [
+    'idb-targets',
+    'idb-connect',
+    'idb-ui-tap',
+    'idb-ui-input',
+    'idb-ui-gesture',
+    'idb-ui-describe',
+    'idb-list-apps',
+    'idb-install',
+    'idb-launch',
+    'idb-terminate',
+    'idb-uninstall',
+  ],
+  io: ['simctl-io', 'simctl-addmedia', 'screenshot'],
+  testing: ['simctl-privacy', 'simctl-push', 'simctl-pbcopy', 'simctl-status-bar'],
+  cache: [
+    'list-cached-responses',
+    'cache-get-stats',
+    'cache-get-config',
+    'cache-set-config',
+    'cache-clear',
+  ],
+  system: [
+    'persistence-enable',
+    'persistence-disable',
+    'persistence-status',
+    'rtfm',
+    'screenshot-save',
+  ],
+};
+
+export const CATEGORY_DESCRIPTIONS: Record<string, { name: string; description: string }> = {
+  build: {
+    name: 'Build & Test Operations',
+    description: 'Build, test, and manage Xcode projects with intelligent defaults',
+  },
+  simulator: {
+    name: 'Simulator Lifecycle',
+    description: 'Create, boot, manage, and configure iOS simulators',
+  },
+  app: {
+    name: 'App Management',
+    description: 'Install, launch, and control apps on simulators',
+  },
+  idb: {
+    name: 'UI Automation',
+    description: 'Programmatic UI interaction via IDB (tap, input, gestures, accessibility)',
+  },
+  io: {
+    name: 'I/O & Media',
+    description: 'Screenshots, videos, and photo library management',
+  },
+  testing: {
+    name: 'Testing Features',
+    description: 'Advanced testing capabilities (permissions, push notifications, status bar)',
+  },
+  cache: {
+    name: 'Cache Management',
+    description: 'Monitor and configure progressive disclosure caching',
+  },
+  system: {
+    name: 'System & Documentation',
+    description: 'Persistence, documentation, and utility tools',
+  },
+};
+
+/**
+ * Get all tools in a category
+ */
+export function getToolsByCategory(categoryKey: string): string[] | undefined {
+  return TOOL_CATEGORIES[categoryKey];
+}
+
+/**
+ * Get category key for a tool name
+ */
+export function getCategoryForTool(toolName: string): string | undefined {
+  for (const [categoryKey, tools] of Object.entries(TOOL_CATEGORIES)) {
+    if (tools.includes(toolName)) {
+      return categoryKey;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Get all category keys
+ */
+export function getAllCategories(): string[] {
+  return Object.keys(TOOL_CATEGORIES);
+}
+
+/**
  * Map of tool names to their full documentation.
  * Tool names match the MCP tool registration names.
  */
