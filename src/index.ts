@@ -15,20 +15,10 @@ import { xcodebuildTestTool } from './tools/xcodebuild/xcodebuild-test.js';
 import { xcodebuildGetDetailsTool } from './tools/xcodebuild/get-details.js';
 import { simctlListTool } from './tools/simctl/list.js';
 import { simctlGetDetailsTool } from './tools/simctl/get-details.js';
-import { simctlBootTool } from './tools/simctl/boot.js';
-import { simctlShutdownTool } from './tools/simctl/shutdown.js';
+import { simctlDeviceTool } from './tools/simctl/device/index.js';
 import { simctlSuggestTool } from './tools/simctl/suggest.js';
-import { simctlCreateTool } from './tools/simctl/create.js';
-import { simctlDeleteTool } from './tools/simctl/delete.js';
-import { simctlEraseTool } from './tools/simctl/erase.js';
-import { simctlCloneTool } from './tools/simctl/clone.js';
-import { simctlRenameTool } from './tools/simctl/rename.js';
-import { simctlHealthCheckTool } from './tools/simctl/health-check.js';
-import { simctlInstallTool } from './tools/simctl/install.js';
-import { simctlUninstallTool } from './tools/simctl/uninstall.js';
+import { simctlAppTool } from './tools/simctl/app/index.js';
 import { simctlGetAppContainerTool } from './tools/simctl/get-app-container.js';
-import { simctlLaunchTool } from './tools/simctl/launch.js';
-import { simctlTerminateTool } from './tools/simctl/terminate.js';
 import { simctlOpenUrlTool } from './tools/simctl/openurl.js';
 import { simctlIoTool } from './tools/simctl/io.js';
 import { simctlAddmediaTool } from './tools/simctl/addmedia.js';
@@ -37,25 +27,16 @@ import { simctlPushTool } from './tools/simctl/push.js';
 import { simctlPbcopyTool } from './tools/simctl/pbcopy.js';
 import { simctlStatusBarTool } from './tools/simctl/status-bar.js';
 import { simctlScreenshotInlineTool } from './tools/simctl/screenshot-inline.js';
-import { idbTargetsTool } from './tools/idb/targets.js';
-import { idbConnectTool } from './tools/idb/connect.js';
+import { idbTargetsToolUnified } from './tools/idb/targets/index.js';
 import { idbUiTapTool } from './tools/idb/ui-tap.js';
 import { idbUiInputTool } from './tools/idb/ui-input.js';
 import { idbUiGestureTool } from './tools/idb/ui-gesture.js';
 import { idbUiDescribeTool } from './tools/idb/ui-describe.js';
 import { idbListAppsTool } from './tools/idb/list-apps.js';
-import { idbInstallTool } from './tools/idb/install.js';
-import { idbLaunchTool } from './tools/idb/launch.js';
-import { idbTerminateTool } from './tools/idb/terminate.js';
-import { idbUninstallTool } from './tools/idb/uninstall.js';
+import { idbAppTool } from './tools/idb/app/index.js';
 import { listCachedResponsesTool } from './tools/cache/list-cached.js';
-import { getCacheStatsTool } from './tools/cache/get-stats.js';
-import { setCacheConfigTool } from './tools/cache/set-config.js';
-import { clearCacheTool } from './tools/cache/clear.js';
-import { getCacheConfigTool } from './tools/cache/get-config.js';
-import { persistenceEnableTool } from './tools/persistence/enable.js';
-import { persistenceDisableTool } from './tools/persistence/disable.js';
-import { persistenceStatusTool } from './tools/persistence/status.js';
+import { cacheTool } from './tools/cache/index.js';
+import { persistenceTool } from './tools/persistence/index.js';
 import { getToolDocsTool } from './tools/get-tool-docs.js';
 import { debugWorkflowPrompt } from './tools/prompts/debug-workflow.js';
 import { validateXcodeInstallation } from './utils/validation.js';
@@ -67,7 +48,7 @@ class XcodeCLIMCPServer {
     this.server = new McpServer(
       {
         name: 'xc-mcp',
-        version: '1.3.2',
+        version: '2.0.0',
         description:
           'Wraps xcodebuild, simctl, and IDB with intelligent caching, for efficient iOS development. The RTFM tool can be called with any of the tool names to return further documentation if required. Tool descriptions are intentionally minimal to reduce MCP context usage.',
       },
