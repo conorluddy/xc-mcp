@@ -6,7 +6,6 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "build:mini": "tsc --project tsconfig.mini.json",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
     "test": "jest",
@@ -14,13 +13,11 @@
     "lint:fix": "eslint src/**/*.ts --fix",
     "format": "prettier --write src/**/*.ts",
     "format:check": "prettier --check src/**/*.ts",
-    "clean": "rm -rf dist dist-mini",
+    "clean": "rm -rf dist",
     "precommit": "lint-staged",
     "prepare": "husky",
     "prepublishOnly": "npm run clean && npm run build && npm test && npm run lint",
-    "postbuild": "chmod +x dist/index.js",
-    "publish:mini": "bash scripts/publish-mini.sh",
-    "publish:full": "npm publish"
+    "postbuild": "chmod +x dist/index.js"
   },
   "keywords": [
     "mcp",
