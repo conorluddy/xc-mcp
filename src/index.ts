@@ -8,7 +8,8 @@ import { z } from 'zod';
 // Import tool implementations
 import { xcodebuildVersionTool } from './tools/xcodebuild/version.js';
 import { xcodebuildListTool } from './tools/xcodebuild/list.js';
-import { xcodebuildShowSDKsTool } from './tools/xcodebuild/showsdks.js';
+// COMMENTED OUT (v2.0.0): xcodebuild-showsdks - static environment info, agents can use defaults
+// import { xcodebuildShowSDKsTool } from './tools/xcodebuild/showsdks.js';
 import { xcodebuildBuildTool } from './tools/xcodebuild/build.js';
 import { xcodebuildCleanTool } from './tools/xcodebuild/clean.js';
 import { xcodebuildTestTool } from './tools/xcodebuild/xcodebuild-test.js';
@@ -16,16 +17,21 @@ import { xcodebuildGetDetailsTool } from './tools/xcodebuild/get-details.js';
 import { simctlListTool } from './tools/simctl/list.js';
 import { simctlGetDetailsTool } from './tools/simctl/get-details.js';
 import { simctlDeviceTool } from './tools/simctl/device/index.js';
-import { simctlSuggestTool } from './tools/simctl/suggest.js';
+// COMMENTED OUT (v2.0.0): simctl-suggest - agents have explicit requirements, redundant with simctl-list
+// import { simctlSuggestTool } from './tools/simctl/suggest.js';
 import { simctlAppTool } from './tools/simctl/app/index.js';
 import { simctlGetAppContainerTool } from './tools/simctl/get-app-container.js';
 import { simctlOpenUrlTool } from './tools/simctl/openurl.js';
 import { simctlIoTool } from './tools/simctl/io.js';
-import { simctlAddmediaTool } from './tools/simctl/addmedia.js';
-import { simctlPrivacyTool } from './tools/simctl/privacy.js';
+// COMMENTED OUT (v2.0.0): simctl-addmedia - niche scenario for photo picker apps
+// import { simctlAddmediaTool } from './tools/simctl/addmedia.js';
+// COMMENTED OUT (v2.0.0): simctl-privacy - permission testing rarely needed in CI/automated testing
+// import { simctlPrivacyTool } from './tools/simctl/privacy.js';
 import { simctlPushTool } from './tools/simctl/push.js';
-import { simctlPbcopyTool } from './tools/simctl/pbcopy.js';
-import { simctlStatusBarTool } from './tools/simctl/status-bar.js';
+// COMMENTED OUT (v2.0.0): simctl-pbcopy - can type text instead via idb-ui-input, extremely niche
+// import { simctlPbcopyTool } from './tools/simctl/pbcopy.js';
+// COMMENTED OUT (v2.0.0): simctl-status-bar - cosmetic screenshot enhancement, not needed for app development
+// import { simctlStatusBarTool } from './tools/simctl/status-bar.js';
 import { simctlScreenshotInlineTool } from './tools/simctl/screenshot-inline.js';
 import { simctlHealthCheckTool } from './tools/simctl/health-check.js';
 import { idbTargetsRouter } from './tools/idb/targets/index.js';
@@ -35,7 +41,8 @@ import { idbUiGestureTool } from './tools/idb/ui-gesture.js';
 import { idbUiDescribeTool } from './tools/idb/ui-describe.js';
 import { idbListAppsTool } from './tools/idb/list-apps.js';
 import { idbAppTool } from './tools/idb/app/index.js';
-import { listCachedResponsesTool } from './tools/cache/list-cached.js';
+// COMMENTED OUT (v2.0.0): list-cached-responses - meta tool for debugging cache, not needed by agents
+// import { listCachedResponsesTool } from './tools/cache/list-cached.js';
 import { cacheTool } from './tools/cache/index.js';
 import { persistenceTool } from './tools/persistence/index.js';
 import { getToolDocsTool } from './tools/get-tool-docs.js';
@@ -114,27 +121,28 @@ class XcodeCLIMCPServer {
       }
     );
 
-    this.server.registerTool(
-      'xcodebuild-showsdks',
-      {
-        description: 'List available SDKs.',
-        inputSchema: {
-          outputFormat: z.enum(['json', 'text']).default('json'),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await xcodebuildShowSDKsTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
+    // COMMENTED OUT (v2.0.0): xcodebuild-showsdks
+    // this.server.registerTool(
+    //   'xcodebuild-showsdks',
+    //   {
+    //     description: 'List available SDKs.',
+    //     inputSchema: {
+    //       outputFormat: z.enum(['json', 'text']).default('json'),
+    //     },
+    //   },
+    //   async args => {
+    //     try {
+    //       await validateXcodeInstallation();
+    //       return await xcodebuildShowSDKsTool(args);
+    //     } catch (error) {
+    //       if (error instanceof McpError) throw error;
+    //       throw new McpError(
+    //         ErrorCode.InternalError,
+    //         `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+    //       );
+    //     }
+    //   }
+    // );
 
     this.server.registerTool(
       'xcodebuild-build',
@@ -332,30 +340,31 @@ class XcodeCLIMCPServer {
       }
     );
 
-    this.server.registerTool(
-      'simctl-suggest',
-      {
-        description: 'Recommend best simulators.',
-        inputSchema: {
-          projectPath: z.string().optional(),
-          deviceType: z.string().optional(),
-          maxSuggestions: z.number().default(4),
-          autoBootTopSuggestion: z.boolean().default(false),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlSuggestTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
+    // COMMENTED OUT (v2.0.0): simctl-suggest
+    // this.server.registerTool(
+    //   'simctl-suggest',
+    //   {
+    //     description: 'Recommend best simulators.',
+    //     inputSchema: {
+    //       projectPath: z.string().optional(),
+    //       deviceType: z.string().optional(),
+    //       maxSuggestions: z.number().default(4),
+    //       autoBootTopSuggestion: z.boolean().default(false),
+    //     },
+    //   },
+    //   async args => {
+    //     try {
+    //       await validateXcodeInstallation();
+    //       return await simctlSuggestTool(args);
+    //     } catch (error) {
+    //       if (error instanceof McpError) throw error;
+    //       throw new McpError(
+    //         ErrorCode.InternalError,
+    //         `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+    //       );
+    //     }
+    //   }
+    // );
 
     this.server.registerTool(
       'simctl-health-check',
@@ -483,56 +492,58 @@ class XcodeCLIMCPServer {
       }
     );
 
-    this.server.registerTool(
-      'simctl-addmedia',
-      {
-        description: 'Add media to photo library.',
-        inputSchema: {
-          udid: z.string(),
-          mediaPath: z.string(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlAddmediaTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
+    // COMMENTED OUT (v2.0.0): simctl-addmedia
+    // this.server.registerTool(
+    //   'simctl-addmedia',
+    //   {
+    //     description: 'Add media to photo library.',
+    //     inputSchema: {
+    //       udid: z.string(),
+    //       mediaPath: z.string(),
+    //     },
+    //   },
+    //   async args => {
+    //     try {
+    //       await validateXcodeInstallation();
+    //       return await simctlAddmediaTool(args);
+    //     } catch (error) {
+    //       if (error instanceof McpError) throw error;
+    //       throw new McpError(
+    //         ErrorCode.InternalError,
+    //         `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+    //       );
+    //     }
+    //   }
+    // );
 
     // Advanced Testing Tools
-    this.server.registerTool(
-      'simctl-privacy',
-      {
-        description: 'Manage app permissions.',
-        inputSchema: {
-          udid: z.string(),
-          bundleId: z.string(),
-          action: z.enum(['grant', 'revoke', 'reset']),
-          service: z.string(),
-          scenario: z.string().optional(),
-          step: z.number().optional(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlPrivacyTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
+    // COMMENTED OUT (v2.0.0): simctl-privacy
+    // this.server.registerTool(
+    //   'simctl-privacy',
+    //   {
+    //     description: 'Manage app permissions.',
+    //     inputSchema: {
+    //       udid: z.string(),
+    //       bundleId: z.string(),
+    //       action: z.enum(['grant', 'revoke', 'reset']),
+    //       service: z.string(),
+    //       scenario: z.string().optional(),
+    //       step: z.number().optional(),
+    //     },
+    //   },
+    //   async args => {
+    //     try {
+    //       await validateXcodeInstallation();
+    //       return await simctlPrivacyTool(args);
+    //     } catch (error) {
+    //       if (error instanceof McpError) throw error;
+    //       throw new McpError(
+    //         ErrorCode.InternalError,
+    //         `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+    //       );
+    //     }
+    //   }
+    // );
 
     this.server.registerTool(
       'simctl-push',
@@ -560,56 +571,58 @@ class XcodeCLIMCPServer {
       }
     );
 
-    this.server.registerTool(
-      'simctl-pbcopy',
-      {
-        description: 'Copy text to clipboard.',
-        inputSchema: {
-          udid: z.string(),
-          text: z.string(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlPbcopyTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
+    // COMMENTED OUT (v2.0.0): simctl-pbcopy
+    // this.server.registerTool(
+    //   'simctl-pbcopy',
+    //   {
+    //     description: 'Copy text to clipboard.',
+    //     inputSchema: {
+    //       udid: z.string(),
+    //       text: z.string(),
+    //     },
+    //   },
+    //   async args => {
+    //     try {
+    //       await validateXcodeInstallation();
+    //       return await simctlPbcopyTool(args);
+    //     } catch (error) {
+    //       if (error instanceof McpError) throw error;
+    //       throw new McpError(
+    //         ErrorCode.InternalError,
+    //         `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+    //       );
+    //     }
+    //   }
+    // );
 
-    this.server.registerTool(
-      'simctl-status-bar',
-      {
-        description: 'Override status bar.',
-        inputSchema: {
-          udid: z.string(),
-          operation: z.enum(['override', 'clear']),
-          time: z.string().optional(),
-          dataNetwork: z.string().optional(),
-          wifiMode: z.string().optional(),
-          batteryState: z.string().optional(),
-          batteryLevel: z.number().min(0).max(100).optional(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlStatusBarTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
+    // COMMENTED OUT (v2.0.0): simctl-status-bar
+    // this.server.registerTool(
+    //   'simctl-status-bar',
+    //   {
+    //     description: 'Override status bar.',
+    //     inputSchema: {
+    //       udid: z.string(),
+    //       operation: z.enum(['override', 'clear']),
+    //       time: z.string().optional(),
+    //       dataNetwork: z.string().optional(),
+    //       wifiMode: z.string().optional(),
+    //       batteryState: z.string().optional(),
+    //       batteryLevel: z.number().min(0).max(100).optional(),
+    //     },
+    //   },
+    //   async args => {
+    //     try {
+    //       await validateXcodeInstallation();
+    //       return await simctlStatusBarTool(args);
+    //     } catch (error) {
+    //       if (error instanceof McpError) throw error;
+    //       throw new McpError(
+    //         ErrorCode.InternalError,
+    //         `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+    //       );
+    //     }
+    //   }
+    // );
     this.server.registerTool(
       'screenshot',
       {
@@ -779,28 +792,29 @@ class XcodeCLIMCPServer {
     );
 
     // Cache Management Tools
-    this.server.registerTool(
-      'list-cached-responses',
-      {
-        description: 'List cached responses.',
-        inputSchema: {
-          tool: z.string().optional(),
-          limit: z.number().default(10),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return (await listCachedResponsesTool(args)) as any;
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
+    // COMMENTED OUT (v2.0.0): list-cached-responses
+    // this.server.registerTool(
+    //   'list-cached-responses',
+    //   {
+    //     description: 'List cached responses.',
+    //     inputSchema: {
+    //       tool: z.string().optional(),
+    //       limit: z.number().default(10),
+    //     },
+    //   },
+    //   async args => {
+    //     try {
+    //       await validateXcodeInstallation();
+    //       return (await listCachedResponsesTool(args)) as any;
+    //     } catch (error) {
+    //       if (error instanceof McpError) throw error;
+    //       throw new McpError(
+    //         ErrorCode.InternalError,
+    //         `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+    //       );
+    //     }
+    //   }
+    // );
 
     this.server.registerTool(
       'cache',
