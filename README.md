@@ -9,7 +9,7 @@
 
 **Production-grade MCP server for Xcode workflows — 75% token reduction, accessibility-first iOS automation**
 
-XC-MCP makes Xcode and iOS simulator tooling accessible to AI agents through intelligent context engineering. **28 consolidated tools consuming just ~2,000 tokens** through progressive disclosure, operation-based routing, and accessibility-first automation patterns.
+XC-MCP makes Xcode and iOS simulator tooling accessible to AI agents through intelligent context engineering. **28 consolidated tools consuming the least amount of tokens possible (for now...)** through progressive disclosure, operation-based routing, and accessibility-first automation patterns.
 
 ![gh-social](https://github.com/user-attachments/assets/dd23b1e5-ed8c-40c0-b44d-7c92f3b5d5aa)
 
