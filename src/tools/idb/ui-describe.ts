@@ -4,6 +4,7 @@ import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-det
 import { IDBTargetCache } from '../../state/idb-target-cache.js';
 import { responseCache } from '../../utils/response-cache.js';
 import { formatToolError } from '../../utils/error-formatter.js';
+import { parseFlexibleJson } from '../../utils/json-parser.js';
 
 interface IdbUiDescribeArgs {
   udid?: string;
@@ -220,9 +221,9 @@ async function executeDescribeAllOperation(
     };
   }
 
-  // Parse UI tree output (NDJSON format)
+  // Parse UI tree output (handles both JSON array and NDJSON formats)
   const uiTreeText = result.stdout;
-  const elements = parseNdJson(uiTreeText);
+  const elements = parseFlexibleJson(uiTreeText);
 
   // Cache full UI tree for later retrieval (progressive disclosure)
   const uiTreeId = responseCache.store({
@@ -417,7 +418,7 @@ async function executeDescribePointOperation(udid: string, x: number, y: number)
  *
  * Example: "{{100, 200}, {50, 100}}" -> { x: 100, y: 200, width: 50, height: 100, centerX: 125, centerY: 250 }
  */
-function parseAXFrame(frameStr: string | undefined): {
+function parseAXFrame(frameInput: string | object | undefined): {
   x: number;
   y: number;
   width: number;
@@ -425,12 +426,29 @@ function parseAXFrame(frameStr: string | undefined): {
   centerX: number;
   centerY: number;
 } | null {
-  if (!frameStr) {
+  if (!frameInput) {
     return null;
   }
 
-  // Parse "{{x, y}, {width, height}}"
-  const match = frameStr.match(/\{\{([^}]+)\},\s*\{([^}]+)\}\}/);
+  // If already parsed as object (from JSON array format)
+  if (typeof frameInput === 'object' && 'x' in frameInput && 'y' in frameInput) {
+    const frame = frameInput as { x: number; y: number; width: number; height: number };
+    return {
+      x: frame.x,
+      y: frame.y,
+      width: frame.width,
+      height: frame.height,
+      centerX: frame.x + frame.width / 2,
+      centerY: frame.y + frame.height / 2,
+    };
+  }
+
+  // Parse string format "{{x, y}, {width, height}}"
+  if (typeof frameInput !== 'string') {
+    return null;
+  }
+
+  const match = frameInput.match(/\{\{([^}]+)\},\s*\{([^}]+)\}\}/);
   if (!match) {
     return null;
   }
@@ -455,40 +473,6 @@ function parseAXFrame(frameStr: string | undefined): {
     centerX: x + width / 2,
     centerY: y + height / 2,
   };
-}
-
-/**
- * Parse NDJSON output from idb ui describe-all
- *
- * Why: Output is newline-delimited JSON where each line is a separate element object.
- * Previous implementation only processed lines as text, missing all but first element.
- * This correctly parses each line as JSON.
- *
- * @param ndjsonText Raw NDJSON output
- * @returns Array of parsed elements
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function parseNdJson(ndjsonText: string): any[] {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const elements: any[] = [];
-  const lines = ndjsonText.split('\n');
-
-  for (const line of lines) {
-    // Skip empty lines
-    if (!line.trim()) {
-      continue;
-    }
-
-    try {
-      const element = JSON.parse(line);
-      elements.push(element);
-    } catch {
-      // Skip malformed JSON lines
-      console.error(`[idb-ui-describe] Failed to parse NDJSON line: ${line}`);
-    }
-  }
-
-  return elements;
 }
 
 /**

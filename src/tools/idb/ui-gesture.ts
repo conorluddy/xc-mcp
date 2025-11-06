@@ -21,7 +21,7 @@ interface IdbUiGestureArgs {
   startY?: number;
   endX?: number; // Optional custom end point (in POINTS, not pixels)
   endY?: number;
-  duration?: number; // Swipe duration in seconds (e.g., 0.20 for 200ms, default from profile)
+  duration?: number; // Swipe duration in MILLISECONDS (e.g., 200 for 200ms, default: 200ms)
   profile?: 'standard' | 'flick' | 'gentle'; // Swipe profile (default: 'standard')
 
   // For 'button' operation
@@ -63,7 +63,7 @@ interface IdbUiGestureArgs {
  * - direction (for swipe): "up" | "down" | "left" | "right" - auto-calculates screen-relative path
  * - profile (for swipe): "standard" | "flick" | "gentle" - gesture profile (default: "standard")
  * - startX, startY, endX, endY (for custom swipe): Precise POINT coordinates for swipe path
- * - duration (optional, for swipe): Swipe duration in SECONDS (e.g., 0.20 for 200ms) - uses profile default if omitted
+ * - duration (optional, for swipe): Swipe duration in MILLISECONDS (e.g., 200 for 200ms, default: 200ms) - uses profile default if omitted
  * - buttonType (for button): "HOME" | "LOCK" | "SIDE_BUTTON" | "APPLE_PAY" | "SIRI" | "SCREENSHOT" | "APP_SWITCH"
  * - udid (optional): Target identifier - auto-detects if omitted
  * - actionName, expectedOutcome (optional): Semantic tracking for test documentation
@@ -267,7 +267,7 @@ export async function idbUiGestureTool(args: IdbUiGestureArgs) {
  *
  * Why: Sends swipe event for navigation, scrolling, etc.
  * Supports directional swipes with profiles and custom paths.
- * CRITICAL: All coordinates in POINT space (393×852), duration in seconds.
+ * CRITICAL: All coordinates in POINT space (393×852), duration in milliseconds.
  * Validates velocity to ensure iOS recognizes gesture as swipe (>650 points/sec).
  */
 interface SwipeCommandResult {
@@ -288,7 +288,7 @@ async function executeSwipeCommand(
     startY?: number;
     endX?: number;
     endY?: number;
-    duration?: number; // In SECONDS (e.g., 0.20 for 200ms)
+    duration?: number; // In MILLISECONDS (e.g., 200 for 200ms)
     profile?: 'standard' | 'flick' | 'gentle';
   }
 ): Promise<SwipeCommandResult> {
@@ -297,7 +297,8 @@ async function executeSwipeCommand(
   let command: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let swipePath: any;
-  let finalDuration = duration; // In seconds
+  // Convert duration from milliseconds to seconds (IDB expects seconds)
+  let finalDuration = duration !== undefined ? duration / 1000 : undefined; // In seconds
   let distance = 0; // In points
 
   if (direction) {
@@ -519,7 +520,7 @@ Executes swipe gestures (directional or custom paths) and hardware button presse
 - **direction** (string): "up" | "down" | "left" | "right" - auto-calculates screen-relative path
 - **profile** (string, default: "standard"): "standard" | "flick" | "gentle" - gesture profile
 - **startX, startY, endX, endY** (numbers): Precise POINT coordinates for custom swipe path
-- **duration** (number): Swipe duration in SECONDS (e.g., 0.20 for 200ms) - uses profile default if omitted
+- **duration** (number, default: 200): Swipe duration in MILLISECONDS (e.g., 200 for 200ms) - uses profile default if omitted
 
 ### Button operation parameters
 - **buttonType** (string): "HOME" | "LOCK" | "SIDE_BUTTON" | "APPLE_PAY" | "SIRI" | "SCREENSHOT" | "APP_SWITCH"

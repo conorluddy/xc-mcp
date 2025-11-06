@@ -217,6 +217,44 @@ describe('idb-ui-describe', () => {
       expect(response.interactiveElementsPreview[0].y).toBe(100);
     });
 
+    it('should handle JSON array format with object frames', async () => {
+      // IDB returns JSON array format where frame is already an object
+      const jsonArrayOutput = JSON.stringify([
+        {
+          type: 'Button',
+          label: 'Login',
+          enabled: true,
+          frame: { x: 100, y: 200, width: 150, height: 50 },
+        },
+        {
+          type: 'Button',
+          label: 'Cancel',
+          enabled: true,
+          frame: { x: 100, y: 300, width: 150, height: 50 },
+        },
+      ]);
+
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: jsonArrayOutput,
+        stderr: '',
+      });
+
+      const result = await idbUiDescribeTool({
+        operation: 'all',
+      });
+
+      const response = JSON.parse(result.content[0].text);
+
+      expect(response.success).toBe(true);
+      expect(response.summary.totalElements).toBe(2);
+      expect(response.summary.tappableElements).toBe(2);
+      expect(response.interactiveElementsPreview[0].centerX).toBe(175); // 100 + 150/2
+      expect(response.interactiveElementsPreview[0].centerY).toBe(225); // 200 + 50/2
+      expect(response.interactiveElementsPreview[1].centerX).toBe(175); // 100 + 150/2
+      expect(response.interactiveElementsPreview[1].centerY).toBe(325); // 300 + 50/2
+    });
+
     it('should cache full UI tree for progressive disclosure', async () => {
       const ndjsonOutput = `{"type":"Button","label":"Test","enabled":true,"frame":"{{0, 0}, {100, 50}}"}`;
 
