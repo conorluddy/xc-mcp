@@ -799,7 +799,10 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           startY: z.number().optional(),
           endX: z.number().optional(),
           endY: z.number().optional(),
-          duration: z.number().default(500),
+          duration: z
+            .number()
+            .default(200)
+            .describe('Swipe duration in milliseconds (e.g., 200 for 200ms, default: 200ms)'),
           buttonType: z
             .enum(['HOME', 'LOCK', 'SIDE_BUTTON', 'APPLE_PAY', 'SIRI', 'SCREENSHOT', 'APP_SWITCH'])
             .optional(),
