@@ -41,9 +41,9 @@ Traditional Xcode CLI wrappers dump massive output that exceeds MCP protocol lim
 
 | Version | Tools | Token Usage | Architecture | Context % |
 |---------|-------|-------------|--------------|-----------|
-| Pre-RTFM (v1.2.1) | 51 | ~7,850 tokens | Individual tools | 3.9% |
-| V1.3.2 (RTFM) | 51 | ~3,000 tokens | Individual + RTFM | 1.5% |
-| **V2.0.0** | **28** | **~18.7k tokens** | **Routers + Full Docs** | **9.3%** |
+| Pre-RTFM (v1.2.1) | 51 | ~45k tokens | Individual tools | 3.9% |
+| V1.3.2 (RTFM) | 51 | ~30k tokens | Individual + RTFM | 1.5% |
+| **V2.0.0** | **28** | **~18k tokens** | **Routers + Full Docs** | **9.3%** |
 
 **Key Improvements:**
 - ✅ **Tool consolidation** (28 vs 51 tools) - 45% reduction
