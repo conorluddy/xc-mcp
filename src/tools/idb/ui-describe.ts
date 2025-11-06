@@ -16,6 +16,9 @@ interface IdbUiDescribeArgs {
   // LLM optimization
   screenContext?: string; // e.g., "LoginScreen"
   purposeDescription?: string; // e.g., "Find tappable button"
+
+  // Progressive disclosure via filtering (for 'all' operation)
+  filterLevel?: 'strict' | 'moderate' | 'permissive' | 'none'; // default: 'moderate'
 }
 
 /**
@@ -35,36 +38,53 @@ interface IdbUiDescribeArgs {
  * - Assess data quality before choosing automation approach - rich data enables precise targeting, minimal data requires screenshots
  * - Validate tap coordinates by querying elements at specific points before execution
  * - Progressive disclosure prevents token overflow on complex UIs - get summary first, full tree on demand
+ * - Progressive filter escalation - start with moderate filtering, escalate to permissive/none if minimal data found
  *
  * **Improvements (Phase 2):**
  * - Fixed NDJSON parsing: Now returns all elements, not just first line
  * - AXFrame coordinate extraction: Parses "{{x, y}, {width, height}}" to get x, y, width, height, centerX, centerY
  * - Proper JSON parsing: Each line parsed as separate JSON object representing one element
  * - Coordinate-ready: All interactive elements include tap-ready centerX/centerY coordinates
+ * - iOS field detection: Recognizes role, role_description, AXLabel, AXFrame fields from iOS accessibility
+ * - Progressive filtering: 4 filter levels (strict, moderate, permissive, none) for element discovery
  *
  * **Parameters:**
  * - operation (required): "all" | "point"
  * - x, y (required for point operation): Coordinates to query element at specific location
  * - udid (optional): Target identifier - auto-detects if omitted
  * - screenContext, purposeDescription (optional): Semantic tracking for element discovery context
+ * - filterLevel (optional): "strict" | "moderate" | "permissive" | "none" (default: "moderate")
+ *   - strict: Only obvious interactive elements via type field (original behavior)
+ *   - moderate: Include iOS roles (role, role_description) - DEFAULT, fixes iOS button detection
+ *   - permissive: Any element with role/type/label information
+ *   - none: Return everything (debugging)
  *
  * **Returns:**
  * For "all": UI tree summary with element counts (total, tappable, text fields), data quality assessment
  * (rich/moderate/minimal), top 20 interactive elements preview with centerX/centerY coordinates,
- * uiTreeId for full tree retrieval, and guidance on automation strategy based on data richness.
+ * uiTreeId for full tree retrieval, current filter level, and guidance on automation strategy including
+ * suggestions to escalate filter level if minimal data found.
  *
  * For "point": Element details at coordinates including type, label, value, identifier, frame coordinates
  * (x, y, centerX, centerY), enabled state, and tappability.
  *
  * **Example:**
  * ```typescript
- * // Query full UI tree with coordinate data
+ * // Query full UI tree with default moderate filtering
  * const result = await idbUiDescribeTool({
  *   operation: 'all',
  *   screenContext: 'LoginScreen',
  *   purposeDescription: 'Find email and password fields'
  * });
  * // Result includes elements with centerX, centerY for direct tapping
+ *
+ * // If minimal data, try permissive filtering
+ * if (result.summary.dataQuality === 'minimal') {
+ *   const result2 = await idbUiDescribeTool({
+ *     operation: 'all',
+ *     filterLevel: 'permissive'
+ *   });
+ * }
  *
  * // Validate element at tap coordinates
  * const element = await idbUiDescribeTool({ operation: 'point', x: 200, y: 400 });
@@ -77,7 +97,7 @@ interface IdbUiDescribeArgs {
  * @returns Tool result with UI tree data or element details
  */
 export async function idbUiDescribeTool(args: IdbUiDescribeArgs) {
-  const { udid, operation, x, y, screenContext, purposeDescription } = args;
+  const { udid, operation, x, y, screenContext, purposeDescription, filterLevel } = args;
 
   try {
     // ============================================================================
@@ -113,6 +133,7 @@ export async function idbUiDescribeTool(args: IdbUiDescribeArgs) {
         ? await executeDescribeAllOperation(resolvedUdid, target, {
             screenContext,
             purposeDescription,
+            filterLevel,
           })
         : // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           await executeDescribePointOperation(resolvedUdid, x!, y!);
@@ -171,6 +192,7 @@ async function executeDescribeAllOperation(
   context: {
     screenContext?: string;
     purposeDescription?: string;
+    filterLevel?: 'strict' | 'moderate' | 'permissive' | 'none';
   }
 ): Promise<any> {
   const command = `idb ui describe-all --udid "${udid}"`;
@@ -220,7 +242,8 @@ async function executeDescribeAllOperation(
   });
 
   // Extract summary information from parsed elements
-  const summary = extractUiTreeSummary(elements);
+  const filterLevel = context.filterLevel || 'moderate';
+  const summary = extractUiTreeSummary(elements, filterLevel);
 
   // Assess data richness for hybrid approach
   const isRichData = summary.tappableCount > 3 || summary.textFieldCount > 0;
@@ -250,6 +273,7 @@ async function executeDescribeAllOperation(
           `✅ Rich accessibility data available - USE THIS for navigation`,
           ``,
           `Summary:`,
+          `• Filter level: ${filterLevel} (default: moderate)`,
           `• Total elements: ${summary.elementCount}`,
           `• Tappable elements: ${summary.tappableCount} ✅ (sufficient for automation)`,
           `• Text fields: ${summary.textFieldCount}`,
@@ -271,26 +295,45 @@ async function executeDescribeAllOperation(
         ].filter(Boolean)
       : [
           isMinimalData
-            ? `⚠️ Minimal accessibility data - FALL BACK to screenshots`
+            ? `⚠️ Minimal accessibility data with filterLevel='${filterLevel}'`
             : `⚠️ Limited accessibility data - consider screenshot approach`,
           ``,
           `Summary:`,
+          `• Filter level: ${filterLevel} (current)`,
           `• Total elements: ${summary.elementCount}`,
           `• Tappable elements: ${summary.tappableCount} ${summary.tappableCount === 0 ? '❌ (insufficient)' : '⚠️ (limited)'}`,
           `• Text fields: ${summary.textFieldCount}`,
           `• Element types: ${Object.keys(summary.elementTypes).length} unique types`,
           ``,
-          isMinimalData
-            ? `❌ Data too limited for reliable automation - use screenshot approach:`
-            : `⚠️ Limited data quality - screenshot approach recommended:`,
+          summary.tappableCount === 0 && filterLevel === 'strict'
+            ? `💡 Try increasing filterLevel to 'moderate' or 'permissive' for more elements`
+            : summary.tappableCount === 0 && filterLevel === 'moderate'
+              ? `💡 Try increasing filterLevel to 'permissive' or 'none' for more elements`
+              : summary.tappableCount === 0 && filterLevel === 'permissive'
+                ? `💡 Try filterLevel='none' to see all elements (debugging)`
+                : undefined,
           ``,
-          `Recommended workflow:`,
+          isMinimalData && filterLevel !== 'none'
+            ? `Progressive escalation recommended:`
+            : `Screenshot approach recommended:`,
+          isMinimalData && filterLevel === 'moderate'
+            ? `1. Try permissive filter: idb-ui-describe --operation all --filterLevel permissive`
+            : isMinimalData && filterLevel === 'permissive'
+              ? `1. Try no filter: idb-ui-describe --operation all --filterLevel none`
+              : undefined,
+          isMinimalData && filterLevel !== 'none'
+            ? `2. If still minimal, fall back to screenshots`
+            : undefined,
+          ``,
+          filterLevel === 'none' || !isMinimalData
+            ? `Recommended workflow:`
+            : `Alternative workflow (if escalation fails):`,
           `1. Take screenshot: simctl-screenshot-inline --udid ${udid} --size half`,
           `2. Analyze visual layout from screenshot`,
           `3. Use coordinate-based taps: idb-ui-tap --x <x> --y <y>`,
           `4. Verify with screenshots after each action`,
           ``,
-          `Alternative (if accessibility improves):`,
+          `Debug options:`,
           `• Retrieve full tree: idb-ui-get-details --uiTreeId ${uiTreeId}`,
           `• Query specific point: idb-ui-describe --operation point --x 200 --y 400`,
         ].filter(Boolean),
@@ -449,13 +492,86 @@ function parseNdJson(ndjsonText: string): any[] {
 }
 
 /**
+ * Check if element is tappable based on filter level
+ *
+ * Why: iOS returns multiple field names (type, role, role_description).
+ * Different filter levels allow progressive escalation from strict to permissive.
+ *
+ * @param element UI element from accessibility tree
+ * @param filterLevel Filter strictness level
+ * @returns true if element should be considered tappable
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function isElementTappable(element: any, filterLevel: string = 'moderate'): boolean {
+  const type = element.type || '';
+  const role = element.role || '';
+  const roleDescription = (element.role_description || '').toLowerCase();
+
+  switch (filterLevel) {
+    case 'strict':
+      // STRICT: Only obvious interactive elements via type field (original behavior)
+      return (
+        element.enabled &&
+        (type.includes('Button') ||
+          type.includes('Cell') ||
+          type.includes('Link') ||
+          type.includes('Tab') ||
+          type.includes('Switch') ||
+          type.includes('PickerWheel'))
+      );
+
+    case 'moderate':
+      // MODERATE: Include iOS-specific roles and common interactive patterns (DEFAULT - fixes the bug)
+      return (
+        element.enabled !== false && // Standard types
+        (type.includes('Button') ||
+          type.includes('Cell') ||
+          type.includes('Link') ||
+          type.includes('Tab') ||
+          type.includes('Image') ||
+          type.includes('Switch') ||
+          type.includes('PickerWheel') ||
+          // iOS accessibility roles
+          role.includes('Button') ||
+          role.includes('Link') ||
+          role.includes('Tab') ||
+          // Role descriptions
+          roleDescription.includes('button') ||
+          roleDescription.includes('link') ||
+          roleDescription.includes('tab'))
+      );
+
+    case 'permissive':
+      // PERMISSIVE: Anything with role/type/label information
+      return (
+        element.enabled !== false &&
+        (element.role ||
+          element.role_description ||
+          element.type ||
+          element.AXLabel ||
+          element.label)
+      );
+
+    case 'none':
+      // NONE: Return everything, no filtering
+      return true;
+
+    default:
+      return false;
+  }
+}
+
+/**
  * Extract summary from parsed UI elements
  *
  * Why: Provide quick overview without loading full tree into tokens.
  * Processes parsed JSON elements instead of raw text lines.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function extractUiTreeSummary(elements: any[]): {
+
+function extractUiTreeSummary(
+  elements: any[],
+  filterLevel: string = 'moderate'
+): {
   elementCount: number;
   tappableCount: number;
   textFieldCount: number;
@@ -464,6 +580,8 @@ function extractUiTreeSummary(elements: any[]): {
     type: string;
     label?: string;
     identifier?: string;
+    role?: string;
+    role_description?: string;
     x?: number;
     y?: number;
     centerX?: number;
@@ -475,6 +593,8 @@ function extractUiTreeSummary(elements: any[]): {
     type: string;
     label?: string;
     identifier?: string;
+    role?: string;
+    role_description?: string;
     x?: number;
     y?: number;
     centerX?: number;
@@ -484,34 +604,33 @@ function extractUiTreeSummary(elements: any[]): {
   let textFieldCount = 0;
 
   for (const element of elements) {
-    const type = element.type || 'Unknown';
+    // Normalize fields: support both standard and iOS-specific field names
+    const type = element.type || element.role || 'Unknown';
+    const label = element.label || element.AXLabel;
+    const identifier = element.identifier || element.AXUniqueId;
+    const frame = element.frame || element.AXFrame;
+
     elementTypes[type] = (elementTypes[type] || 0) + 1;
 
-    // Check if tappable: enabled && (Button, Cell, Link, Tab, etc.)
-    const isTappable =
-      element.enabled &&
-      (type.includes('Button') ||
-        type.includes('Cell') ||
-        type.includes('Link') ||
-        type.includes('Tab') ||
-        type.includes('Image') ||
-        type.includes('PickerWheel') ||
-        type.includes('Switch'));
+    // Check if tappable using filter level
+    const isTappable = isElementTappable(element, filterLevel);
 
     if (isTappable) {
       tappableCount++;
 
       // Extract frame and calculate center
-      const frame = parseAXFrame(element.frame);
+      const parsedFrame = parseAXFrame(frame);
 
       interactiveElements.push({
         type,
-        label: element.label,
-        identifier: element.identifier,
-        x: frame?.x,
-        y: frame?.y,
-        centerX: frame?.centerX,
-        centerY: frame?.centerY,
+        label,
+        identifier,
+        role: element.role,
+        role_description: element.role_description,
+        x: parsedFrame?.x,
+        y: parsedFrame?.y,
+        centerX: parsedFrame?.centerX,
+        centerY: parsedFrame?.centerY,
       });
     }
 
@@ -595,6 +714,10 @@ export const IDB_UI_DESCRIBE_DOCS = `
 
 Queries iOS accessibility tree to discover UI elements, their properties (type, label, enabled state), coordinates (frame, centerX, centerY), and accessibility identifiers. Returns full tree with progressive disclosure (summary + cache ID for full data), element-at-point queries for tap validation, and data quality assessment (rich/moderate/minimal) to guide automation strategy. Automatically parses NDJSON output to extract all elements (not just first), includes AXFrame coordinate parsing for precise tapping, and caches large outputs to prevent token overflow.
 
+**Progressive Filtering:** Supports 4 filter levels for element discovery - start conservative with moderate filtering (default), escalate to permissive/none if minimal data found.
+
+**iOS Compatibility:** Recognizes iOS-specific accessibility fields (role, role_description, AXLabel, AXFrame) in addition to standard fields.
+
 ## Why you'd use it
 
 - Discover all tappable elements from accessibility tree - buttons, cells, links identified by JSON element objects
@@ -602,6 +725,7 @@ Queries iOS accessibility tree to discover UI elements, their properties (type, 
 - Assess data quality before choosing automation approach - rich data enables precise targeting, minimal data requires screenshots
 - Validate tap coordinates by querying elements at specific points before execution
 - Progressive disclosure prevents token overflow on complex UIs - get summary first, full tree on demand
+- Progressive filter escalation - start with moderate filtering, escalate to permissive/none if minimal data found
 
 ## Parameters
 
@@ -616,16 +740,21 @@ Queries iOS accessibility tree to discover UI elements, their properties (type, 
 - **udid** (string): Target identifier - auto-detects if omitted
 - **screenContext** (string): Screen name for context (e.g., "LoginScreen")
 - **purposeDescription** (string): Query purpose (e.g., "Find tappable button")
+- **filterLevel** (string): "strict" | "moderate" | "permissive" | "none" (default: "moderate")
+  - **strict**: Only obvious interactive elements via type field (original behavior)
+  - **moderate**: Include iOS roles (role, role_description) - DEFAULT, fixes iOS button detection
+  - **permissive**: Any element with role/type/label information
+  - **none**: Return everything (debugging)
 
 ## Returns
 
-**For "all":** UI tree summary with element counts (total, tappable, text fields), data quality assessment (rich/moderate/minimal), top 20 interactive elements preview with centerX/centerY coordinates, uiTreeId for full tree retrieval, and guidance on automation strategy based on data richness.
+**For "all":** UI tree summary with element counts (total, tappable, text fields), data quality assessment (rich/moderate/minimal), top 20 interactive elements preview with centerX/centerY coordinates, uiTreeId for full tree retrieval, current filter level, and guidance on automation strategy including suggestions to escalate filter level if minimal data found.
 
 **For "point":** Element details at coordinates including type, label, value, identifier, frame coordinates (x, y, centerX, centerY), enabled state, and tappability.
 
 ## Examples
 
-### Query full UI tree with coordinate data
+### Query full UI tree with default moderate filtering
 \`\`\`typescript
 const result = await idbUiDescribeTool({
   operation: 'all',
@@ -633,6 +762,33 @@ const result = await idbUiDescribeTool({
   purposeDescription: 'Find email and password fields'
 });
 // Result includes elements with centerX, centerY for direct tapping
+\`\`\`
+
+### Progressive filter escalation pattern
+\`\`\`typescript
+// 1. Start with default (moderate)
+let result = await idbUiDescribeTool({ operation: 'all' });
+
+// 2. If minimal data, try permissive
+if (result.summary.dataQuality === 'minimal') {
+  result = await idbUiDescribeTool({
+    operation: 'all',
+    filterLevel: 'permissive'
+  });
+}
+
+// 3. If still minimal, try none (return everything)
+if (result.summary.dataQuality === 'minimal') {
+  result = await idbUiDescribeTool({
+    operation: 'all',
+    filterLevel: 'none'
+  });
+}
+
+// 4. If STILL minimal, fall back to screenshots
+if (result.summary.dataQuality === 'minimal') {
+  // Use screenshot-based approach
+}
 \`\`\`
 
 ### Validate element at tap coordinates
@@ -649,4 +805,6 @@ const element = await idbUiDescribeTool({
 
 - idb-ui-tap: Tap discovered elements using centerX/centerY coordinates
 - screenshot: Capture screenshot for visual element identification
+- idb-ui-find-element: Semantic element search by label/identifier
+- accessibility-quality-check: Quick assessment before choosing approach
 `;
