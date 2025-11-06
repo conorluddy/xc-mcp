@@ -418,7 +418,7 @@ async function executeDescribePointOperation(udid: string, x: number, y: number)
  *
  * Example: "{{100, 200}, {50, 100}}" -> { x: 100, y: 200, width: 50, height: 100, centerX: 125, centerY: 250 }
  */
-function parseAXFrame(frameStr: string | undefined): {
+function parseAXFrame(frameInput: string | object | undefined): {
   x: number;
   y: number;
   width: number;
@@ -426,12 +426,29 @@ function parseAXFrame(frameStr: string | undefined): {
   centerX: number;
   centerY: number;
 } | null {
-  if (!frameStr) {
+  if (!frameInput) {
     return null;
   }
 
-  // Parse "{{x, y}, {width, height}}"
-  const match = frameStr.match(/\{\{([^}]+)\},\s*\{([^}]+)\}\}/);
+  // If already parsed as object (from JSON array format)
+  if (typeof frameInput === 'object' && 'x' in frameInput && 'y' in frameInput) {
+    const frame = frameInput as { x: number; y: number; width: number; height: number };
+    return {
+      x: frame.x,
+      y: frame.y,
+      width: frame.width,
+      height: frame.height,
+      centerX: frame.x + frame.width / 2,
+      centerY: frame.y + frame.height / 2,
+    };
+  }
+
+  // Parse string format "{{x, y}, {width, height}}"
+  if (typeof frameInput !== 'string') {
+    return null;
+  }
+
+  const match = frameInput.match(/\{\{([^}]+)\},\s*\{([^}]+)\}\}/);
   if (!match) {
     return null;
   }
