@@ -979,4 +979,159 @@ describe('idb-ui-describe', () => {
       expect(response.summary.tappableElements).toBe(0); // Disabled elements not tappable
     });
   });
+
+  describe('Bug Fix Validation - Grapla App Scenario', () => {
+    // This is the EXACT data from the bug report that was failing
+    const graplaExploreNdjson = `{"role":"AXButton","role_description":"button","AXLabel":"Positions","enabled":true,"AXFrame":"{{25, 292}, {173.66666666666666, 119.99999999999994}}"}\n{"role":"AXButton","role_description":"button","AXLabel":"Submissions","enabled":true,"AXFrame":"{{208, 292}, {173, 120}}"}\n{"role":"AXButton","role_description":"button","AXLabel":"Techniques","enabled":true,"AXFrame":"{{25, 422}, {173, 120}}"}\n{"role":"AXButton","role_description":"button","AXLabel":"Movements","enabled":true,"AXFrame":"{{208, 422}, {173, 120}}"}\n{"role":"AXButton","role_description":"button","AXLabel":"Principles","enabled":true,"AXFrame":"{{25, 552}, {173, 120}}"}`;
+
+    it('should demonstrate the original bug with strict filter', async () => {
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: graplaExploreNdjson,
+        stderr: '',
+      });
+
+      const result = await idbUiDescribeTool({
+        operation: 'all',
+        filterLevel: 'strict',
+        screenContext: 'Grapla Explore View',
+      });
+      const response = JSON.parse(result.content[0].text);
+
+      // This demonstrates the bug: strict filter misses all iOS buttons
+      expect(response.summary.totalElements).toBe(5);
+      expect(response.summary.tappableElements).toBe(0); // BUG: No buttons detected!
+      expect(response.summary.dataQuality).toBe('minimal');
+    });
+
+    it('should fix the bug with moderate filter (default)', async () => {
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: graplaExploreNdjson,
+        stderr: '',
+      });
+
+      const result = await idbUiDescribeTool({
+        operation: 'all',
+        // filterLevel: 'moderate' (default)
+        screenContext: 'Grapla Explore View',
+      });
+      const response = JSON.parse(result.content[0].text);
+
+      // This proves the fix: moderate filter detects all iOS buttons
+      expect(response.summary.totalElements).toBe(5);
+      expect(response.summary.tappableElements).toBe(5); // FIXED: All 5 buttons detected!
+      expect(response.summary.dataQuality).toBe('rich'); // Now rich instead of minimal
+      expect(response.interactiveElementsPreview).toHaveLength(5);
+      expect(response.interactiveElementsPreview[0].label).toBe('Positions');
+      expect(response.interactiveElementsPreview[0].role_description).toBe('button');
+    });
+
+    it('should detect all buttons with explicit moderate filter', async () => {
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: graplaExploreNdjson,
+        stderr: '',
+      });
+
+      const result = await idbUiDescribeTool({
+        operation: 'all',
+        filterLevel: 'moderate',
+        screenContext: 'Grapla Explore View',
+      });
+      const response = JSON.parse(result.content[0].text);
+
+      expect(response.summary.tappableElements).toBe(5);
+      expect(response.summary.dataQuality).toBe('rich');
+      expect(response.guidance.some((g: string) => g.includes('Filter level: moderate'))).toBe(
+        true
+      );
+    });
+
+    it('should include correct coordinates for tapping', async () => {
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: graplaExploreNdjson,
+        stderr: '',
+      });
+
+      const result = await idbUiDescribeTool({
+        operation: 'all',
+        screenContext: 'Grapla Explore View',
+      });
+      const response = JSON.parse(result.content[0].text);
+
+      // Verify Positions button has correct coordinates
+      const positionsButton = response.interactiveElementsPreview[0];
+      expect(positionsButton.label).toBe('Positions');
+      expect(positionsButton.x).toBe(25);
+      expect(positionsButton.y).toBe(292);
+      expect(positionsButton.centerX).toBeCloseTo(111.5, 0); // 25 + 173/2 (float width truncated to int)
+      expect(positionsButton.centerY).toBeCloseTo(351.5, 0); // 292 + 119/2 (float height 119.999... truncated to 119)
+    });
+  });
+
+  describe('Progressive Filter Escalation Pattern', () => {
+    it('should demonstrate progressive improvement from strict to moderate', async () => {
+      const testData = `{"role":"AXButton","role_description":"button","AXLabel":"Button1","enabled":true,"AXFrame":"{{0, 0}, {100, 50}}"}`;
+
+      // Test strict (original buggy behavior)
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: testData,
+        stderr: '',
+      });
+
+      const strictResult = await idbUiDescribeTool({
+        operation: 'all',
+        filterLevel: 'strict',
+      });
+      const strictResponse = JSON.parse(strictResult.content[0].text);
+
+      expect(strictResponse.summary.tappableElements).toBe(0);
+
+      // Test moderate (fixed behavior)
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: testData,
+        stderr: '',
+      });
+
+      const moderateResult = await idbUiDescribeTool({
+        operation: 'all',
+        filterLevel: 'moderate',
+      });
+      const moderateResponse = JSON.parse(moderateResult.content[0].text);
+
+      expect(moderateResponse.summary.tappableElements).toBe(1);
+      expect(moderateResponse.summary.dataQuality).toBe('minimal'); // 1 element is still minimal (need 2-3 for moderate, >3 for rich)
+    });
+
+    it('should demonstrate full escalation path: strict → moderate → permissive → none', async () => {
+      const complexData = `{"role":"AXButton","role_description":"button","AXLabel":"Button","enabled":true}\n{"type":"Text","AXLabel":"Label"}\n{"enabled":true}`;
+
+      const results: Record<string, number> = {};
+
+      for (const level of ['strict', 'moderate', 'permissive', 'none']) {
+        mockExecuteCommand.mockResolvedValueOnce({
+          code: 0,
+          stdout: complexData,
+          stderr: '',
+        });
+
+        const result = await idbUiDescribeTool({
+          operation: 'all',
+          filterLevel: level as any,
+        });
+        const response = JSON.parse(result.content[0].text);
+        results[level] = response.summary.tappableElements;
+      }
+
+      // Validate progressive escalation finds more elements
+      expect(results.strict).toBe(0); // Misses iOS button
+      expect(results.moderate).toBe(1); // Finds iOS button
+      expect(results.permissive).toBe(2); // Finds button + text with label
+      expect(results.none).toBe(3); // Finds everything
+    });
+  });
 });
