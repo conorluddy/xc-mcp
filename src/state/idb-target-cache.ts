@@ -77,6 +77,8 @@ class IDBTargetCacheManager {
       );
     }
 
+    console.error(`[IDBTargetCache] getTarget(${udid}): ${target.name} - state: ${target.state}`);
+
     // If screen dimensions are missing (0x0), fetch them with idb describe
     if (target.screenDimensions.width === 0 || target.screenDimensions.height === 0) {
       await this.fetchScreenDimensions(udid, target);
@@ -266,6 +268,7 @@ class IDBTargetCacheManager {
    */
   private async refreshCache(): Promise<void> {
     try {
+      console.error('[IDBTargetCache] Refreshing cache from idb list-targets...');
       const result = await executeCommand('idb list-targets --json', {
         timeout: 10000,
       });
@@ -293,10 +296,16 @@ class IDBTargetCacheManager {
         .filter(line => line.trim())
         .map(line => JSON.parse(line) as IDBTarget);
 
+      console.error(`[IDBTargetCache] idb list-targets returned ${targets.length} targets`);
+
       this.cache.targets.clear();
       for (const target of targets) {
         // Preserve existing usage tracking if target already cached
         const existing = this.cache.targets.get(target.udid);
+
+        console.error(
+          `[IDBTargetCache] Parsed target: ${target.name} (${target.udid}) - state: ${target.state}`
+        );
 
         this.cache.targets.set(target.udid, {
           udid: target.udid,
@@ -321,6 +330,7 @@ class IDBTargetCacheManager {
       }
 
       this.cache.lastFetched = Date.now();
+      console.error('[IDBTargetCache] Cache refresh completed');
     } catch (error) {
       throw new McpError(
         ErrorCode.InternalError,
