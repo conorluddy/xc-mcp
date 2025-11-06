@@ -691,4 +691,447 @@ describe('idb-ui-describe', () => {
       expect(response.targetName).toBe('iPhone 16 Pro');
     });
   });
+
+  describe('Filter Levels', () => {
+    // Test data with iOS-specific fields
+    const ndjsonWithIOSFields = `{"role":"AXButton","role_description":"button","AXLabel":"Positions","enabled":true,"AXFrame":"{{25, 292}, {173, 120}}"}\n{"type":"Text","AXLabel":"Header","enabled":true}\n{"type":"Unknown","enabled":true}`;
+
+    it('should apply strict filtering (original behavior)', async () => {
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: ndjsonWithIOSFields,
+        stderr: '',
+      });
+
+      const result = await idbUiDescribeTool({
+        operation: 'all',
+        filterLevel: 'strict',
+      });
+      const response = JSON.parse(result.content[0].text);
+
+      expect(response.summary.totalElements).toBe(3);
+      expect(response.summary.tappableElements).toBe(0); // Strict misses iOS role_description
+    });
+
+    it('should apply moderate filtering with iOS roles (default)', async () => {
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: ndjsonWithIOSFields,
+        stderr: '',
+      });
+
+      const result = await idbUiDescribeTool({
+        operation: 'all',
+        // filterLevel: 'moderate' (default)
+      });
+      const response = JSON.parse(result.content[0].text);
+
+      expect(response.summary.totalElements).toBe(3);
+      expect(response.summary.tappableElements).toBe(1); // Finds button via role_description
+      expect(response.summary.dataQuality).toBe('moderate'); // 1 tappable
+    });
+
+    it('should apply permissive filtering', async () => {
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: ndjsonWithIOSFields,
+        stderr: '',
+      });
+
+      const result = await idbUiDescribeTool({
+        operation: 'all',
+        filterLevel: 'permissive',
+      });
+      const response = JSON.parse(result.content[0].text);
+
+      expect(response.summary.totalElements).toBe(3);
+      expect(response.summary.tappableElements).toBe(3); // Finds all 3 elements with AXLabel
+    });
+
+    it('should return all elements with no filtering', async () => {
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: ndjsonWithIOSFields,
+        stderr: '',
+      });
+
+      const result = await idbUiDescribeTool({
+        operation: 'all',
+        filterLevel: 'none',
+      });
+      const response = JSON.parse(result.content[0].text);
+
+      expect(response.summary.totalElements).toBe(3);
+      expect(response.summary.tappableElements).toBe(3); // Returns everything
+      expect(response.summary.dataQuality).toBe('moderate'); // 3 tappable = moderate (need >3 for rich)
+    });
+
+    it('should include filter level in guidance for rich data', async () => {
+      const ndjsonOutput = `{"type":"Button","label":"B1","enabled":true,"frame":"{{0, 0}, {100, 50}}"}\n{"type":"Button","label":"B2","enabled":true,"frame":"{{0, 50}, {100, 50}}"}\n{"type":"Button","label":"B3","enabled":true,"frame":"{{0, 100}, {100, 50}}"}\n{"type":"Button","label":"B4","enabled":true,"frame":"{{0, 150}, {100, 50}}"}`;
+
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: ndjsonOutput,
+        stderr: '',
+      });
+
+      const result = await idbUiDescribeTool({
+        operation: 'all',
+        filterLevel: 'moderate',
+      });
+      const response = JSON.parse(result.content[0].text);
+
+      expect(response.guidance.some((g: string) => g.includes('Filter level: moderate'))).toBe(
+        true
+      );
+    });
+
+    it('should suggest trying higher filter level when minimal with strict', async () => {
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: `{"type":"Text"}`,
+        stderr: '',
+      });
+
+      const result = await idbUiDescribeTool({
+        operation: 'all',
+        filterLevel: 'strict',
+      });
+      const response = JSON.parse(result.content[0].text);
+
+      expect(
+        response.guidance.some(
+          (g: string) =>
+            g && g.includes('filterLevel') && (g.includes('moderate') || g.includes('permissive'))
+        )
+      ).toBe(true);
+    });
+
+    it('should suggest trying permissive when minimal with moderate', async () => {
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: `{"type":"Text"}`,
+        stderr: '',
+      });
+
+      const result = await idbUiDescribeTool({
+        operation: 'all',
+        filterLevel: 'moderate',
+      });
+      const response = JSON.parse(result.content[0].text);
+
+      expect(
+        response.guidance.some((g: string) => (g && g.includes('permissive')) || g.includes('none'))
+      ).toBe(true);
+    });
+  });
+
+  describe('iOS-Specific Field Detection', () => {
+    it('should detect buttons via role field', async () => {
+      const ndjsonOutput = `{"role":"AXButton","AXLabel":"Submit","enabled":true,"AXFrame":"{{100, 200}, {150, 50}}"}`;
+
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: ndjsonOutput,
+        stderr: '',
+      });
+
+      const result = await idbUiDescribeTool({
+        operation: 'all',
+        filterLevel: 'moderate',
+      });
+      const response = JSON.parse(result.content[0].text);
+
+      expect(response.summary.tappableElements).toBe(1);
+      expect(response.interactiveElementsPreview[0].role).toBe('AXButton');
+    });
+
+    it('should detect buttons via role_description field', async () => {
+      const ndjsonOutput = `{"role_description":"button","AXLabel":"Login","enabled":true,"AXFrame":"{{50, 100}, {200, 60}}"}`;
+
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: ndjsonOutput,
+        stderr: '',
+      });
+
+      const result = await idbUiDescribeTool({
+        operation: 'all',
+        filterLevel: 'moderate',
+      });
+      const response = JSON.parse(result.content[0].text);
+
+      expect(response.summary.tappableElements).toBe(1);
+      expect(response.interactiveElementsPreview[0].role_description).toBe('button');
+    });
+
+    it('should normalize AXLabel to label', async () => {
+      const ndjsonOutput = `{"type":"Button","AXLabel":"Click Me","enabled":true,"AXFrame":"{{0, 0}, {100, 50}}"}`;
+
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: ndjsonOutput,
+        stderr: '',
+      });
+
+      const result = await idbUiDescribeTool({
+        operation: 'all',
+      });
+      const response = JSON.parse(result.content[0].text);
+
+      expect(response.interactiveElementsPreview[0].label).toBe('Click Me');
+    });
+
+    it('should normalize AXFrame to frame coordinates', async () => {
+      const ndjsonOutput = `{"type":"Button","AXLabel":"Test","enabled":true,"AXFrame":"{{25, 50}, {100, 75}}"}`;
+
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: ndjsonOutput,
+        stderr: '',
+      });
+
+      const result = await idbUiDescribeTool({
+        operation: 'all',
+      });
+      const response = JSON.parse(result.content[0].text);
+
+      expect(response.interactiveElementsPreview[0].x).toBe(25);
+      expect(response.interactiveElementsPreview[0].y).toBe(50);
+      expect(response.interactiveElementsPreview[0].centerX).toBe(75); // 25 + 100/2
+      expect(response.interactiveElementsPreview[0].centerY).toBe(87.5); // 50 + 75/2
+    });
+
+    it('should handle mixed iOS and standard field names', async () => {
+      const ndjsonOutput = `{"type":"Button","AXLabel":"Standard Button","enabled":true,"frame":"{{0, 0}, {100, 50}}"}\n{"role":"AXButton","role_description":"button","AXLabel":"iOS Button","enabled":true,"AXFrame":"{{0, 60}, {100, 50}}"}`;
+
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: ndjsonOutput,
+        stderr: '',
+      });
+
+      const result = await idbUiDescribeTool({
+        operation: 'all',
+        filterLevel: 'moderate',
+      });
+      const response = JSON.parse(result.content[0].text);
+
+      expect(response.summary.totalElements).toBe(2);
+      expect(response.summary.tappableElements).toBe(2);
+      expect(response.interactiveElementsPreview[0].label).toBe('Standard Button');
+      expect(response.interactiveElementsPreview[1].label).toBe('iOS Button');
+    });
+
+    it('should detect links via role_description', async () => {
+      const ndjsonOutput = `{"role_description":"link","AXLabel":"Learn More","enabled":true,"AXFrame":"{{10, 20}, {80, 30}}"}`;
+
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: ndjsonOutput,
+        stderr: '',
+      });
+
+      const result = await idbUiDescribeTool({
+        operation: 'all',
+        filterLevel: 'moderate',
+      });
+      const response = JSON.parse(result.content[0].text);
+
+      expect(response.summary.tappableElements).toBe(1);
+      expect(response.interactiveElementsPreview[0].role_description).toBe('link');
+    });
+
+    it('should detect tabs via role field', async () => {
+      const ndjsonOutput = `{"role":"AXTab","AXLabel":"Profile","enabled":true,"AXFrame":"{{0, 700}, {100, 50}}"}`;
+
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: ndjsonOutput,
+        stderr: '',
+      });
+
+      const result = await idbUiDescribeTool({
+        operation: 'all',
+        filterLevel: 'moderate',
+      });
+      const response = JSON.parse(result.content[0].text);
+
+      expect(response.summary.tappableElements).toBe(1);
+      expect(response.interactiveElementsPreview[0].role).toBe('AXTab');
+    });
+
+    it('should handle disabled elements with iOS fields', async () => {
+      const ndjsonOutput = `{"role":"AXButton","role_description":"button","AXLabel":"Disabled","enabled":false,"AXFrame":"{{0, 0}, {100, 50}}"}`;
+
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: ndjsonOutput,
+        stderr: '',
+      });
+
+      const result = await idbUiDescribeTool({
+        operation: 'all',
+        filterLevel: 'moderate',
+      });
+      const response = JSON.parse(result.content[0].text);
+
+      expect(response.summary.tappableElements).toBe(0); // Disabled elements not tappable
+    });
+  });
+
+  describe('Bug Fix Validation - Grapla App Scenario', () => {
+    // This is the EXACT data from the bug report that was failing
+    const graplaExploreNdjson = `{"role":"AXButton","role_description":"button","AXLabel":"Positions","enabled":true,"AXFrame":"{{25, 292}, {173.66666666666666, 119.99999999999994}}"}\n{"role":"AXButton","role_description":"button","AXLabel":"Submissions","enabled":true,"AXFrame":"{{208, 292}, {173, 120}}"}\n{"role":"AXButton","role_description":"button","AXLabel":"Techniques","enabled":true,"AXFrame":"{{25, 422}, {173, 120}}"}\n{"role":"AXButton","role_description":"button","AXLabel":"Movements","enabled":true,"AXFrame":"{{208, 422}, {173, 120}}"}\n{"role":"AXButton","role_description":"button","AXLabel":"Principles","enabled":true,"AXFrame":"{{25, 552}, {173, 120}}"}`;
+
+    it('should demonstrate the original bug with strict filter', async () => {
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: graplaExploreNdjson,
+        stderr: '',
+      });
+
+      const result = await idbUiDescribeTool({
+        operation: 'all',
+        filterLevel: 'strict',
+        screenContext: 'Grapla Explore View',
+      });
+      const response = JSON.parse(result.content[0].text);
+
+      // This demonstrates the bug: strict filter misses all iOS buttons
+      expect(response.summary.totalElements).toBe(5);
+      expect(response.summary.tappableElements).toBe(0); // BUG: No buttons detected!
+      expect(response.summary.dataQuality).toBe('minimal');
+    });
+
+    it('should fix the bug with moderate filter (default)', async () => {
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: graplaExploreNdjson,
+        stderr: '',
+      });
+
+      const result = await idbUiDescribeTool({
+        operation: 'all',
+        // filterLevel: 'moderate' (default)
+        screenContext: 'Grapla Explore View',
+      });
+      const response = JSON.parse(result.content[0].text);
+
+      // This proves the fix: moderate filter detects all iOS buttons
+      expect(response.summary.totalElements).toBe(5);
+      expect(response.summary.tappableElements).toBe(5); // FIXED: All 5 buttons detected!
+      expect(response.summary.dataQuality).toBe('rich'); // Now rich instead of minimal
+      expect(response.interactiveElementsPreview).toHaveLength(5);
+      expect(response.interactiveElementsPreview[0].label).toBe('Positions');
+      expect(response.interactiveElementsPreview[0].role_description).toBe('button');
+    });
+
+    it('should detect all buttons with explicit moderate filter', async () => {
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: graplaExploreNdjson,
+        stderr: '',
+      });
+
+      const result = await idbUiDescribeTool({
+        operation: 'all',
+        filterLevel: 'moderate',
+        screenContext: 'Grapla Explore View',
+      });
+      const response = JSON.parse(result.content[0].text);
+
+      expect(response.summary.tappableElements).toBe(5);
+      expect(response.summary.dataQuality).toBe('rich');
+      expect(response.guidance.some((g: string) => g.includes('Filter level: moderate'))).toBe(
+        true
+      );
+    });
+
+    it('should include correct coordinates for tapping', async () => {
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: graplaExploreNdjson,
+        stderr: '',
+      });
+
+      const result = await idbUiDescribeTool({
+        operation: 'all',
+        screenContext: 'Grapla Explore View',
+      });
+      const response = JSON.parse(result.content[0].text);
+
+      // Verify Positions button has correct coordinates
+      const positionsButton = response.interactiveElementsPreview[0];
+      expect(positionsButton.label).toBe('Positions');
+      expect(positionsButton.x).toBe(25);
+      expect(positionsButton.y).toBe(292);
+      expect(positionsButton.centerX).toBeCloseTo(111.5, 0); // 25 + 173/2 (float width truncated to int)
+      expect(positionsButton.centerY).toBeCloseTo(351.5, 0); // 292 + 119/2 (float height 119.999... truncated to 119)
+    });
+  });
+
+  describe('Progressive Filter Escalation Pattern', () => {
+    it('should demonstrate progressive improvement from strict to moderate', async () => {
+      const testData = `{"role":"AXButton","role_description":"button","AXLabel":"Button1","enabled":true,"AXFrame":"{{0, 0}, {100, 50}}"}`;
+
+      // Test strict (original buggy behavior)
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: testData,
+        stderr: '',
+      });
+
+      const strictResult = await idbUiDescribeTool({
+        operation: 'all',
+        filterLevel: 'strict',
+      });
+      const strictResponse = JSON.parse(strictResult.content[0].text);
+
+      expect(strictResponse.summary.tappableElements).toBe(0);
+
+      // Test moderate (fixed behavior)
+      mockExecuteCommand.mockResolvedValueOnce({
+        code: 0,
+        stdout: testData,
+        stderr: '',
+      });
+
+      const moderateResult = await idbUiDescribeTool({
+        operation: 'all',
+        filterLevel: 'moderate',
+      });
+      const moderateResponse = JSON.parse(moderateResult.content[0].text);
+
+      expect(moderateResponse.summary.tappableElements).toBe(1);
+      expect(moderateResponse.summary.dataQuality).toBe('minimal'); // 1 element is still minimal (need 2-3 for moderate, >3 for rich)
+    });
+
+    it('should demonstrate full escalation path: strict → moderate → permissive → none', async () => {
+      const complexData = `{"role":"AXButton","role_description":"button","AXLabel":"Button","enabled":true}\n{"type":"Text","AXLabel":"Label"}\n{"enabled":true}`;
+
+      const results: Record<string, number> = {};
+
+      for (const level of ['strict', 'moderate', 'permissive', 'none']) {
+        mockExecuteCommand.mockResolvedValueOnce({
+          code: 0,
+          stdout: complexData,
+          stderr: '',
+        });
+
+        const result = await idbUiDescribeTool({
+          operation: 'all',
+          filterLevel: level as any,
+        });
+        const response = JSON.parse(result.content[0].text);
+        results[level] = response.summary.tappableElements;
+      }
+
+      // Validate progressive escalation finds more elements
+      expect(results.strict).toBe(0); // Misses iOS button
+      expect(results.moderate).toBe(1); // Finds iOS button
+      expect(results.permissive).toBe(2); // Finds button + text with label
+      expect(results.none).toBe(3); // Finds everything
+    });
+  });
 });
