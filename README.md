@@ -3,233 +3,481 @@
 [![npm version](https://img.shields.io/npm/v/xc-mcp.svg)](https://www.npmjs.com/package/xc-mcp)
 [![npm downloads](https://img.shields.io/npm/dm/xc-mcp.svg)](https://www.npmjs.com/package/xc-mcp)
 [![Node.js version](https://img.shields.io/node/v/xc-mcp.svg)](https://nodejs.org)
-[![codecov](https://codecov.io/gh/conorluddy/xc-mcp/graph/badge.svg?token=4CKBMDTENZ)](https://codecov.io/gh/conorluddy/xc-mcp) 
+[![codecov](https://codecov.io/gh/conorluddy/xc-mcp/graph/badge.svg?token=4CKBMDTENZ)](https://codecov.io/gh/conorluddy/xc-mcp)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/conorluddy/xc-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## 🎯 Massive Toolkit, Minimal Tokens
+**Production-grade MCP server for Xcode workflows — 75% token reduction, accessibility-first iOS automation**
 
-**51 specialized iOS development tools consuming just ~30,000 tokens** — that's ~590 tokens per tool on average.
-
-XC-MCP achieves extreme token efficiency through **progressive disclosure via RTFM**: ultra-minimal tool descriptions (10 words max) and parameter schemas with RTFM references. Full comprehensive documentation is available on-demand across 8 organized categories.
-
-**Token efficiency vs traditional verbose MCP servers:**
-- **XC-MCP:** ~30k tokens for 51 tools (descriptions + schemas)
-- **Traditional:** ~50k+ tokens for 51 tools (verbose descriptions + verbose schemas)
-- **Savings: 40% reduction in MCP tool overhead**
-
-**What's optimized:**
-- Tool descriptions: 10 words max + "Use rtfm for details"
-- Parameter descriptions: Tool-specific RTFM references
-- Full docs: Available via `rtfm({ toolName: "tool-name" })` on demand
-
----
-
-**Problem**: MCP clients can't effectively use Xcode CLI tools because the build and simulator listing commands return more than 50,000 tokens, exceeding MCP limits.
-**Solution**: Progressive disclosure with intelligent caching returns 2,000 tokens instead, achieving 96% reduction.
-**Result**: Full Xcode tooling functionality without token overflow, 90% faster workflows.
+XC-MCP makes Xcode and iOS simulator tooling accessible to AI agents through intelligent context engineering. **28 consolidated tools consuming just ~2,000 tokens** through progressive disclosure, operation-based routing, and accessibility-first automation patterns.
 
 ![gh-social](https://github.com/user-attachments/assets/dd23b1e5-ed8c-40c0-b44d-7c92f3b5d5aa)
 
+---
 
-## Overview
+## Why XC-MCP?
 
-**XC-MCP is a production-grade MCP server that makes Xcode and iOS simulator tooling accessible to AI agents through intelligent context engineering.**
+### The Problem: Token Overflow Breaks MCP Clients
 
-The repository implements **52 specialized tools** across 9 categories, solving the fundamental problem that raw Xcode CLI output (50,000+ tokens) exceeds MCP protocol limits. Through progressive disclosure, intelligent caching, and agent-optimized patterns, XC-MCP achieves **96% token reduction** while maintaining complete functionality.
+Traditional Xcode CLI wrappers dump massive output that exceeds MCP protocol limits:
+- `simctl list`: 57,000+ tokens (unusable in MCP context)
+- Build logs: 135,000+ tokens (catastrophic overflow)
+- Screenshot-first automation: 170 tokens per screen, 2000ms latency
+- No state memory between operations
 
-### Clever Optimizations
+### The Solution: Progressive Disclosure + Accessibility-First
 
-**Progressive Disclosure Architecture**
-- Returns 2,000-token summaries instead of 50,000+ raw output
-- Cache IDs enable on-demand access to full details
-- Prevents token overflow while preserving all information
-- Smart filtering returns only relevant data upfront
+**V2.0.0 Architecture:**
+```
+28 consolidated tools, ~1,980 tokens (75% reduction from baseline)
+├─ 6 router tools with operation enums (21 tools consolidated)
+├─ 22 individual specialized tools
+├─ RTFM on-demand documentation pattern
+└─ Accessibility-first workflow (50 tokens, 120ms vs 170 tokens, 2000ms)
+```
 
-**Vision-Optimized Screenshots**
-- Inline base64 screenshots with intelligent sizing (max 800px)
-- Automatic format selection (PNG for UI, JPEG for photos)
-- Semantic naming: `{appName}_{screenName}_{state}_{timestamp}.png`
-- Enables agents to reason about screen context without file I/O
+**Token Efficiency Evolution:**
 
-**Auto-UDID Detection**
-- Automatically finds booted simulators or selects optimal device
-- Eliminates manual UDID lookups in 90% of operations
-- Falls back gracefully with clear guidance when needed
+| Version | Tools | Token Usage | Architecture | vs Baseline |
+|---------|-------|-------------|--------------|-------------|
+| Pre-RTFM (v1.2.1) | 51 | ~7,850 tokens | Individual tools | Baseline |
+| V1.3.2 (RTFM) | 51 | ~3,000 tokens | Individual + RTFM | -62% |
+| **V2.0.0** | **28** | **~1,980 tokens** | **Routers + RTFM** | **-75%** |
 
-**Coordinate Transformation**
-- Converts IDB percentages (0-100) to simctl pixels automatically
-- Handles device resolution differences transparently
-- Enables consistent tap/gesture coordinates across devices
+**Key Improvements:**
+- ✅ **75% token reduction** (1,980 vs 7,850 baseline)
+- ✅ **45% fewer tools** (28 vs 51) through consolidation
+- ✅ **Accessibility-first automation** (3-4x faster, 3-4x cheaper than screenshots)
+- ✅ **Progressive disclosure** (summaries → cache IDs → full details on demand)
+- ✅ **60% test coverage** with comprehensive error handling
 
-**Learning & Intelligence**
-- Tracks successful build configurations per project
-- Records simulator boot performance and usage patterns
-- Suggests optimal devices based on history
-- Improves recommendations over time
-
-**Build Settings Cache**
-- Auto-discovers bundle IDs, deployment targets, capabilities
-- Extracts Info.plist permissions and entitlements
-- Enables permission validation and auto-configuration
-- 1-hour retention prevents repeated expensive operations
+---
 
 ## Quick Start
 
 ```bash
-# Install and run
+# Install globally
 npm install -g xc-mcp
-xc-mcp
 
-# Or use without installation
+# Or run without installation
 npx xc-mcp
 ```
 
 **MCP Configuration** (Claude Desktop):
-```bash
-claude mcp add xc-mcp -s user "npx xc-mcp"
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "xc-mcp": {
+      "command": "npx",
+      "args": ["-y", "xc-mcp"]
+    }
+  }
+}
 ```
 
-## Why This Exists
+---
 
-Raw Xcode CLI tools break MCP clients due to massive output:
-- `simctl list`: 57,000+ tokens (exceeds MCP limits)
-- `xcodebuild` logs: 135,000+ tokens (unusable)
-- No state memory between operations
+## Token Optimization Architecture
 
-XC-MCP solves this with progressive disclosure: return concise summaries first, full data on demand via cache IDs. This maintains complete functionality while respecting MCP token constraints.
+### Progressive Disclosure Pattern
 
-## Core Features
+XC-MCP returns concise summaries first, with cache IDs for on-demand detail retrieval:
 
-### Progressive Disclosure System
-- **Concise summaries by default**: 96% token reduction for simulator lists
-- **Full details on demand**: Use cache IDs to access complete data
-- **Smart filtering**: Return only relevant information upfront
-- **Token-efficient responses**: Never exceed MCP client limits
+**Example: Simulator List** (96% token reduction)
+```typescript
+// 1. Get summary (2,000 tokens vs 57,000 raw)
+simctl-list({ deviceType: "iPhone" })
+// Returns:
+{
+  cacheId: "sim-abc123",
+  summary: { totalDevices: 47, availableDevices: 31, bootedDevices: 1 },
+  quickAccess: { bootedDevices: [...], recentlyUsed: [...] }
+}
 
-### Three-Layer Intelligent Cache
-- **Simulator Cache**: 1-hour retention with usage tracking and performance metrics
-- **Project Cache**: Remembers successful build configurations per project  
-- **Response Cache**: 30-minute retention for progressive disclosure access
+// 2. Get full details only if needed
+simctl-get-details({
+  cacheId: "sim-abc123",
+  detailType: "available-only",
+  maxDevices: 10
+})
+```
 
-### Smart Defaults & Learning
-- **Build configuration memory**: Learns successful settings per project
-- **Simulator recommendations**: Prioritizes recently used and optimal devices
-- **Performance tracking**: Records boot times, build success rates, optimization metrics
-- **Adaptive intelligence**: Improves suggestions based on usage patterns
+**Example: Build Operations**
+```typescript
+// 1. Build returns summary + buildId
+xcodebuild-build({ projectPath: "./MyApp.xcworkspace", scheme: "MyApp" })
+// Returns:
+{
+  buildId: "build-xyz789",
+  success: true,
+  summary: { duration: 7075, errorCount: 0, warningCount: 1 }
+}
+
+// 2. Access full logs only when debugging
+xcodebuild-get-details({ buildId: "build-xyz789", detailType: "full-log" })
+```
+
+### RTFM On-Demand Documentation
+
+**Discovery Workflow:**
+```typescript
+// 1. Browse tool categories
+rtfm({ categoryName: "build" })
+// Returns: List of build tools with brief descriptions
+
+// 2. Get comprehensive docs for specific tool
+rtfm({ toolName: "xcodebuild-build" })
+// Returns: Full documentation with parameters, examples, related tools
+
+// 3. Execute with consolidated operations
+xcodebuild-build({ scheme: "MyApp", configuration: "Debug" })
+```
+
+**Why RTFM?**
+- Tool descriptions: <10 words + "See rtfm for details"
+- Full docs retrieved only when needed
+- 80% token savings vs traditional verbose MCP servers
+
+### Operation Enum Consolidation
+
+**Before V2.0:** 21 individual tools
+```typescript
+simctl-boot, simctl-shutdown, simctl-create, simctl-delete,
+simctl-erase, simctl-clone, simctl-rename, simctl-install,
+simctl-uninstall, simctl-launch, simctl-terminate...
+```
+
+**V2.0:** 6 consolidated routers
+```typescript
+simctl-device({ operation: "boot" | "shutdown" | "create" | "delete" | "erase" | "clone" | "rename" })
+simctl-app({ operation: "install" | "uninstall" | "launch" | "terminate" })
+idb-app({ operation: "install" | "uninstall" | "launch" | "terminate" })
+cache({ operation: "get-stats" | "get-config" | "set-config" | "clear" })
+persistence({ operation: "enable" | "disable" | "status" })
+idb-targets({ operation: "list" | "describe" | "connect" | "disconnect" })
+```
+
+**Result:** 40% token reduction through shared parameter schemas and unified documentation.
+
+---
+
+## Accessibility-First iOS Automation
+
+### Our Philosophy
+
+XC-MCP promotes **accessibility-first** automation because it:
+
+1. **Encourages better apps**: Developers building accessible UIs benefit all users (screen readers, voice control, assistive technologies)
+2. **Enables precise AI interaction**: Semantic element discovery via accessibility tree vs visual guesswork from screenshots
+3. **Improves efficiency**: 3-4x faster execution, 3-4x cheaper token cost
+4. **Reduces energy usage**: Skip computationally expensive image processing entirely
+
+### Objective Performance Data
+
+| Approach | Tokens | Latency | Use Case |
+|----------|--------|---------|----------|
+| **Accessibility Tree** | ~50 | ~120ms | Rich UIs with >3 tappable elements |
+| **Screenshot Analysis** | ~170 | ~2000ms | Minimal UIs with ≤1 tappable element |
+| **Efficiency Gain** | **3.4x cheaper** | **16x faster** | When accessibility sufficient |
+
+### Accessibility-First Workflow
+
+```typescript
+// 1. ALWAYS assess quality first
+accessibility-quality-check({ screenContext: "LoginScreen" })
+// Returns:
+{
+  quality: "rich" | "moderate" | "minimal",
+  recommendation: "accessibility-ready" | "consider-screenshot",
+  elementCounts: { total: 12, tappable: 8, textFields: 2 }
+}
+
+// 2. Decision branch based on quality
+if (quality === "rich" || quality === "moderate") {
+  // Use accessibility tree (faster, cheaper)
+  idb-ui-find-element({ query: "login" })
+  // Returns: { centerX: 200, centerY: 400, label: "Login" }
+
+  idb-ui-tap({ x: 200, y: 400 })
+  // Precise coordinate-based interaction
+
+} else if (quality === "minimal") {
+  // Fall back to screenshot (last resort)
+  screenshot({ size: "half", screenName: "LoginScreen" })
+  // Visual analysis when accessibility insufficient
+}
+```
+
+**Why This Matters:**
+
+- **For Users**: Encourages inclusive app development benefiting everyone
+- **For AI Agents**: Precise semantic targeting vs visual pattern matching
+- **For Efficiency**: 50 tokens (accessibility) vs 170 tokens (screenshot)
+- **For Speed**: 120ms (accessibility) vs 2000ms (screenshot)
+- **For Energy**: Skip image encoding/decoding/analysis entirely
+
+### Accessibility Tools (3 specialized)
+
+**`accessibility-quality-check`**: Rapid assessment without full tree query
+- Returns: `rich` (>3 tappable) | `moderate` (2-3) | `minimal` (≤1)
+- Use case: Decision point before screenshot vs accessibility
+- Cost: ~30 tokens, ~80ms
+
+**`idb-ui-find-element`**: Semantic element search by label/identifier
+- Returns: Tap-ready coordinates (centerX, centerY) with frame boundaries
+- Use case: Find specific button, field, or cell without visual analysis
+- Cost: ~40 tokens, ~120ms
+
+**`idb-ui-describe`**: Full accessibility tree with progressive disclosure
+- Operation `all`: Summary + uiTreeId for full tree retrieval
+- Operation `point`: Element details at specific coordinates
+- Use case: Discover all interactive elements, validate tap coordinates
+- Cost: ~50 tokens for summary, ~500 tokens for full tree
+
+---
+
+## Tool Reference
+
+### 6 Consolidated Router Tools
+
+**`simctl-device`** — Simulator lifecycle (7 operations)
+- `boot`, `shutdown`, `create`, `delete`, `erase`, `clone`, `rename`
+- Auto-UDID detection, performance tracking, smart defaults
+
+**`simctl-app`** — App management (4 operations)
+- `install`, `uninstall`, `launch`, `terminate`
+- Bundle ID resolution, launch arguments, environment variables
+
+**`idb-app`** — IDB app operations (4 operations)
+- `install`, `uninstall`, `launch`, `terminate`
+- Physical device + simulator support via IDB
+
+**`cache`** — Cache management (4 operations)
+- `get-stats`, `get-config`, `set-config`, `clear`
+- Multi-layer caching (simulator, project, response, build settings)
+
+**`persistence`** — Persistence control (3 operations)
+- `enable`, `disable`, `status`
+- File-based cache across server restarts
+
+**`idb-targets`** — Target management (2 operations)
+- `list`, `describe`, `connect`, `disconnect`
+- Physical device and simulator discovery
+
+### 22 Individual Specialized Tools
+
+**Build & Test (6 tools)**
+- `xcodebuild-build`: Build with progressive disclosure via buildId
+- `xcodebuild-test`: Test with filtering, test plans, cache IDs
+- `xcodebuild-clean`: Clean build artifacts
+- `xcodebuild-list`: List targets/schemes with smart caching
+- `xcodebuild-version`: Get Xcode and SDK versions
+- `xcodebuild-get-details`: Access cached build/test logs
+
+**UI Automation (6 tools)**
+- `idb-ui-describe`: Accessibility tree queries (all | point operations)
+- `idb-ui-tap`: Coordinate-based tapping with percentage conversion
+- `idb-ui-input`: Text input with keyboard control
+- `idb-ui-gesture`: Swipes, pinches, rotations with coordinate transforms
+- `idb-ui-find-element`: Semantic element search (NEW in v2.0)
+- `accessibility-quality-check`: Rapid UI richness assessment (NEW in v2.0)
+
+**I/O & Media (2 tools)**
+- `simctl-io`: Screenshots and video recording with semantic naming
+- `screenshot`: Vision-optimized base64 screenshots (inline, max 800px)
+
+**Discovery & Health (3 tools)**
+- `simctl-list`: Progressive disclosure simulator listing (96% token reduction)
+- `simctl-get-details`: On-demand full simulator data retrieval
+- `simctl-health-check`: Xcode environment validation
+
+**Utilities (5 tools)**
+- `simctl-openurl`: Open URLs and deep links
+- `simctl-get-app-container`: Get app container paths (bundle, data, group)
+- `rtfm`: On-demand comprehensive documentation
+- `list-cached-responses`: View recent build/test cache IDs
+- `workflow-build-and-run`: Complete build → boot → install → launch → screenshot
+
+**Total: 28 active tools** (down from 51 in v1.3.2)
+
+---
 
 ## Usage Examples
 
-### Complete Login Flow UI Automation
-Automate login testing with UI automation tools:
-```bash
-# 1. Query for login button
-simctl-query-ui udid: "device-123", bundleId: "com.example.app", predicate: 'type == "XCUIElementTypeButton" AND label == "Login"'
+### Example 1: Accessibility-First Login Automation
 
-# 2. Tap email field and enter email
-simctl-tap udid: "device-123", x: 100, y: 150
-simctl-type-text udid: "device-123", text: "user@example.com", actionName: "Enter email"
+```typescript
+// 1. Quality check before choosing approach
+accessibility-quality-check({ screenContext: "LoginScreen" })
+// → { quality: "rich", tappableElements: 12, textFields: 2 }
 
-# 3. Tap password field and enter password
-simctl-tap udid: "device-123", x: 100, y: 200
-simctl-type-text udid: "device-123", text: "password123", isSensitive: true, actionName: "Enter password"
+// 2. Find email field semantically
+idb-ui-find-element({ query: "email" })
+// → { centerX: 200, centerY: 150, label: "Email", type: "TextField" }
 
-# 4. Scroll to login button if needed
-simctl-scroll udid: "device-123", direction: "down", actionName: "Scroll to login button"
+// 3. Tap and input email
+idb-ui-tap({ x: 200, y: 150 })
+idb-ui-input({ operation: "text", text: "user@example.com" })
 
-# 5. Query and tap login button
-simctl-query-ui udid: "device-123", bundleId: "com.example.app", predicate: 'label == "Login"', captureLocation: true
-simctl-tap udid: "device-123", x: 100, y: 250, actionName: "Tap Login Button"
+// 4. Find and tap login button
+idb-ui-find-element({ query: "login" })
+// → { centerX: 200, centerY: 400, label: "Login", type: "Button" }
+idb-ui-tap({ x: 200, y: 400 })
 
-# 6. Verify success with screenshot
-simctl-io udid: "device-123", operation: "screenshot", appName: "MyApp", screenName: "HomeView", state: "Success"
+// 5. Verify (screenshot only for confirmation, not primary interaction)
+screenshot({ screenName: "HomeScreen", state: "LoggedIn" })
 ```
 
-### Progressive Simulator Management
-Get instant simulator summary (2k tokens vs 57k):
-```json
+**Efficiency Comparison:**
+- **Accessibility approach**: 4 queries × 50 tokens = 200 tokens, ~500ms total
+- **Screenshot approach**: 3 screenshots × 170 tokens = 510 tokens, ~6000ms total
+- **Savings**: 2.5x cheaper, 12x faster
+
+### Example 2: RTFM Discovery Workflow
+
+```typescript
+// 1. Browse tool categories
+rtfm({ categoryName: "build" })
+// Returns:
 {
-  "tool": "simctl-list",
-  "arguments": {"deviceType": "iPhone"}
+  category: "build",
+  tools: [
+    { name: "xcodebuild-build", description: "Build Xcode projects with smart defaults" },
+    { name: "xcodebuild-test", description: "Run tests with filtering and test plans" },
+    ...
+  ]
 }
+
+// 2. Get comprehensive docs for specific tool
+rtfm({ toolName: "xcodebuild-build" })
+// Returns:
+{
+  tool: "xcodebuild-build",
+  description: "Full comprehensive documentation...",
+  parameters: { projectPath: "...", scheme: "...", configuration: "..." },
+  examples: [...],
+  relatedTools: ["xcodebuild-clean", "xcodebuild-get-details"]
+}
+
+// 3. Execute with discovered parameters
+xcodebuild-build({
+  projectPath: "./MyApp.xcworkspace",
+  scheme: "MyApp",
+  configuration: "Debug"
+})
 ```
 
-Returns concise summary with cache ID for detailed access:
-```json
+### Example 3: Progressive Disclosure Build Workflow
+
+```typescript
+// 1. Build returns summary + buildId
+xcodebuild-build({
+  projectPath: "./MyApp.xcworkspace",
+  scheme: "MyApp"
+})
+// Returns:
 {
-  "cacheId": "sim-abc123",
-  "summary": {
-    "totalDevices": 47,
-    "availableDevices": 31,
-    "bootedDevices": 1
+  buildId: "build-abc123",
+  success: true,
+  summary: {
+    duration: 7075,
+    errorCount: 0,
+    warningCount: 1,
+    configuration: "Debug",
+    sdk: "iphonesimulator"
   },
-  "quickAccess": {
-    "bootedDevices": [{"name": "iPhone 16", "udid": "ABC-123"}],
-    "recentlyUsed": [...],
-    "recommendedForBuild": [...]
-  }
-}
-```
-
-Access full details when needed:
-```json
-{
-  "tool": "simctl-get-details",
-  "arguments": {
-    "cacheId": "sim-abc123",
-    "detailType": "available-only",
-    "maxDevices": 10
-  }
-}
-```
-
-### Smart Building with Configuration Memory
-Build with automatic smart defaults:
-```json
-{
-  "tool": "xcodebuild-build",
-  "arguments": {
-    "projectPath": "./MyApp.xcworkspace",
-    "scheme": "MyApp"
-  }
-}
-```
-
-Returns build summary with cache ID for full logs:
-```json
-{
-  "buildId": "build-xyz789",
-  "success": true,
-  "summary": {
-    "duration": 7075,
-    "errorCount": 0,
-    "warningCount": 1
-  },
-  "nextSteps": [
+  nextSteps: [
     "Build completed successfully",
-    "Smart defaults used: optimal simulator auto-selected",
     "Use 'xcodebuild-get-details' with buildId for full logs"
   ]
 }
+
+// 2. Access full logs only when debugging
+xcodebuild-get-details({
+  buildId: "build-abc123",
+  detailType: "full-log",
+  maxLines: 100
+})
+// Returns: Full compiler output, warnings, errors
 ```
 
-### Cache Management
-Monitor cache performance:
-```json
-{"tool": "cache-get-stats", "arguments": {}}
+---
+
+## CLAUDE.md Template for End Users
+
+Copy this into your project's `CLAUDE.md` to guide AI agents toward optimal XC-MCP usage:
+
+```markdown
+# XC-MCP Optimal Usage Patterns
+
+This project uses XC-MCP for iOS development automation. Follow these patterns for maximum efficiency.
+
+## Tool Discovery
+
+1. **Browse categories**: `rtfm({ categoryName: "build" })` — See all build-related tools
+2. **Get tool docs**: `rtfm({ toolName: "xcodebuild-build" })` — Comprehensive documentation
+3. **Execute**: Use discovered parameters and operations
+
+## Accessibility-First Automation (MANDATORY)
+
+**ALWAYS assess accessibility quality before taking screenshots:**
+
+1. **Check quality**: `accessibility-quality-check({ screenContext: "LoginScreen" })`
+   - Returns: `rich` | `moderate` | `minimal`
+
+2. **Decision branch**:
+   - IF `rich` or `moderate`: Use `idb-ui-find-element` + `idb-ui-tap` (faster, cheaper)
+   - IF `minimal`: Fall back to `screenshot` (last resort)
+
+3. **Why this matters**:
+   - Accessibility: 50 tokens, 120ms per query
+   - Screenshots: 170 tokens, 2000ms per capture
+   - **3-4x cheaper, 16x faster when accessibility sufficient**
+   - **Promotes inclusive app development**
+
+## Progressive Disclosure
+
+- Build/test tools return `buildId` or cache IDs
+- Use `xcodebuild-get-details` or `simctl-get-details` to drill down
+- **Never request full logs upfront** — get summaries first
+
+## Best Practices
+
+- **Let UDID auto-detect** — Don't prompt user for simulator UDIDs
+- **Use semantic context** — Include `screenContext`, `appName`, `screenName` parameters
+- **Prefer accessibility over screenshots** — Better for efficiency AND app quality
+- **Use operation enums** — `simctl-device({ operation: "boot" })` instead of separate tools
+
+## Example: Optimal Login Flow
+
+\`\`\`typescript
+// 1. Quality check (30 tokens, 80ms)
+accessibility-quality-check({ screenContext: "LoginScreen" })
+
+// 2. IF rich: Semantic search (40 tokens, 120ms)
+idb-ui-find-element({ query: "email" })
+idb-ui-tap({ x: 200, y: 150 })
+idb-ui-input({ operation: "text", text: "user@example.com" })
+
+idb-ui-find-element({ query: "login" })
+idb-ui-tap({ x: 200, y: 400 })
+
+// 3. Verify with screenshot only at end (170 tokens, 2000ms)
+screenshot({ screenName: "HomeScreen", state: "LoggedIn" })
+
+// Total: ~280 tokens, ~2400ms
+// vs Screenshot-first: ~510 tokens, ~6000ms (2.5x slower, 1.8x more expensive)
+\`\`\`
 ```
 
-Configure cache timeouts:
-```json
-{
-  "tool": "cache-set-config",
-  "arguments": {"cacheType": "simulator", "maxAgeMinutes": 30}
-}
-```
+---
 
 ## Installation & Configuration
 
 ### Prerequisites
+
 - macOS with Xcode command-line tools
 - Node.js 18+
 - Xcode 15+ recommended
@@ -240,9 +488,13 @@ xcode-select --install
 ```
 
 ### Installation Options
+
 ```bash
-# Global install (recommended)
+# Global install (recommended for MCP)
 npm install -g xc-mcp
+
+# Or run directly without installation
+npx -y xc-mcp
 
 # Local development
 git clone https://github.com/conorluddy/xc-mcp.git
@@ -250,211 +502,80 @@ cd xc-mcp && npm install && npm run build
 ```
 
 ### MCP Client Configuration
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+**Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 ```json
 {
   "mcpServers": {
     "xc-mcp": {
       "command": "npx",
-      "args": ["xc-mcp"],
+      "args": ["-y", "xc-mcp"],
       "cwd": "/path/to/your/ios/project"
     }
   }
 }
 ```
 
-## Tool Reference (52 Tools)
+**Environment Variables** (optional):
+- `XCODE_CLI_MCP_TIMEOUT`: Operation timeout in seconds (default: 300)
+- `XCODE_CLI_MCP_LOG_LEVEL`: Logging verbosity (debug | info | warn | error)
+- `XCODE_CLI_MCP_CACHE_DIR`: Custom cache directory path
 
-### Project Discovery (3 tools)
-| Tool | Description |
-|------|-------------|
-| `xcodebuild-list` | List targets, schemes, configurations with smart caching |
-| `xcodebuild-showsdks` | Discover available SDKs for iOS, macOS, watchOS, tvOS |
-| `xcodebuild-version` | Get Xcode and SDK version information |
-
-### Build Operations (4 tools)
-| Tool | Description |
-|------|-------------|
-| `xcodebuild-build` | Build with smart defaults, progressive disclosure via buildId, optional auto-install |
-| `xcodebuild-clean` | Clean build artifacts |
-| `xcodebuild-test` | Run tests with smart defaults, test plan support, filtering |
-| `xcodebuild-get-details` | Access cached build logs and error details |
-
-### Project Inspection (2 tools)
-| Tool | Description |
-|------|-------------|
-| `xcodebuild-inspect-scheme` | Parse and inspect Xcode scheme configurations (build/launch/test actions) |
-| `xcodebuild-validate-capabilities` | Validate app capabilities and generate permission grant commands |
-
-### Simulator Lifecycle (6 tools)
-| Tool | Description |
-|------|-------------|
-| `simctl-create` | Create new iOS simulator with device type and runtime |
-| `simctl-delete` | Delete simulator device |
-| `simctl-erase` | Erase simulator to factory settings |
-| `simctl-clone` | Clone simulator configuration and data |
-| `simctl-rename` | Rename simulator |
-| `simctl-health-check` | Validate Xcode, simulators, and environment |
-
-### Simulator Control (5 tools)
-| Tool | Description |
-|------|-------------|
-| `simctl-list` | List simulators with 96% token reduction via caching |
-| `simctl-get-details` | Progressive access to full simulator data |
-| `simctl-boot` | Boot simulator with performance tracking |
-| `simctl-shutdown` | Shutdown one or all simulators |
-| `simctl-suggest` | Get smart simulator recommendations with scoring |
-
-### App Management (3 tools)
-| Tool | Description |
-|------|-------------|
-| `simctl-install` | Install iOS app bundle to simulator |
-| `simctl-uninstall` | Uninstall app by bundle ID |
-| `simctl-get-app-container` | Get app container paths (bundle, data, group) |
-
-### App Control (3 tools)
-| Tool | Description |
-|------|-------------|
-| `simctl-launch` | Launch app with arguments and environment variables |
-| `simctl-terminate` | Gracefully terminate running app |
-| `simctl-openurl` | Open URLs and deep links (http, https, custom schemes) |
-
-### I/O & Media (2 tools)
-| Tool | Description |
-|------|-------------|
-| `simctl-io` | Capture screenshots and record videos with semantic naming |
-| `simctl-addmedia` | Add images and videos to simulator photo library |
-
-### Advanced Testing (5 tools)
-| Tool | Description |
-|------|-------------|
-| `simctl-privacy` | Manage app privacy permissions with audit trails |
-| `simctl-push` | Send simulated push notifications with delivery tracking |
-| `simctl-pbcopy` | Copy text to simulator clipboard (UIPasteboard) |
-| `simctl-status-bar` | Override status bar (time, network, battery) |
-| `simctl-stream-logs` | Real-time console log streaming with bundle ID filtering |
-
-### Workflow Orchestration (1 tool)
-| Tool | Description |
-|------|-------------|
-| `workflow-build-and-run` | Complete workflow: build → select simulator → boot → install → launch → screenshot |
-
-### Monitoring & Screenshots (1 tool)
-| Tool | Description |
-|------|-------------|
-| `simctl-screenshot-inline` | Vision-optimized base64 screenshots with automatic sizing (max 800px) |
-
-### IDB UI Automation (11 tools)
-| Tool | Description |
-|------|-------------|
-| `idb-targets` | List available IDB targets (physical devices and simulators) |
-| `idb-connect` | Connect to IDB target for UI automation |
-| `idb-ui-describe` | Describe UI element hierarchy with accessibility tree |
-| `idb-ui-tap` | Tap UI elements by coordinates (percentage-based, auto-converted) |
-| `idb-ui-input` | Input text into focused fields |
-| `idb-ui-gesture` | Perform gestures (swipe, pinch, rotate) with coordinate transformation |
-| `idb-list-apps` | List installed apps on IDB target |
-| `idb-install` | Install app bundle to IDB target |
-| `idb-launch` | Launch app on IDB target with arguments |
-| `idb-terminate` | Terminate running app on IDB target |
-| `idb-uninstall` | Uninstall app from IDB target |
-
-### Cache Management (5 tools)
-| Tool | Description |
-|------|-------------|
-| `cache-get-stats` | View cache performance metrics and health |
-| `cache-set-config` | Configure cache timeouts per layer |
-| `cache-get-config` | Get current cache configuration |
-| `cache-clear` | Clear cache (simulator, project, response) |
-| `list-cached-responses` | View recent cached build/test results |
-
-### Persistence Management (3 tools)
-| Tool | Description |
-|------|-------------|
-| `persistence-enable` | Enable file-based cache persistence across server restarts |
-| `persistence-disable` | Disable persistence and optionally clear cache files |
-| `persistence-status` | View persistence status, disk usage, and health metrics |
-
-### Documentation (1 tool)
-| Tool | Description |
-|------|-------------|
-| `rtfm` | Read The Manual - Get comprehensive documentation for any tool with examples and parameter details. Implements progressive disclosure: concise tool descriptions stay under 400 tokens, full docs available on demand. Documentation embedded in compiled JavaScript, works in both development and published npm package. |
-
-## Advanced Features
-
-### LLM Optimization Patterns
-XC-MCP implements context engineering patterns specifically optimized for AI agent usage:
-
-**Semantic Screenshot Naming** (simctl-io)
-- Automatic naming: `{appName}_{screenName}_{state}_{date}.png`
-- Example: `MyApp_LoginScreen_Empty_2025-01-23.png`
-- Enables agents to reason about screen context and state progression
-
-**Structured Test Context** (simctl-push)
-- Delivery tracking with `deliveryInfo` (sent/sentAt)
-- Test context with `testName`, `expectedBehavior`, `actualBehavior`
-- Enables agents to verify push delivery and validate app behavior
-
-**Permission Audit Trails** (simctl-privacy)
-- Audit entries with timestamp, action, service, success
-- Test context with scenario and step tracking
-- Enables agents to track permission changes across test scenarios
-
-**Interaction Sequence Tracking**
-- All UI automation tools support `actionName` parameter
-- Timestamp tracking for verification with screenshots
-- Guidance suggests next steps for agents
-
-See `docs/LLM_OPTIMIZATION.md` for comprehensive patterns and future phases.
-
-### UI Automation Workflows
-Chain multiple UI tools for complete app testing:
-```json
-[
-  {"tool": "simctl-query-ui", "args": {"udid": "...", "bundleId": "...", "predicate": "type == \"Button\" AND label == \"Login\""}},
-  {"tool": "simctl-tap", "args": {"udid": "...", "x": 100, "y": 200, "actionName": "Tap Login Button"}},
-  {"tool": "simctl-io", "args": {"udid": "...", "operation": "screenshot", "appName": "MyApp", "screenName": "LoginScreen", "state": "Success"}},
-  {"tool": "simctl-query-ui", "args": {"udid": "...", "bundleId": "...", "predicate": "type == \"TextField\" AND identifier == \"emailInput\""}}
-]
-```
-
-### Performance Optimization
-- **90% fewer repeated calls** through intelligent caching
-- **Boot time tracking** for simulator performance optimization
-- **Build trend analysis** tracks success rates and timing
-- **Usage pattern learning** improves recommendations over time
-- **Smart simulator selection** based on usage history and performance
-
-### Persistent State Management (Optional)
-Enable file-based persistence for cache data across server restarts:
-```json
-{"tool": "persistence-enable", "arguments": {}}
-```
-
-### Environment Variables
-- `XCODE_CLI_MCP_TIMEOUT`: Operation timeout (default: 300s)
-- `XCODE_CLI_MCP_LOG_LEVEL`: Logging verbosity
-- `XCODE_CLI_MCP_CACHE_DIR`: Custom cache directory
+---
 
 ## Development
 
 ### Build Commands
+
 ```bash
-npm run build      # Compile TypeScript
-npm run dev        # Development mode with watch
-npm test           # Run test suite (80% coverage required)
-npm run lint       # Code linting with auto-fix
+npm run build          # Compile TypeScript to JavaScript
+npm run dev            # Development mode with watch compilation
+npm test               # Run Jest test suite (60% coverage)
+npm run test:coverage  # Generate coverage report
+npm run lint           # ESLint with auto-fix
+npm run format         # Prettier code formatting
 ```
 
 ### Testing
-- Jest with ESM support
-- 80% coverage threshold enforced
-- Pre-commit hooks ensure code quality
 
-## License & Support
+- **Jest** with ESM support and TypeScript compilation
+- **60% coverage** across statements, branches, functions, lines
+- **1136 tests** covering core functionality, edge cases, error handling
+- **Pre-commit hooks** enforce code quality via Husky + lint-staged
 
-MIT License. For issues and questions, open a GitHub issue.
+### Architecture
+
+**Core Components:**
+- `src/index.ts` — MCP server with tool registration and routing
+- `src/tools/` — 28 tools organized by category (xcodebuild, simctl, idb, cache)
+- `src/state/` — Multi-layer intelligent caching (simulator, project, response, build settings)
+- `src/utils/` — Shared utilities (command execution, validation, error formatting)
+- `src/types/` — TypeScript definitions for Xcode data structures
+
+**Cache Architecture:**
+- **Simulator Cache**: 1-hour retention, usage tracking, performance metrics
+- **Project Cache**: Remembers successful build configurations per project
+- **Build Settings Cache**: Auto-discovers bundle IDs, deployment targets, capabilities
+- **Response Cache**: 30-minute retention for progressive disclosure
 
 ---
 
-**XC-MCP solves MCP token overflow for Xcode tooling through progressive disclosure and intelligent caching.**
+## Contributing
+
+Contributions welcome! Please ensure:
+- Tests pass (`npm test`)
+- Coverage remains ≥60% (`npm run test:coverage`)
+- Code passes linting (`npm run lint`)
+- TypeScript compiles (`npm run build`)
+
+See [CLAUDE.md](./CLAUDE.md) for detailed development guidelines and architecture documentation.
+
+---
+
+## License
+
+MIT License — See [LICENSE](./LICENSE) for details.
+
+---
+
+**XC-MCP: Production-grade Xcode automation for AI agents through progressive disclosure and accessibility-first workflows.**

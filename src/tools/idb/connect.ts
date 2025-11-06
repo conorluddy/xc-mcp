@@ -122,7 +122,7 @@ export async function idbConnectTool(args: IdbConnectArgs) {
  * Auto-started by IDB CLI if not already running.
  */
 async function executeConnectOperation(udid: string, target: any) {
-  const result = await executeCommand(`idb connect --udid "${udid}"`, {
+  const result = await executeCommand(`idb connect "${udid}"`, {
     timeout: 10000,
   });
 
@@ -186,7 +186,7 @@ async function executeConnectOperation(udid: string, target: any) {
  * Frees resources and closes gRPC channel.
  */
 async function executeDisconnectOperation(udid: string, target: any) {
-  const result = await executeCommand(`idb disconnect --udid "${udid}"`, {
+  const result = await executeCommand(`idb disconnect "${udid}"`, {
     timeout: 5000,
   });
 

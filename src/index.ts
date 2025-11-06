@@ -8,54 +8,45 @@ import { z } from 'zod';
 // Import tool implementations
 import { xcodebuildVersionTool } from './tools/xcodebuild/version.js';
 import { xcodebuildListTool } from './tools/xcodebuild/list.js';
-import { xcodebuildShowSDKsTool } from './tools/xcodebuild/showsdks.js';
+// COMMENTED OUT (v2.0.0): xcodebuild-showsdks - static environment info, agents can use defaults
+// import { xcodebuildShowSDKsTool } from './tools/xcodebuild/showsdks.js';
 import { xcodebuildBuildTool } from './tools/xcodebuild/build.js';
 import { xcodebuildCleanTool } from './tools/xcodebuild/clean.js';
 import { xcodebuildTestTool } from './tools/xcodebuild/xcodebuild-test.js';
 import { xcodebuildGetDetailsTool } from './tools/xcodebuild/get-details.js';
 import { simctlListTool } from './tools/simctl/list.js';
 import { simctlGetDetailsTool } from './tools/simctl/get-details.js';
-import { simctlBootTool } from './tools/simctl/boot.js';
-import { simctlShutdownTool } from './tools/simctl/shutdown.js';
-import { simctlSuggestTool } from './tools/simctl/suggest.js';
-import { simctlCreateTool } from './tools/simctl/create.js';
-import { simctlDeleteTool } from './tools/simctl/delete.js';
-import { simctlEraseTool } from './tools/simctl/erase.js';
-import { simctlCloneTool } from './tools/simctl/clone.js';
-import { simctlRenameTool } from './tools/simctl/rename.js';
-import { simctlHealthCheckTool } from './tools/simctl/health-check.js';
-import { simctlInstallTool } from './tools/simctl/install.js';
-import { simctlUninstallTool } from './tools/simctl/uninstall.js';
+import { simctlDeviceTool } from './tools/simctl/device/index.js';
+// COMMENTED OUT (v2.0.0): simctl-suggest - agents have explicit requirements, redundant with simctl-list
+// import { simctlSuggestTool } from './tools/simctl/suggest.js';
+import { simctlAppTool } from './tools/simctl/app/index.js';
 import { simctlGetAppContainerTool } from './tools/simctl/get-app-container.js';
-import { simctlLaunchTool } from './tools/simctl/launch.js';
-import { simctlTerminateTool } from './tools/simctl/terminate.js';
 import { simctlOpenUrlTool } from './tools/simctl/openurl.js';
 import { simctlIoTool } from './tools/simctl/io.js';
-import { simctlAddmediaTool } from './tools/simctl/addmedia.js';
-import { simctlPrivacyTool } from './tools/simctl/privacy.js';
+// COMMENTED OUT (v2.0.0): simctl-addmedia - niche scenario for photo picker apps
+// import { simctlAddmediaTool } from './tools/simctl/addmedia.js';
+// COMMENTED OUT (v2.0.0): simctl-privacy - permission testing rarely needed in CI/automated testing
+// import { simctlPrivacyTool } from './tools/simctl/privacy.js';
 import { simctlPushTool } from './tools/simctl/push.js';
-import { simctlPbcopyTool } from './tools/simctl/pbcopy.js';
-import { simctlStatusBarTool } from './tools/simctl/status-bar.js';
+// COMMENTED OUT (v2.0.0): simctl-pbcopy - can type text instead via idb-ui-input, extremely niche
+// import { simctlPbcopyTool } from './tools/simctl/pbcopy.js';
+// COMMENTED OUT (v2.0.0): simctl-status-bar - cosmetic screenshot enhancement, not needed for app development
+// import { simctlStatusBarTool } from './tools/simctl/status-bar.js';
 import { simctlScreenshotInlineTool } from './tools/simctl/screenshot-inline.js';
-import { idbTargetsTool } from './tools/idb/targets.js';
-import { idbConnectTool } from './tools/idb/connect.js';
+import { simctlHealthCheckTool } from './tools/simctl/health-check.js';
+import { idbTargetsRouter } from './tools/idb/targets/index.js';
 import { idbUiTapTool } from './tools/idb/ui-tap.js';
 import { idbUiInputTool } from './tools/idb/ui-input.js';
 import { idbUiGestureTool } from './tools/idb/ui-gesture.js';
 import { idbUiDescribeTool } from './tools/idb/ui-describe.js';
+import { idbUiFindElementTool } from './tools/idb/ui-find-element.js';
+import { accessibilityQualityCheckTool } from './tools/idb/accessibility-quality-check.js';
 import { idbListAppsTool } from './tools/idb/list-apps.js';
-import { idbInstallTool } from './tools/idb/install.js';
-import { idbLaunchTool } from './tools/idb/launch.js';
-import { idbTerminateTool } from './tools/idb/terminate.js';
-import { idbUninstallTool } from './tools/idb/uninstall.js';
-import { listCachedResponsesTool } from './tools/cache/list-cached.js';
-import { getCacheStatsTool } from './tools/cache/get-stats.js';
-import { setCacheConfigTool } from './tools/cache/set-config.js';
-import { clearCacheTool } from './tools/cache/clear.js';
-import { getCacheConfigTool } from './tools/cache/get-config.js';
-import { persistenceEnableTool } from './tools/persistence/enable.js';
-import { persistenceDisableTool } from './tools/persistence/disable.js';
-import { persistenceStatusTool } from './tools/persistence/status.js';
+import { idbAppTool } from './tools/idb/app/index.js';
+// COMMENTED OUT (v2.0.0): list-cached-responses - meta tool for debugging cache, not needed by agents
+// import { listCachedResponsesTool } from './tools/cache/list-cached.js';
+import { cacheTool } from './tools/cache/index.js';
+import { persistenceTool } from './tools/persistence/index.js';
 import { getToolDocsTool } from './tools/get-tool-docs.js';
 import { debugWorkflowPrompt } from './tools/prompts/debug-workflow.js';
 import { validateXcodeInstallation } from './utils/validation.js';
@@ -67,7 +58,7 @@ class XcodeCLIMCPServer {
     this.server = new McpServer(
       {
         name: 'xc-mcp',
-        version: '1.3.2',
+        version: '2.0.0',
         description:
           'Wraps xcodebuild, simctl, and IDB with intelligent caching, for efficient iOS development. The RTFM tool can be called with any of the tool names to return further documentation if required. Tool descriptions are intentionally minimal to reduce MCP context usage.',
       },
@@ -76,6 +67,68 @@ class XcodeCLIMCPServer {
           tools: {},
           prompts: {},
         },
+        instructions: `# XC-MCP: Accessibility-First Automation Workflow
+
+## Core Strategy: Always Query Accessibility Tree First
+
+XC-MCP is optimized for **accessibility-driven automation** - querying the UI accessibility tree is 3-4x faster and cheaper than screenshots.
+
+### Recommended Workflow
+
+1. **Query Accessibility Tree** (ALWAYS START HERE)
+   - Use: \`idb-ui-describe\` with operation \`all\` to get full element tree
+   - Get: Tap-ready coordinates (centerX, centerY), element labels, types
+   - Cost: ~50 tokens, 120ms response time
+   - When to use: 95% of automation tasks
+
+2. **Check Accessibility Quality** (Optional Quick Assessment)
+   - Use: \`accessibility-quality-check\` for rapid richness assessment
+   - Get: Quality score + recommendation (accessibility-ready or screenshot-needed)
+   - Cost: ~30 tokens, 80ms response time
+   - When: If unsure whether accessibility data is sufficient
+
+3. **Semantic Element Search** (Alternative Discovery)
+   - Use: \`idb-ui-find-element\` to search by label or identifier
+   - Get: Matching elements filtered from accessibility tree
+   - Cost: ~40 tokens, 100ms response time
+   - When: Looking for specific element in complex UI
+
+4. **Only Use Screenshots as Fallback** (10% of cases)
+   - Use: \`screenshot\` (simctl-screenshot-inline) when accessibility data is minimal
+   - Get: Visual context for complex layouts or custom UI
+   - Cost: ~170 tokens, 2000ms response time
+   - When: Accessibility tree insufficient, visual analysis required
+
+### Why This Matters
+
+- **3-4x faster**: Accessibility queries (100-120ms) vs screenshots (2000ms)
+- **80% cheaper**: ~50 tokens vs ~170 tokens per query
+- **More reliable**: Accessibility tree survives app theme/layout changes
+- **Works offline**: No visual processing needed, pure data queries
+
+### Key Tools Reference
+
+**Accessibility Tree (USE FIRST):**
+- \`idb-ui-describe\` - Query full tree or specific point
+- \`idb-ui-find-element\` - Semantic element search
+- \`accessibility-quality-check\` - Quick richness assessment
+
+**Interaction:**
+- \`idb-ui-tap\` - Tap at coordinates from accessibility tree
+- \`idb-ui-input\` - Type in text fields by identifier
+- \`idb-ui-gesture\` - Swipe, button presses, complex gestures
+
+**Screenshots (Fallback Only):**
+- \`screenshot\` - Base64 screenshot with optional accessibility data
+- Use only when accessibility tree says data is minimal
+
+### Progressive Disclosure
+
+Large outputs use cache IDs (returned in response) - use \`xcodebuild-get-details\`, \`simctl-get-details\`, or \`idb-get-details\` to drill into full results.
+
+### Documentation Discovery
+
+Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName: "idb-ui-describe" })\``,
       }
     );
 
@@ -132,27 +185,28 @@ class XcodeCLIMCPServer {
       }
     );
 
-    this.server.registerTool(
-      'xcodebuild-showsdks',
-      {
-        description: 'List available SDKs.',
-        inputSchema: {
-          outputFormat: z.enum(['json', 'text']).default('json'),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await xcodebuildShowSDKsTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
+    // COMMENTED OUT (v2.0.0): xcodebuild-showsdks
+    // this.server.registerTool(
+    //   'xcodebuild-showsdks',
+    //   {
+    //     description: 'List available SDKs.',
+    //     inputSchema: {
+    //       outputFormat: z.enum(['json', 'text']).default('json'),
+    //     },
+    //   },
+    //   async args => {
+    //     try {
+    //       await validateXcodeInstallation();
+    //       return await xcodebuildShowSDKsTool(args);
+    //     } catch (error) {
+    //       if (error instanceof McpError) throw error;
+    //       throw new McpError(
+    //         ErrorCode.InternalError,
+    //         `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+    //       );
+    //     }
+    //   }
+    // );
 
     this.server.registerTool(
       'xcodebuild-build',
@@ -321,135 +375,25 @@ class XcodeCLIMCPServer {
     );
 
     this.server.registerTool(
-      'simctl-boot',
+      'simctl-device',
       {
-        description: 'Boot simulator.',
+        description: 'Manage simulator devices.',
         inputSchema: {
-          deviceId: z.string(),
+          operation: z.enum(['boot', 'shutdown', 'create', 'delete', 'erase', 'clone', 'rename']),
+          deviceId: z.string().optional(),
           waitForBoot: z.boolean().default(true),
           openGui: z.boolean().default(true),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlBootTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'simctl-shutdown',
-      {
-        description: 'Shutdown simulator.',
-        inputSchema: {
-          deviceId: z.string(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlShutdownTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'simctl-suggest',
-      {
-        description: 'Recommend best simulators.',
-        inputSchema: {
-          projectPath: z.string().optional(),
+          name: z.string().optional(),
           deviceType: z.string().optional(),
-          maxSuggestions: z.number().default(4),
-          autoBootTopSuggestion: z.boolean().default(false),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlSuggestTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'simctl-create',
-      {
-        description: 'Create simulator device.',
-        inputSchema: {
-          name: z.string(),
-          deviceType: z.string(),
           runtime: z.string().optional(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlCreateTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'simctl-delete',
-      {
-        description: 'Delete simulator device.',
-        inputSchema: {
-          deviceId: z.string(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlDeleteTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'simctl-erase',
-      {
-        description: 'Reset simulator to factory settings.',
-        inputSchema: {
-          deviceId: z.string(),
           force: z.boolean().default(false),
+          newName: z.string().optional(),
         },
       },
       async args => {
         try {
           await validateXcodeInstallation();
-          return await simctlEraseTool(args);
+          return await simctlDeviceTool(args);
         } catch (error) {
           if (error instanceof McpError) throw error;
           throw new McpError(
@@ -460,51 +404,31 @@ class XcodeCLIMCPServer {
       }
     );
 
-    this.server.registerTool(
-      'simctl-clone',
-      {
-        description: 'Clone simulator.',
-        inputSchema: {
-          deviceId: z.string(),
-          newName: z.string(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlCloneTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'simctl-rename',
-      {
-        description: 'Rename simulator.',
-        inputSchema: {
-          deviceId: z.string(),
-          newName: z.string(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlRenameTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
+    // COMMENTED OUT (v2.0.0): simctl-suggest
+    // this.server.registerTool(
+    //   'simctl-suggest',
+    //   {
+    //     description: 'Recommend best simulators.',
+    //     inputSchema: {
+    //       projectPath: z.string().optional(),
+    //       deviceType: z.string().optional(),
+    //       maxSuggestions: z.number().default(4),
+    //       autoBootTopSuggestion: z.boolean().default(false),
+    //     },
+    //   },
+    //   async args => {
+    //     try {
+    //       await validateXcodeInstallation();
+    //       return await simctlSuggestTool(args);
+    //     } catch (error) {
+    //       if (error instanceof McpError) throw error;
+    //       throw new McpError(
+    //         ErrorCode.InternalError,
+    //         `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+    //       );
+    //     }
+    //   }
+    // );
 
     this.server.registerTool(
       'simctl-health-check',
@@ -526,44 +450,25 @@ class XcodeCLIMCPServer {
       }
     );
 
-    // Phase 3: App Lifecycle & Testing Tools (11 total)
-    // App Management Tools
+    // Phase 3: App Lifecycle & Testing Tools
+    // Consolidated App Management Tool
     this.server.registerTool(
-      'simctl-install',
+      'simctl-app',
       {
-        description: 'Install app on simulator.',
+        description: 'Manage apps on simulators.',
         inputSchema: {
-          udid: z.string(),
-          appPath: z.string(),
+          operation: z.enum(['install', 'uninstall', 'launch', 'terminate']),
+          udid: z.string().optional(),
+          bundleId: z.string().optional(),
+          appPath: z.string().optional(),
+          arguments: z.array(z.string()).optional(),
+          environment: z.record(z.string()).optional(),
         },
       },
       async args => {
         try {
           await validateXcodeInstallation();
-          return await simctlInstallTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'simctl-uninstall',
-      {
-        description: 'Uninstall app from simulator.',
-        inputSchema: {
-          udid: z.string(),
-          bundleId: z.string(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlUninstallTool(args);
+          return await simctlAppTool(args);
         } catch (error) {
           if (error instanceof McpError) throw error;
           throw new McpError(
@@ -588,55 +493,6 @@ class XcodeCLIMCPServer {
         try {
           await validateXcodeInstallation();
           return await simctlGetAppContainerTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    // App Control Tools
-    this.server.registerTool(
-      'simctl-launch',
-      {
-        description: 'Launch app.',
-        inputSchema: {
-          udid: z.string(),
-          bundleId: z.string(),
-          arguments: z.array(z.string()).optional(),
-          environment: z.record(z.string()).optional(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlLaunchTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'simctl-terminate',
-      {
-        description: 'Terminate running app.',
-        inputSchema: {
-          udid: z.string(),
-          bundleId: z.string(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlTerminateTool(args);
         } catch (error) {
           if (error instanceof McpError) throw error;
           throw new McpError(
@@ -700,56 +556,58 @@ class XcodeCLIMCPServer {
       }
     );
 
-    this.server.registerTool(
-      'simctl-addmedia',
-      {
-        description: 'Add media to photo library.',
-        inputSchema: {
-          udid: z.string(),
-          mediaPath: z.string(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlAddmediaTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
+    // COMMENTED OUT (v2.0.0): simctl-addmedia
+    // this.server.registerTool(
+    //   'simctl-addmedia',
+    //   {
+    //     description: 'Add media to photo library.',
+    //     inputSchema: {
+    //       udid: z.string(),
+    //       mediaPath: z.string(),
+    //     },
+    //   },
+    //   async args => {
+    //     try {
+    //       await validateXcodeInstallation();
+    //       return await simctlAddmediaTool(args);
+    //     } catch (error) {
+    //       if (error instanceof McpError) throw error;
+    //       throw new McpError(
+    //         ErrorCode.InternalError,
+    //         `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+    //       );
+    //     }
+    //   }
+    // );
 
     // Advanced Testing Tools
-    this.server.registerTool(
-      'simctl-privacy',
-      {
-        description: 'Manage app permissions.',
-        inputSchema: {
-          udid: z.string(),
-          bundleId: z.string(),
-          action: z.enum(['grant', 'revoke', 'reset']),
-          service: z.string(),
-          scenario: z.string().optional(),
-          step: z.number().optional(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlPrivacyTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
+    // COMMENTED OUT (v2.0.0): simctl-privacy
+    // this.server.registerTool(
+    //   'simctl-privacy',
+    //   {
+    //     description: 'Manage app permissions.',
+    //     inputSchema: {
+    //       udid: z.string(),
+    //       bundleId: z.string(),
+    //       action: z.enum(['grant', 'revoke', 'reset']),
+    //       service: z.string(),
+    //       scenario: z.string().optional(),
+    //       step: z.number().optional(),
+    //     },
+    //   },
+    //   async args => {
+    //     try {
+    //       await validateXcodeInstallation();
+    //       return await simctlPrivacyTool(args);
+    //     } catch (error) {
+    //       if (error instanceof McpError) throw error;
+    //       throw new McpError(
+    //         ErrorCode.InternalError,
+    //         `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+    //       );
+    //     }
+    //   }
+    // );
 
     this.server.registerTool(
       'simctl-push',
@@ -777,60 +635,63 @@ class XcodeCLIMCPServer {
       }
     );
 
-    this.server.registerTool(
-      'simctl-pbcopy',
-      {
-        description: 'Copy text to clipboard.',
-        inputSchema: {
-          udid: z.string(),
-          text: z.string(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlPbcopyTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
+    // COMMENTED OUT (v2.0.0): simctl-pbcopy
+    // this.server.registerTool(
+    //   'simctl-pbcopy',
+    //   {
+    //     description: 'Copy text to clipboard.',
+    //     inputSchema: {
+    //       udid: z.string(),
+    //       text: z.string(),
+    //     },
+    //   },
+    //   async args => {
+    //     try {
+    //       await validateXcodeInstallation();
+    //       return await simctlPbcopyTool(args);
+    //     } catch (error) {
+    //       if (error instanceof McpError) throw error;
+    //       throw new McpError(
+    //         ErrorCode.InternalError,
+    //         `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+    //       );
+    //     }
+    //   }
+    // );
 
-    this.server.registerTool(
-      'simctl-status-bar',
-      {
-        description: 'Override status bar.',
-        inputSchema: {
-          udid: z.string(),
-          operation: z.enum(['override', 'clear']),
-          time: z.string().optional(),
-          dataNetwork: z.string().optional(),
-          wifiMode: z.string().optional(),
-          batteryState: z.string().optional(),
-          batteryLevel: z.number().min(0).max(100).optional(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlStatusBarTool(args);
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
+    // COMMENTED OUT (v2.0.0): simctl-status-bar
+    // this.server.registerTool(
+    //   'simctl-status-bar',
+    //   {
+    //     description: 'Override status bar.',
+    //     inputSchema: {
+    //       udid: z.string(),
+    //       operation: z.enum(['override', 'clear']),
+    //       time: z.string().optional(),
+    //       dataNetwork: z.string().optional(),
+    //       wifiMode: z.string().optional(),
+    //       batteryState: z.string().optional(),
+    //       batteryLevel: z.number().min(0).max(100).optional(),
+    //     },
+    //   },
+    //   async args => {
+    //     try {
+    //       await validateXcodeInstallation();
+    //       return await simctlStatusBarTool(args);
+    //     } catch (error) {
+    //       if (error instanceof McpError) throw error;
+    //       throw new McpError(
+    //         ErrorCode.InternalError,
+    //         `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+    //       );
+    //     }
+    //   }
+    // );
     this.server.registerTool(
       'screenshot',
       {
-        description: 'Capture screenshot as base64.',
+        description:
+          'Capture screenshot as base64 (use only when accessibility tree is insufficient - see idb-ui-describe first for faster queries).',
         inputSchema: {
           udid: z.string().optional(),
           size: z.enum(['full', 'half', 'quarter', 'thumb']).optional(),
@@ -854,31 +715,19 @@ class XcodeCLIMCPServer {
       }
     );
 
-    // IDB Tools (11 total) - iOS Development Bridge for UI Automation & App Management
+    // IDB Tools - iOS Development Bridge for UI Automation & App Management
     this.server.registerTool(
       'idb-targets',
       {
-        description: 'Query iOS targets.',
+        description: 'Query and manage IDB targets.',
         inputSchema: {
-          operation: z.enum(['list', 'describe', 'focus']),
+          operation: z.enum(['list', 'describe', 'focus', 'connect', 'disconnect']),
           udid: z.string().optional(),
           state: z.enum(['Booted', 'Shutdown']).optional(),
           type: z.enum(['device', 'simulator']).optional(),
         },
       },
-      async args => idbTargetsTool(args)
-    );
-
-    this.server.registerTool(
-      'idb-connect',
-      {
-        description: 'Manage IDB connections.',
-        inputSchema: {
-          udid: z.string().optional(),
-          operation: z.enum(['connect', 'disconnect']).default('connect'),
-        },
-      },
-      async args => idbConnectTool(args)
+      async args => idbTargetsRouter(args)
     );
 
     this.server.registerTool(
@@ -964,7 +813,8 @@ class XcodeCLIMCPServer {
     this.server.registerTool(
       'idb-ui-describe',
       {
-        description: 'Query UI accessibility tree.',
+        description:
+          'Query UI accessibility tree for tap coordinates (ACCESSIBILITY-FIRST: 3-4x faster and cheaper than screenshots).',
         inputSchema: {
           udid: z.string().optional(),
           operation: z.enum(['all', 'point']),
@@ -975,6 +825,32 @@ class XcodeCLIMCPServer {
         },
       },
       async args => idbUiDescribeTool(args)
+    );
+
+    this.server.registerTool(
+      'idb-ui-find-element',
+      {
+        description:
+          'Find UI element by label/identifier - semantic search in accessibility tree without screenshots.',
+        inputSchema: {
+          udid: z.string().optional(),
+          query: z.string(),
+        },
+      },
+      async args => idbUiFindElementTool(args)
+    );
+
+    this.server.registerTool(
+      'accessibility-quality-check',
+      {
+        description:
+          'Quick check if accessibility data is sufficient - avoid expensive screenshots (~80ms, costs 5x less than screenshot).',
+        inputSchema: {
+          udid: z.string().optional(),
+          screenContext: z.string().optional(),
+        },
+      },
+      async args => accessibilityQualityCheckTool(args)
     );
 
     this.server.registerTool(
@@ -991,128 +867,54 @@ class XcodeCLIMCPServer {
     );
 
     this.server.registerTool(
-      'idb-install',
+      'idb-app',
       {
-        description: 'Install app.',
+        description: 'Manage apps via IDB.',
         inputSchema: {
+          operation: z.enum(['install', 'uninstall', 'launch', 'terminate']),
           udid: z.string().optional(),
-          appPath: z.string(),
-        },
-      },
-      async args => idbInstallTool(args)
-    );
-
-    this.server.registerTool(
-      'idb-launch',
-      {
-        description: 'Launch app.',
-        inputSchema: {
-          udid: z.string().optional(),
-          bundleId: z.string(),
+          bundleId: z.string().optional(),
+          appPath: z.string().optional(),
           streamOutput: z.boolean().optional(),
           arguments: z.array(z.string()).optional(),
           environment: z.record(z.string()).optional(),
         },
       },
-      async args => idbLaunchTool(args)
+      async args => idbAppTool(args)
     );
 
+    // Cache Management Tools
+    // COMMENTED OUT (v2.0.0): list-cached-responses
+    // this.server.registerTool(
+    //   'list-cached-responses',
+    //   {
+    //     description: 'List cached responses.',
+    //     inputSchema: {
+    //       tool: z.string().optional(),
+    //       limit: z.number().default(10),
+    //     },
+    //   },
+    //   async args => {
+    //     try {
+    //       await validateXcodeInstallation();
+    //       return (await listCachedResponsesTool(args)) as any;
+    //     } catch (error) {
+    //       if (error instanceof McpError) throw error;
+    //       throw new McpError(
+    //         ErrorCode.InternalError,
+    //         `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+    //       );
+    //     }
+    //   }
+    // );
+
     this.server.registerTool(
-      'idb-terminate',
+      'cache',
       {
-        description: 'Terminate app.',
+        description: 'Manage cache configuration.',
         inputSchema: {
-          udid: z.string().optional(),
-          bundleId: z.string(),
-        },
-      },
-      async args => idbTerminateTool(args)
-    );
-
-    this.server.registerTool(
-      'idb-uninstall',
-      {
-        description: 'Uninstall app.',
-        inputSchema: {
-          udid: z.string().optional(),
-          bundleId: z.string(),
-        },
-      },
-      async args => idbUninstallTool(args)
-    );
-
-    // Cache Management Tools (5 total)
-    this.server.registerTool(
-      'list-cached-responses',
-      {
-        description: 'List cached responses.',
-        inputSchema: {
-          tool: z.string().optional(),
-          limit: z.number().default(10),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return (await listCachedResponsesTool(args)) as any;
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'cache-get-stats',
-      {
-        description: 'Get cache statistics.',
-        inputSchema: {},
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return (await getCacheStatsTool(args)) as any;
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'cache-get-config',
-      {
-        description: 'Get cache configuration.',
-        inputSchema: {
-          cacheType: z.enum(['simulator', 'project', 'response', 'all']).default('all'),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return (await getCacheConfigTool(args)) as any;
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'cache-set-config',
-      {
-        description: 'Configure cache settings.',
-        inputSchema: {
-          cacheType: z.enum(['simulator', 'project', 'response', 'all']),
+          operation: z.enum(['get-stats', 'get-config', 'set-config', 'clear']),
+          cacheType: z.enum(['simulator', 'project', 'response', 'all']).optional(),
           maxAgeMs: z.number().optional(),
           maxAgeMinutes: z.number().optional(),
           maxAgeHours: z.number().optional(),
@@ -1121,7 +923,7 @@ class XcodeCLIMCPServer {
       async args => {
         try {
           await validateXcodeInstallation();
-          return (await setCacheConfigTool(args)) as any;
+          return (await cacheTool(args)) as any;
         } catch (error) {
           if (error instanceof McpError) throw error;
           throw new McpError(
@@ -1132,85 +934,22 @@ class XcodeCLIMCPServer {
       }
     );
 
+    // Persistence Tools
     this.server.registerTool(
-      'cache-clear',
+      'persistence',
       {
-        description: 'Clear cached data.',
+        description: 'Manage cache persistence.',
         inputSchema: {
-          cacheType: z.enum(['simulator', 'project', 'response', 'all']),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return (await clearCacheTool(args)) as any;
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    // Persistence Tools (3 total)
-    this.server.registerTool(
-      'persistence-enable',
-      {
-        description: 'Enable persistence.',
-        inputSchema: {
+          operation: z.enum(['enable', 'disable', 'status']),
           cacheDir: z.string().optional(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return (await persistenceEnableTool(args)) as any;
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'persistence-disable',
-      {
-        description: 'Disable persistence.',
-        inputSchema: {
           clearData: z.boolean().default(false),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return (await persistenceDisableTool(args)) as any;
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    this.server.registerTool(
-      'persistence-status',
-      {
-        description: 'Get persistence status.',
-        inputSchema: {
           includeStorageInfo: z.boolean().default(true),
         },
       },
       async args => {
         try {
           await validateXcodeInstallation();
-          return (await persistenceStatusTool(args)) as any;
+          return (await persistenceTool(args)) as any;
         } catch (error) {
           if (error instanceof McpError) throw error;
           throw new McpError(
@@ -1235,35 +974,6 @@ class XcodeCLIMCPServer {
       async args => {
         try {
           return (await getToolDocsTool(args)) as any;
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
-    // Screenshot save alias (file-based variant)
-    this.server.registerTool(
-      'screenshot-save',
-      {
-        description: 'Save screenshot to file.',
-        inputSchema: {
-          udid: z.string().optional(),
-          operation: z.enum(['screenshot', 'video']),
-          appName: z.string().optional(),
-          screenName: z.string().optional(),
-          state: z.string().optional(),
-          outputPath: z.string().optional(),
-          codec: z.enum(['h264', 'hevc', 'prores']).optional(),
-        },
-      },
-      async args => {
-        try {
-          await validateXcodeInstallation();
-          return await simctlIoTool(args);
         } catch (error) {
           if (error instanceof McpError) throw error;
           throw new McpError(

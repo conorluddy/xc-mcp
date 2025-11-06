@@ -113,7 +113,14 @@ Error: ${companionCheck.stderr || 'Companion not reachable'}`
 export async function validateTargetBooted(udid: string) {
   const target = await IDBTargetCache.getTarget(udid);
 
+  console.error(
+    `[idb-device-detection] validateTargetBooted(${udid}): ${target.name} - state: ${target.state}`
+  );
+
   if (target.state !== 'Booted') {
+    console.error(
+      `[idb-device-detection] Validation failed: target state is ${target.state}, not Booted`
+    );
     throw new McpError(
       ErrorCode.InvalidRequest,
       `Target "${target.name}" (${udid}) is not booted.
@@ -127,5 +134,6 @@ Or use idb-targets to list available booted targets.`
     );
   }
 
+  console.error(`[idb-device-detection] Validation passed: target is booted`);
   return target;
 }
