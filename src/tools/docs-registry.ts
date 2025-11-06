@@ -196,11 +196,11 @@ export const RTFM_DOCS = `
 
 ## Overview
 
-The rtfm tool provides access to comprehensive documentation for any of the 28 consolidated tools in this MCP server (v2.0+). This implements progressive disclosure: tool descriptions in the main list stay concise (~1,980 tokens total), while full documentation with examples, parameters, and usage guidance is available on demand.
+The rtfm tool provides access to comprehensive documentation for any of the 28 consolidated tools in this MCP server (v2.0+). This implements progressive disclosure: tool descriptions in the main list include full documentation (~18.7k tokens total for optimal agent understanding), while rtfm provides additional context and examples on demand.
 
 **Version History:**
-- v1.x: 51 individual tools (~3,060 tokens)
-- v2.0+: 28 consolidated tools (~1,980 tokens) - 35% reduction via operation enums
+- v1.x: 51 individual tools (~3,000-7,850 tokens depending on approach)
+- v2.0+: 28 consolidated tools (~18.7k tokens) - Comprehensive docs for optimal reasoning
 
 ## Why rtfm?
 

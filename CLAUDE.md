@@ -8,28 +8,28 @@ XC-MCP is a Model Context Protocol (MCP) server that provides intelligent access
 
 ### Token Efficiency Architecture (V2.0.0)
 
-**28 consolidated tools consuming just ~1,980 tokens total** (75% reduction from v1.2.1 baseline).
+**28 consolidated tools consuming ~18.7k tokens total** (9.3% of 200k context window).
 
 **Token Evolution:**
 | Version | Tools | Tokens | Architecture |
 |---------|-------|--------|--------------|
 | Pre-RTFM (v1.2.1) | 51 | ~7,850 | Individual tools |
 | V1.3.2 (RTFM) | 51 | ~3,000 | Individual + RTFM |
-| **V2.0.0 (Current)** | **28** | **~1,980** | **Routers + RTFM + Accessibility** |
+| **V2.0.0 (Current)** | **28** | **~18.7k** | **Routers + RTFM + Accessibility** |
 
 XC-MCP V2.0 implements **tool consolidation + progressive disclosure via RTFM** to minimize agent context overhead:
-- **Operation enum routers**: 21 individual tools → 6 consolidated routers (40% token reduction)
-- **Ultra-minimal tool descriptions**: ~1 sentence each + "See rtfm for details"
-- **On-demand documentation**: Full docs via RTFM tool when needed
+- **Operation enum routers**: 21 individual tools → 6 consolidated routers
+- **Comprehensive tool descriptions**: Full documentation in tool schemas for optimal agent understanding
+- **On-demand RTFM documentation**: Additional context available via RTFM tool when needed
 - **Accessibility-first workflow**: 3 new tools for semantic UI automation (50 tokens vs 170 for screenshots)
-- **Token savings**: 75% reduction vs baseline (1,980 vs 7,850 tokens)
+- **Token usage**: ~18.7k tokens (9.3% of 200k context window)
 
 **Progressive Discovery Pattern:**
-1. Agent sees minimal tool list (1,980 tokens)
+1. Agent sees full tool list with comprehensive descriptions (~18.7k tokens)
 2. Browses categories via RTFM: `rtfm({ categoryName: "simulator" })`
-3. Gets full docs for specific tools: `rtfm({ toolName: "simctl-device" })`
+3. Gets additional docs for specific tools: `rtfm({ toolName: "simctl-device" })`
 4. Executes with operation enums: `simctl-device({ operation: "boot", udid: "..." })`
-5. Context budget preserved for actual work
+5. Context budget preserved for actual work (180k+ tokens remaining)
 
 **Tool Categories (V2.0):**
 - `build`: Build & Test Operations (6 tools: xcodebuild-build, xcodebuild-test, xcodebuild-clean, xcodebuild-list, xcodebuild-version, xcodebuild-get-details)

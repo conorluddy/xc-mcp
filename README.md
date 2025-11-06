@@ -29,27 +29,29 @@ Traditional Xcode CLI wrappers dump massive output that exceeds MCP protocol lim
 
 **V2.0.0 Architecture:**
 ```
-28 consolidated tools, ~1,980 tokens (75% reduction from baseline)
+28 consolidated tools, ~18.7k tokens (9.3% of 200k context)
 ├─ 6 router tools with operation enums (21 tools consolidated)
 ├─ 22 individual specialized tools
-├─ RTFM on-demand documentation pattern
+├─ Comprehensive tool documentation for optimal agent understanding
+├─ RTFM for additional on-demand documentation
 └─ Accessibility-first workflow (50 tokens, 120ms vs 170 tokens, 2000ms)
 ```
 
 **Token Efficiency Evolution:**
 
-| Version | Tools | Token Usage | Architecture | vs Baseline |
-|---------|-------|-------------|--------------|-------------|
-| Pre-RTFM (v1.2.1) | 51 | ~7,850 tokens | Individual tools | Baseline |
-| V1.3.2 (RTFM) | 51 | ~3,000 tokens | Individual + RTFM | -62% |
-| **V2.0.0** | **28** | **~1,980 tokens** | **Routers + RTFM** | **-75%** |
+| Version | Tools | Token Usage | Architecture | Context % |
+|---------|-------|-------------|--------------|-----------|
+| Pre-RTFM (v1.2.1) | 51 | ~7,850 tokens | Individual tools | 3.9% |
+| V1.3.2 (RTFM) | 51 | ~3,000 tokens | Individual + RTFM | 1.5% |
+| **V2.0.0** | **28** | **~18.7k tokens** | **Routers + Full Docs** | **9.3%** |
 
 **Key Improvements:**
-- ✅ **75% token reduction** (1,980 vs 7,850 baseline)
-- ✅ **45% fewer tools** (28 vs 51) through consolidation
+- ✅ **Tool consolidation** (28 vs 51 tools) - 45% reduction
+- ✅ **Comprehensive documentation** in tool schemas for optimal agent reasoning
 - ✅ **Accessibility-first automation** (3-4x faster, 3-4x cheaper than screenshots)
 - ✅ **Progressive disclosure** (summaries → cache IDs → full details on demand)
 - ✅ **60% test coverage** with comprehensive error handling
+- ✅ **Context efficient** (9.3% usage, 180k+ tokens available for actual work)
 
 ---
 
