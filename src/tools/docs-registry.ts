@@ -43,6 +43,8 @@ import { IDB_UI_TAP_DOCS } from './idb/ui-tap.js';
 import { IDB_UI_INPUT_DOCS } from './idb/ui-input.js';
 import { IDB_UI_GESTURE_DOCS } from './idb/ui-gesture.js';
 import { IDB_UI_DESCRIBE_DOCS } from './idb/ui-describe.js';
+import { IDB_UI_FIND_ELEMENT_DOCS } from './idb/ui-find-element.js';
+import { ACCESSIBILITY_QUALITY_CHECK_DOCS } from './idb/accessibility-quality-check.js';
 import { IDB_LIST_APPS_DOCS } from './idb/list-apps.js';
 
 // Cache documentation (non-consolidated only)
@@ -425,12 +427,23 @@ export const TOOL_CATEGORIES: Record<string, string[]> = {
     'simctl-openurl',
   ],
   idb: [
-    'idb-targets',
-    'idb-connect',
+    // ============================================================================
+    // DISCOVERY TOOLS (TRY THESE FIRST) - Accessibility-first automation
+    // ============================================================================
+    'accessibility-quality-check',
+    'idb-ui-describe',
+    'idb-ui-find-element',
+    // ============================================================================
+    // INTERACTION TOOLS - Use coordinates from discovery tools
+    // ============================================================================
     'idb-ui-tap',
     'idb-ui-input',
     'idb-ui-gesture',
-    'idb-ui-describe',
+    // ============================================================================
+    // MANAGEMENT TOOLS - App and target management
+    // ============================================================================
+    'idb-targets',
+    'idb-connect',
     'idb-list-apps',
     'idb-install',
     'idb-launch',
@@ -556,6 +569,8 @@ export const TOOL_DOCS: Record<string, string> = {
   'idb-ui-input': IDB_UI_INPUT_DOCS,
   'idb-ui-gesture': IDB_UI_GESTURE_DOCS,
   'idb-ui-describe': IDB_UI_DESCRIBE_DOCS,
+  'idb-ui-find-element': IDB_UI_FIND_ELEMENT_DOCS,
+  'accessibility-quality-check': ACCESSIBILITY_QUALITY_CHECK_DOCS,
   'idb-list-apps': IDB_LIST_APPS_DOCS,
 
   // Cache tools (non-consolidated)
