@@ -60,3 +60,5 @@ pids
 # TypeScript cache
 *.tsbuildinfo
 
+# Planning docs
+plans

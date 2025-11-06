@@ -196,11 +196,11 @@ export const RTFM_DOCS = `
 
 ## Overview
 
-The rtfm tool provides access to comprehensive documentation for any of the 33 consolidated tools in this MCP server (v2.0+). This implements progressive disclosure: tool descriptions in the main list stay concise (~1,980 tokens total), while full documentation with examples, parameters, and usage guidance is available on demand.
+The rtfm tool provides access to comprehensive documentation for any of the 28 consolidated tools in this MCP server (v2.0+). This implements progressive disclosure: tool descriptions in the main list stay concise (~1,980 tokens total), while full documentation with examples, parameters, and usage guidance is available on demand.
 
 **Version History:**
 - v1.x: 51 individual tools (~3,060 tokens)
-- v2.0+: 33 consolidated tools (~1,980 tokens) - 40% reduction via operation enums
+- v2.0+: 28 consolidated tools (~1,980 tokens) - 35% reduction via operation enums
 
 ## Why rtfm?
 
@@ -271,7 +271,7 @@ Did you mean one of these?
   - simctl-boot
   - simctl-shutdown
 
-Available tools (33 total):
+Available tools (28 total):
   - xcodebuild-*
   - simctl-*
   - idb-*
