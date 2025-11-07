@@ -11,7 +11,8 @@
 
 XC-MCP makes Xcode and iOS simulator tooling accessible to AI agents through intelligent context engineering. **28 consolidated tools consuming the least amount of tokens possible (for now...)** through progressive disclosure, operation-based routing, and accessibility-first automation patterns.
 
-![gh-social](https://github.com/user-attachments/assets/dd23b1e5-ed8c-40c0-b44d-7c92f3b5d5aa)
+<img width="807" height="727" alt="Screenshot 2025-11-07 at 08 37 00" src="https://github.com/user-attachments/assets/141de013-947e-458e-acaf-91c039f0f48e" />
+
 
 ---
 
