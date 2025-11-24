@@ -48,36 +48,22 @@ import { idbAppTool } from './tools/idb/app/index.js';
 import { cacheTool } from './tools/cache/index.js';
 import { persistenceTool } from './tools/persistence/index.js';
 import { getToolDocsTool } from './tools/get-tool-docs.js';
-import { toolSearchTool } from './tools/tool-search.js';
 import { workflowTapElementTool } from './tools/workflows/tap-element.js';
 import { workflowFreshInstallTool } from './tools/workflows/fresh-install.js';
 import { debugWorkflowPrompt } from './tools/prompts/debug-workflow.js';
 import { validateXcodeInstallation } from './utils/validation.js';
 
-// Type for registered tool from MCP SDK
-type RegisteredTool = {
-  enabled: boolean;
-  enable(): void;
-  disable(): void;
-};
+// Environment variable to disable defer_loading (for debugging/testing)
+const ENABLE_DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
 
-// Core tools that are always enabled (discovery tools only)
-const CORE_TOOLS = ['tool-search', 'rtfm'];
-
-// Environment variable to disable deferred loading (loads all tools like v2.x)
-const DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
+// defer_loading config - passed through by MCP SDK to Claude
+// TypeScript doesn't know about this property, so we use a spread with type assertion
+const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
+  ? ({ defer_loading: true } as Record<string, unknown>)
+  : {};
 
 class XcodeCLIMCPServer {
   private server: McpServer;
-  private toolRegistry: Map<string, RegisteredTool> = new Map();
-
-  /**
-   * Helper to register a tool and store its reference for deferred loading
-   */
-  private registerAndStore(name: string, config: any, handler: (args: any) => Promise<any>): void {
-    const tool = this.server.registerTool(name, config, handler);
-    this.toolRegistry.set(name, tool as unknown as RegisteredTool);
-  }
 
   constructor() {
     this.server = new McpServer(
@@ -164,7 +150,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
 
   private async registerTools() {
     // Xcodebuild Tools (7 total)
-    this.registerAndStore(
+    this.server.registerTool(
       'xcodebuild-version',
       {
         description: 'Get Xcode version.',
@@ -172,6 +158,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           sdk: z.string().optional(),
           outputFormat: z.enum(['json', 'text']).default('json'),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -187,7 +174,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       }
     );
 
-    this.registerAndStore(
+    this.server.registerTool(
       'xcodebuild-list',
       {
         description: 'List project targets and schemes.',
@@ -195,6 +182,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           projectPath: z.string(),
           outputFormat: z.enum(['json', 'text']).default('json'),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -233,7 +221,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
     //   }
     // );
 
-    this.registerAndStore(
+    this.server.registerTool(
       'xcodebuild-build',
       {
         description: 'Build Xcode projects.',
@@ -245,6 +233,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           sdk: z.string().optional(),
           derivedDataPath: z.string().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -260,7 +249,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       }
     );
 
-    this.registerAndStore(
+    this.server.registerTool(
       'xcodebuild-clean',
       {
         description: 'Clean build artifacts.',
@@ -269,6 +258,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           scheme: z.string(),
           configuration: z.string().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -284,7 +274,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       }
     );
 
-    this.registerAndStore(
+    this.server.registerTool(
       'xcodebuild-test',
       {
         description: 'Run tests.',
@@ -300,6 +290,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           skipTesting: z.array(z.string()).optional(),
           testWithoutBuilding: z.boolean().default(false),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -315,7 +306,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       }
     );
 
-    this.registerAndStore(
+    this.server.registerTool(
       'xcodebuild-get-details',
       {
         description: 'Get cached build/test details.',
@@ -331,6 +322,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           ]),
           maxLines: z.number().default(100),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -347,7 +339,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
     );
 
     // Simctl Tools (4 total) - Critical for progressive disclosure
-    this.registerAndStore(
+    this.server.registerTool(
       'simctl-list',
       {
         description: 'List simulators.',
@@ -358,6 +350,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           outputFormat: z.enum(['json', 'text']).default('json'),
           concise: z.boolean().default(true),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -373,7 +366,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       }
     );
 
-    this.registerAndStore(
+    this.server.registerTool(
       'simctl-get-details',
       {
         description: 'Get cached simulator list details.',
@@ -384,6 +377,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           runtime: z.string().optional(),
           maxDevices: z.number().default(20),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -399,7 +393,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       }
     );
 
-    this.registerAndStore(
+    this.server.registerTool(
       'simctl-device',
       {
         description: 'Manage simulator devices.',
@@ -414,6 +408,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           force: z.boolean().default(false),
           newName: z.string().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -455,11 +450,12 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
     //   }
     // );
 
-    this.registerAndStore(
+    this.server.registerTool(
       'simctl-health-check',
       {
         description: 'Validate iOS development environment.',
         inputSchema: {},
+        ...DEFER_LOADING_CONFIG,
       },
       async _args => {
         try {
@@ -477,7 +473,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
 
     // Phase 3: App Lifecycle & Testing Tools
     // Consolidated App Management Tool
-    this.registerAndStore(
+    this.server.registerTool(
       'simctl-app',
       {
         description: 'Manage apps on simulators.',
@@ -489,6 +485,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           arguments: z.array(z.string()).optional(),
           environment: z.record(z.string()).optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -504,7 +501,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       }
     );
 
-    this.registerAndStore(
+    this.server.registerTool(
       'simctl-get-app-container',
       {
         description: 'Get app container filesystem path.',
@@ -513,6 +510,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           bundleId: z.string(),
           containerType: z.enum(['bundle', 'data', 'group']).optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -528,7 +526,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       }
     );
 
-    this.registerAndStore(
+    this.server.registerTool(
       'simctl-openurl',
       {
         description: 'Open URL in simulator.',
@@ -536,6 +534,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           udid: z.string(),
           url: z.string(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -552,7 +551,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
     );
 
     // I/O Tools
-    this.registerAndStore(
+    this.server.registerTool(
       'simctl-io',
       {
         description: 'Capture screenshots/videos.',
@@ -566,6 +565,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           screenName: z.string().optional(),
           state: z.string().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -634,7 +634,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
     //   }
     // );
 
-    this.registerAndStore(
+    this.server.registerTool(
       'simctl-push',
       {
         description: 'Simulate push notifications.',
@@ -645,6 +645,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           testName: z.string().optional(),
           expectedBehavior: z.string().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -712,7 +713,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
     //     }
     //   }
     // );
-    this.registerAndStore(
+    this.server.registerTool(
       'screenshot',
       {
         description:
@@ -725,6 +726,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           state: z.string().optional(),
           enableCoordinateCaching: z.boolean().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -741,7 +743,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
     );
 
     // IDB Tools - iOS Development Bridge for UI Automation & App Management
-    this.registerAndStore(
+    this.server.registerTool(
       'idb-targets',
       {
         description: 'Query and manage IDB targets.',
@@ -751,11 +753,12 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           state: z.enum(['Booted', 'Shutdown']).optional(),
           type: z.enum(['device', 'simulator']).optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => idbTargetsRouter(args)
     );
 
-    this.registerAndStore(
+    this.server.registerTool(
       'idb-ui-tap',
       {
         description: 'Tap coordinates.',
@@ -774,11 +777,12 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           testScenario: z.string().optional(),
           step: z.number().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => idbUiTapTool(args)
     );
 
-    this.registerAndStore(
+    this.server.registerTool(
       'idb-ui-input',
       {
         description: 'Input text/keyboard.',
@@ -808,11 +812,12 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           expectedOutcome: z.string().optional(),
           isSensitive: z.boolean().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => idbUiInputTool(args)
     );
 
-    this.registerAndStore(
+    this.server.registerTool(
       'idb-ui-gesture',
       {
         description: 'Perform gestures/buttons.',
@@ -834,11 +839,12 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           actionName: z.string().optional(),
           expectedOutcome: z.string().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => idbUiGestureTool(args)
     );
 
-    this.registerAndStore(
+    this.server.registerTool(
       'idb-ui-describe',
       {
         description:
@@ -851,11 +857,12 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           screenContext: z.string().optional(),
           purposeDescription: z.string().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => idbUiDescribeTool(args)
     );
 
-    this.registerAndStore(
+    this.server.registerTool(
       'idb-ui-find-element',
       {
         description:
@@ -864,11 +871,12 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           udid: z.string().optional(),
           query: z.string(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => idbUiFindElementTool(args)
     );
 
-    this.registerAndStore(
+    this.server.registerTool(
       'accessibility-quality-check',
       {
         description:
@@ -877,11 +885,12 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           udid: z.string().optional(),
           screenContext: z.string().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => accessibilityQualityCheckTool(args)
     );
 
-    this.registerAndStore(
+    this.server.registerTool(
       'idb-list-apps',
       {
         description: 'List installed apps.',
@@ -890,11 +899,12 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           filterType: z.enum(['system', 'user', 'internal']).optional(),
           runningOnly: z.boolean().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => idbListAppsTool(args)
     );
 
-    this.registerAndStore(
+    this.server.registerTool(
       'idb-app',
       {
         description: 'Manage apps via IDB.',
@@ -907,13 +917,14 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           arguments: z.array(z.string()).optional(),
           environment: z.record(z.string()).optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => idbAppTool(args)
     );
 
     // Cache Management Tools
     // COMMENTED OUT (v2.0.0): list-cached-responses
-    // this.registerAndStore(
+    // this.server.registerTool(
     //   'list-cached-responses',
     //   {
     //     description: 'List cached responses.',
@@ -936,7 +947,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
     //   }
     // );
 
-    this.registerAndStore(
+    this.server.registerTool(
       'cache',
       {
         description: 'Manage cache configuration.',
@@ -947,6 +958,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           maxAgeMinutes: z.number().optional(),
           maxAgeHours: z.number().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -963,7 +975,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
     );
 
     // Persistence Tools
-    this.registerAndStore(
+    this.server.registerTool(
       'persistence',
       {
         description: 'Manage cache persistence.',
@@ -973,6 +985,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           clearData: z.boolean().default(false),
           includeStorageInfo: z.boolean().default(true),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -988,59 +1001,8 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       }
     );
 
-    // Tool Search - Dynamic tool discovery (v3.0.0)
-    this.registerAndStore(
-      'tool-search',
-      {
-        description:
-          'Search and discover xc-mcp tools by keyword, category, or list all. Use this to find the right tool for your task.',
-        inputSchema: {
-          query: z
-            .string()
-            .optional()
-            .describe('Search term (searches name, description, keywords)'),
-          category: z
-            .enum(['build', 'simulator', 'app', 'idb', 'io', 'cache', 'system', 'workflow'])
-            .optional()
-            .describe('Filter by category'),
-          limit: z.number().default(10).describe('Max results'),
-          showAll: z.boolean().default(false).describe('Show all tools'),
-        },
-      },
-      async args => {
-        try {
-          const result = await toolSearchTool(args);
-
-          // Auto-enable matched tools if deferred loading is active
-          if (DEFER_LOADING && !args.showAll) {
-            const response = JSON.parse(result.content[0].text);
-            if (response.tools) {
-              for (const tool of response.tools) {
-                const registeredTool = this.toolRegistry.get(tool.name);
-                if (registeredTool && !registeredTool.enabled) {
-                  registeredTool.enable();
-                }
-              }
-              // Notify client that tool list changed
-              if (response.tools.length > 0) {
-                this.server.sendToolListChanged();
-              }
-            }
-          }
-
-          return result as any;
-        } catch (error) {
-          if (error instanceof McpError) throw error;
-          throw new McpError(
-            ErrorCode.InternalError,
-            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      }
-    );
-
     // Documentation Tool
-    this.registerAndStore(
+    this.server.registerTool(
       'rtfm',
       {
         description:
@@ -1049,6 +1011,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           toolName: z.string().optional(),
           categoryName: z.string().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -1064,7 +1027,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
     );
 
     // Workflow Tools (v3.0.0) - Multi-step orchestration
-    this.registerAndStore(
+    this.server.registerTool(
       'workflow-tap-element',
       {
         description:
@@ -1076,6 +1039,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           udid: z.string().optional().describe('Target device'),
           screenContext: z.string().optional().describe('Screen name for tracking'),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -1091,7 +1055,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       }
     );
 
-    this.registerAndStore(
+    this.server.registerTool(
       'workflow-fresh-install',
       {
         description:
@@ -1105,6 +1069,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           launchArguments: z.array(z.string()).optional(),
           environmentVariables: z.record(z.string()).optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -1120,21 +1085,9 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       }
     );
 
-    // Apply deferred loading: disable non-core tools (v3.0.0)
-    if (DEFER_LOADING) {
-      for (const [name, tool] of this.toolRegistry) {
-        if (!CORE_TOOLS.includes(name)) {
-          tool.disable();
-        }
-      }
-      console.error(
-        `XC-MCP v3.0.0: Deferred loading active. ${CORE_TOOLS.length} core tools enabled, ${this.toolRegistry.size - CORE_TOOLS.length} tools available via tool-search.`
-      );
-    } else {
-      console.error(
-        `XC-MCP v3.0.0: Full loading active (XC_MCP_DEFER_LOADING=false). All ${this.toolRegistry.size} tools enabled.`
-      );
-    }
+    console.error(
+      `XC-MCP v3.0.0: ${ENABLE_DEFER_LOADING ? 'defer_loading enabled' : 'defer_loading disabled'} for all tools.`
+    );
   }
 
   private async registerPrompts() {

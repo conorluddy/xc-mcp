@@ -50,9 +50,6 @@ import { IDB_LIST_APPS_DOCS } from './idb/list-apps.js';
 // Cache documentation (non-consolidated only)
 import { CACHE_LIST_CACHED_RESPONSES_DOCS } from './cache/list-cached.js';
 
-// Tool search documentation (v3.0.0)
-import { TOOL_SEARCH_DOCS } from './tool-search.js';
-
 // Workflow documentation (v3.0.0)
 import { WORKFLOW_TAP_ELEMENT_DOCS } from './workflows/tap-element.js';
 import { WORKFLOW_FRESH_INSTALL_DOCS } from './workflows/fresh-install.js';
@@ -471,7 +468,6 @@ export const TOOL_CATEGORIES: Record<string, string[]> = {
     'persistence-disable',
     'persistence-status',
     'rtfm',
-    'tool-search',
     'screenshot-save',
   ],
   workflow: ['workflow-tap-element', 'workflow-fresh-install'],
@@ -596,9 +592,8 @@ export const TOOL_DOCS: Record<string, string> = {
   cache: CACHE_DOCS,
   persistence: PERSISTENCE_DOCS,
 
-  // Documentation and discovery tools
+  // Documentation tool
   rtfm: RTFM_DOCS,
-  'tool-search': TOOL_SEARCH_DOCS,
 
   // Workflow tools (v3.0.0)
   'workflow-tap-element': WORKFLOW_TAP_ELEMENT_DOCS,
