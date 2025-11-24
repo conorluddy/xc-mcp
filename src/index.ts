@@ -48,17 +48,42 @@ import { idbAppTool } from './tools/idb/app/index.js';
 import { cacheTool } from './tools/cache/index.js';
 import { persistenceTool } from './tools/persistence/index.js';
 import { getToolDocsTool } from './tools/get-tool-docs.js';
+import { toolSearchTool } from './tools/tool-search.js';
+import { workflowTapElementTool } from './tools/workflows/tap-element.js';
+import { workflowFreshInstallTool } from './tools/workflows/fresh-install.js';
 import { debugWorkflowPrompt } from './tools/prompts/debug-workflow.js';
 import { validateXcodeInstallation } from './utils/validation.js';
 
+// Type for registered tool from MCP SDK
+type RegisteredTool = {
+  enabled: boolean;
+  enable(): void;
+  disable(): void;
+};
+
+// Core tools that are always enabled (discovery tools only)
+const CORE_TOOLS = ['tool-search', 'rtfm'];
+
+// Environment variable to disable deferred loading (loads all tools like v2.x)
+const DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
+
 class XcodeCLIMCPServer {
   private server: McpServer;
+  private toolRegistry: Map<string, RegisteredTool> = new Map();
+
+  /**
+   * Helper to register a tool and store its reference for deferred loading
+   */
+  private registerAndStore(name: string, config: any, handler: (args: any) => Promise<any>): void {
+    const tool = this.server.registerTool(name, config, handler);
+    this.toolRegistry.set(name, tool as unknown as RegisteredTool);
+  }
 
   constructor() {
     this.server = new McpServer(
       {
         name: 'xc-mcp',
-        version: '2.0.0',
+        version: '3.0.0',
         description:
           'Wraps xcodebuild, simctl, and IDB with intelligent caching, for efficient iOS development. The RTFM tool can be called with any of the tool names to return further documentation if required. Tool descriptions are intentionally minimal to reduce MCP context usage.',
       },
@@ -139,7 +164,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
 
   private async registerTools() {
     // Xcodebuild Tools (7 total)
-    this.server.registerTool(
+    this.registerAndStore(
       'xcodebuild-version',
       {
         description: 'Get Xcode version.',
@@ -162,7 +187,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       }
     );
 
-    this.server.registerTool(
+    this.registerAndStore(
       'xcodebuild-list',
       {
         description: 'List project targets and schemes.',
@@ -208,7 +233,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
     //   }
     // );
 
-    this.server.registerTool(
+    this.registerAndStore(
       'xcodebuild-build',
       {
         description: 'Build Xcode projects.',
@@ -235,7 +260,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       }
     );
 
-    this.server.registerTool(
+    this.registerAndStore(
       'xcodebuild-clean',
       {
         description: 'Clean build artifacts.',
@@ -259,7 +284,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       }
     );
 
-    this.server.registerTool(
+    this.registerAndStore(
       'xcodebuild-test',
       {
         description: 'Run tests.',
@@ -290,7 +315,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       }
     );
 
-    this.server.registerTool(
+    this.registerAndStore(
       'xcodebuild-get-details',
       {
         description: 'Get cached build/test details.',
@@ -322,7 +347,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
     );
 
     // Simctl Tools (4 total) - Critical for progressive disclosure
-    this.server.registerTool(
+    this.registerAndStore(
       'simctl-list',
       {
         description: 'List simulators.',
@@ -348,7 +373,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       }
     );
 
-    this.server.registerTool(
+    this.registerAndStore(
       'simctl-get-details',
       {
         description: 'Get cached simulator list details.',
@@ -374,7 +399,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       }
     );
 
-    this.server.registerTool(
+    this.registerAndStore(
       'simctl-device',
       {
         description: 'Manage simulator devices.',
@@ -430,7 +455,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
     //   }
     // );
 
-    this.server.registerTool(
+    this.registerAndStore(
       'simctl-health-check',
       {
         description: 'Validate iOS development environment.',
@@ -452,7 +477,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
 
     // Phase 3: App Lifecycle & Testing Tools
     // Consolidated App Management Tool
-    this.server.registerTool(
+    this.registerAndStore(
       'simctl-app',
       {
         description: 'Manage apps on simulators.',
@@ -479,7 +504,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       }
     );
 
-    this.server.registerTool(
+    this.registerAndStore(
       'simctl-get-app-container',
       {
         description: 'Get app container filesystem path.',
@@ -503,7 +528,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       }
     );
 
-    this.server.registerTool(
+    this.registerAndStore(
       'simctl-openurl',
       {
         description: 'Open URL in simulator.',
@@ -527,7 +552,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
     );
 
     // I/O Tools
-    this.server.registerTool(
+    this.registerAndStore(
       'simctl-io',
       {
         description: 'Capture screenshots/videos.',
@@ -609,7 +634,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
     //   }
     // );
 
-    this.server.registerTool(
+    this.registerAndStore(
       'simctl-push',
       {
         description: 'Simulate push notifications.',
@@ -687,7 +712,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
     //     }
     //   }
     // );
-    this.server.registerTool(
+    this.registerAndStore(
       'screenshot',
       {
         description:
@@ -716,7 +741,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
     );
 
     // IDB Tools - iOS Development Bridge for UI Automation & App Management
-    this.server.registerTool(
+    this.registerAndStore(
       'idb-targets',
       {
         description: 'Query and manage IDB targets.',
@@ -730,7 +755,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       async args => idbTargetsRouter(args)
     );
 
-    this.server.registerTool(
+    this.registerAndStore(
       'idb-ui-tap',
       {
         description: 'Tap coordinates.',
@@ -753,7 +778,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       async args => idbUiTapTool(args)
     );
 
-    this.server.registerTool(
+    this.registerAndStore(
       'idb-ui-input',
       {
         description: 'Input text/keyboard.',
@@ -787,7 +812,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       async args => idbUiInputTool(args)
     );
 
-    this.server.registerTool(
+    this.registerAndStore(
       'idb-ui-gesture',
       {
         description: 'Perform gestures/buttons.',
@@ -813,7 +838,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       async args => idbUiGestureTool(args)
     );
 
-    this.server.registerTool(
+    this.registerAndStore(
       'idb-ui-describe',
       {
         description:
@@ -830,7 +855,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       async args => idbUiDescribeTool(args)
     );
 
-    this.server.registerTool(
+    this.registerAndStore(
       'idb-ui-find-element',
       {
         description:
@@ -843,7 +868,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       async args => idbUiFindElementTool(args)
     );
 
-    this.server.registerTool(
+    this.registerAndStore(
       'accessibility-quality-check',
       {
         description:
@@ -856,7 +881,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       async args => accessibilityQualityCheckTool(args)
     );
 
-    this.server.registerTool(
+    this.registerAndStore(
       'idb-list-apps',
       {
         description: 'List installed apps.',
@@ -869,7 +894,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       async args => idbListAppsTool(args)
     );
 
-    this.server.registerTool(
+    this.registerAndStore(
       'idb-app',
       {
         description: 'Manage apps via IDB.',
@@ -888,7 +913,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
 
     // Cache Management Tools
     // COMMENTED OUT (v2.0.0): list-cached-responses
-    // this.server.registerTool(
+    // this.registerAndStore(
     //   'list-cached-responses',
     //   {
     //     description: 'List cached responses.',
@@ -911,7 +936,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
     //   }
     // );
 
-    this.server.registerTool(
+    this.registerAndStore(
       'cache',
       {
         description: 'Manage cache configuration.',
@@ -938,7 +963,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
     );
 
     // Persistence Tools
-    this.server.registerTool(
+    this.registerAndStore(
       'persistence',
       {
         description: 'Manage cache persistence.',
@@ -963,8 +988,59 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       }
     );
 
+    // Tool Search - Dynamic tool discovery (v3.0.0)
+    this.registerAndStore(
+      'tool-search',
+      {
+        description:
+          'Search and discover xc-mcp tools by keyword, category, or list all. Use this to find the right tool for your task.',
+        inputSchema: {
+          query: z
+            .string()
+            .optional()
+            .describe('Search term (searches name, description, keywords)'),
+          category: z
+            .enum(['build', 'simulator', 'app', 'idb', 'io', 'cache', 'system', 'workflow'])
+            .optional()
+            .describe('Filter by category'),
+          limit: z.number().default(10).describe('Max results'),
+          showAll: z.boolean().default(false).describe('Show all tools'),
+        },
+      },
+      async args => {
+        try {
+          const result = await toolSearchTool(args);
+
+          // Auto-enable matched tools if deferred loading is active
+          if (DEFER_LOADING && !args.showAll) {
+            const response = JSON.parse(result.content[0].text);
+            if (response.tools) {
+              for (const tool of response.tools) {
+                const registeredTool = this.toolRegistry.get(tool.name);
+                if (registeredTool && !registeredTool.enabled) {
+                  registeredTool.enable();
+                }
+              }
+              // Notify client that tool list changed
+              if (response.tools.length > 0) {
+                this.server.sendToolListChanged();
+              }
+            }
+          }
+
+          return result as any;
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
     // Documentation Tool
-    this.server.registerTool(
+    this.registerAndStore(
       'rtfm',
       {
         description:
@@ -986,6 +1062,79 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
         }
       }
     );
+
+    // Workflow Tools (v3.0.0) - Multi-step orchestration
+    this.registerAndStore(
+      'workflow-tap-element',
+      {
+        description:
+          'High-level semantic UI tap - find element by name and tap it. Orchestrates accessibility check, element search, and tap in one call.',
+        inputSchema: {
+          elementQuery: z.string().describe('Search term for element (e.g., "Login", "Submit")'),
+          inputText: z.string().optional().describe('Text to type after tapping'),
+          verifyResult: z.boolean().default(false).describe('Take screenshot after action'),
+          udid: z.string().optional().describe('Target device'),
+          screenContext: z.string().optional().describe('Screen name for tracking'),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await workflowTapElementTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.registerAndStore(
+      'workflow-fresh-install',
+      {
+        description:
+          'Clean slate app installation - shutdown, (erase), boot, build, install, launch in one call.',
+        inputSchema: {
+          projectPath: z.string().describe('Path to .xcodeproj or .xcworkspace'),
+          scheme: z.string().describe('Build scheme name'),
+          simulatorUdid: z.string().optional().describe('Target simulator'),
+          eraseSimulator: z.boolean().default(false).describe('Wipe simulator data'),
+          configuration: z.enum(['Debug', 'Release']).default('Debug'),
+          launchArguments: z.array(z.string()).optional(),
+          environmentVariables: z.record(z.string()).optional(),
+        },
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await workflowFreshInstallTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    // Apply deferred loading: disable non-core tools (v3.0.0)
+    if (DEFER_LOADING) {
+      for (const [name, tool] of this.toolRegistry) {
+        if (!CORE_TOOLS.includes(name)) {
+          tool.disable();
+        }
+      }
+      console.error(
+        `XC-MCP v3.0.0: Deferred loading active. ${CORE_TOOLS.length} core tools enabled, ${this.toolRegistry.size - CORE_TOOLS.length} tools available via tool-search.`
+      );
+    } else {
+      console.error(
+        `XC-MCP v3.0.0: Full loading active (XC_MCP_DEFER_LOADING=false). All ${this.toolRegistry.size} tools enabled.`
+      );
+    }
   }
 
   private async registerPrompts() {

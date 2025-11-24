@@ -1,6 +1,6 @@
 {
   "name": "xc-mcp",
-  "version": "2.0.2",
+  "version": "3.0.0",
   "description": "MCP server that wraps Xcode command-line tools for iOS/macOS development workflows",
   "author": "Conor Luddy",
   "license": "MIT",

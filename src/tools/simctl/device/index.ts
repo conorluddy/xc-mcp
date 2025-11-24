@@ -148,6 +148,43 @@ Unified iOS simulator device management - boot, shutdown, create, delete, erase,
 
 Single tool for all simulator device lifecycle operations. Routes to specialized handlers while maintaining clean operation semantics.
 
+## Complete JSON Examples
+
+### Boot a Simulator
+\`\`\`json
+{"operation": "boot", "deviceId": "ABCD1234-5678-90EF-GHIJ-KLMNOPQRSTUV", "waitForBoot": true, "openGui": true}
+\`\`\`
+
+### Shutdown Running Simulator
+\`\`\`json
+{"operation": "shutdown", "deviceId": "booted"}
+\`\`\`
+
+### Create New Simulator
+\`\`\`json
+{"operation": "create", "name": "Test iPhone 16", "deviceType": "iPhone 16 Pro", "runtime": "iOS-18-0"}
+\`\`\`
+
+### Delete Simulator
+\`\`\`json
+{"operation": "delete", "deviceId": "ABCD1234-5678-90EF-GHIJ-KLMNOPQRSTUV"}
+\`\`\`
+
+### Factory Reset (Erase)
+\`\`\`json
+{"operation": "erase", "deviceId": "simulator-udid", "force": true}
+\`\`\`
+
+### Clone Simulator
+\`\`\`json
+{"operation": "clone", "deviceId": "source-udid", "newName": "Snapshot Before Tests"}
+\`\`\`
+
+### Rename Simulator
+\`\`\`json
+{"operation": "rename", "deviceId": "simulator-udid", "newName": "My Test Device"}
+\`\`\`
+
 ## Operations
 
 ### boot

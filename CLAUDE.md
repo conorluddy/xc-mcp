@@ -6,39 +6,45 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 XC-MCP is a Model Context Protocol (MCP) server that provides intelligent access to Xcode command-line tools with advanced caching and progressive disclosure features. It wraps `xcodebuild`, `simctl`, and `idb` commands to solve token overflow issues while maintaining full functionality.
 
-### Token Efficiency Architecture (V2.0.0)
+### Token Efficiency Architecture (V3.0.0)
 
-**28 consolidated tools consuming ~18.7k tokens total** (9.3% of 200k context window).
+**30 tools with deferred loading consuming ~1k tokens at startup** (0.5% of 200k context window).
 
 **Token Evolution:**
 | Version | Tools | Tokens | Architecture |
 |---------|-------|--------|--------------|
 | Pre-RTFM (v1.2.1) | 51 | ~7,850 | Individual tools |
 | V1.3.2 (RTFM) | 51 | ~3,000 | Individual + RTFM |
-| **V2.0.0 (Current)** | **28** | **~18.7k** | **Routers + RTFM + Accessibility** |
+| V2.0.0 | 28 | ~18.7k | Routers + RTFM + Accessibility |
+| **V3.0.0 (Current)** | **30** | **~1k** | **Deferred loading + tool-search** |
 
-XC-MCP V2.0 implements **tool consolidation + progressive disclosure via RTFM** to minimize agent context overhead:
-- **Operation enum routers**: 21 individual tools → 6 consolidated routers
-- **Comprehensive tool descriptions**: Full documentation in tool schemas for optimal agent understanding
-- **On-demand RTFM documentation**: Additional context available via RTFM tool when needed
-- **Accessibility-first workflow**: 3 new tools for semantic UI automation (50 tokens vs 170 for screenshots)
-- **Token usage**: ~18.7k tokens (9.3% of 200k context window)
+XC-MCP V3.0 implements **deferred tool loading with dynamic discovery** to minimize startup context overhead:
+- **Startup footprint**: Only `tool-search` and `rtfm` visible at initialization (~1k tokens)
+- **Dynamic tool discovery**: Agents use `tool-search` to discover relevant tools on-demand
+- **Auto-enabled tools**: Discovered tools automatically enabled and visible to agent
+- **Operation enum routers**: 6 consolidated routers with semantic operations (21 tools → 6 routers)
+- **Accessibility-first workflow**: 3 tools for semantic UI automation (50 tokens vs 170 for screenshots)
+- **Workflow tools**: 2 high-level orchestration tools for common patterns
+- **Token usage**: ~1k tokens at startup (0.5% of 200k context window)
 
-**Progressive Discovery Pattern:**
-1. Agent sees full tool list with comprehensive descriptions (~18.7k tokens)
-2. Browses categories via RTFM: `rtfm({ categoryName: "simulator" })`
-3. Gets additional docs for specific tools: `rtfm({ toolName: "simctl-device" })`
-4. Executes with operation enums: `simctl-device({ operation: "boot", udid: "..." })`
-5. Context budget preserved for actual work (180k+ tokens remaining)
+**Tool Search Discovery Pattern:**
+1. Agent starts with only `tool-search` and `rtfm` visible (~1k tokens)
+2. Uses `tool-search` to discover relevant tools: `tool-search({ query: "build", category: "build" })`
+3. Discovered tools automatically enabled and visible in agent context
+4. Uses `rtfm({ categoryName: "build" })` for detailed documentation of category
+5. Gets additional docs for specific tools: `rtfm({ toolName: "xcodebuild-build" })`
+6. Executes tools with operation enums or direct parameters
+7. **Context budget fully preserved for actual work (199k+ tokens remaining)**
 
-**Tool Categories (V2.0):**
+**Tool Categories (V3.0):**
 - `build`: Build & Test Operations (6 tools: xcodebuild-build, xcodebuild-test, xcodebuild-clean, xcodebuild-list, xcodebuild-version, xcodebuild-get-details)
 - `simulator`: Simulator Lifecycle & Discovery (3 tools: simctl-device router [7 ops], simctl-list, simctl-get-details, simctl-health-check)
 - `app`: App Management (2 routers: simctl-app [4 ops], idb-app [4 ops])
 - `idb`: UI Automation (8 tools: idb-ui-describe, idb-ui-tap, idb-ui-input, idb-ui-gesture, idb-ui-find-element, accessibility-quality-check, idb-targets [4 ops])
 - `io`: I/O & Media (2 tools: simctl-io, screenshot)
 - `cache`: Cache Management (2 routers: cache [4 ops], persistence [3 ops])
-- `system`: System & Documentation (4 tools: rtfm, simctl-openurl, simctl-get-app-container, list-cached-responses, workflow-build-and-run)
+- `workflow`: Workflow Orchestration (2 tools: workflow-tap-element, workflow-fresh-install)
+- `system`: System & Discovery (3 tools: tool-search, rtfm, simctl-openurl, simctl-get-app-container)
 
 ## Development Commands
 
@@ -195,11 +201,52 @@ persistence-status       → persistence({ operation: "status" })
 - `simctl-addmedia`, `simctl-privacy`, `simctl-pbcopy`, `simctl-status-bar`: Commented out to reduce schema bloat
 - `list-cached-responses`: Integrated into main cache tools
 
-**For Claude Code:**
+**For Claude Code (V2.0):**
 - Use `rtfm()` to discover tools progressively
 - Prefer `accessibility-quality-check` before screenshots
 - Use `idb-ui-find-element` for semantic element search
 - Progressive disclosure via cache IDs (buildId, testId, cacheId, uiTreeId)
+
+### V3.0 Architecture Changes
+
+**Major Changes from V2.0:**
+- **Deferred loading**: Only `tool-search` and `rtfm` visible at startup (~1k tokens vs ~18.7k)
+- **Tool count**: 28 → 30 tools (added 2 workflow tools)
+- **Dynamic discovery**: Agents discover tools on-demand via `tool-search`
+- **Auto-enabling**: Discovered tools automatically added to agent context
+- **Startup optimization**: 94% reduction in initial context overhead
+- **Full feature parity**: All V2.0 features preserved with dynamic loading
+
+**New Tools in V3.0:**
+- `tool-search`: Dynamic tool discovery by name, description, category, or capability
+- `workflow-tap-element`: High-level semantic tap workflow combining accessibility assessment and element interaction
+- `workflow-fresh-install`: Clean slate installation workflow for testing
+
+**Tool Search Usage:**
+```javascript
+// Discover build tools
+tool-search({ query: "build", category: "build" })
+
+// Find simulator tools
+tool-search({ query: "boot" })
+
+// List all tools in a category
+tool-search({ category: "idb" })
+```
+
+**Workflow Tools:**
+- `workflow-tap-element`: Combines `accessibility-quality-check` + `idb-ui-find-element` + `idb-ui-tap` into single high-level operation
+- `workflow-fresh-install`: Combines device cleanup, fresh install, and app launch into single operation
+
+**For Claude Code (V3.0):**
+- Start with `tool-search` to discover relevant tools
+- Use `rtfm()` for detailed documentation once tools are discovered
+- `workflow-tap-element` for accessibility-first UI interaction
+- `workflow-fresh-install` for test environment setup
+- Progressive disclosure via cache IDs (buildId, testId, cacheId, uiTreeId)
+
+**Environment Variables:**
+- `XC_MCP_DEFER_LOADING=false` - Disables deferred loading and loads all tools like V2.x (default: true)
 
 ## Development Guidelines
 

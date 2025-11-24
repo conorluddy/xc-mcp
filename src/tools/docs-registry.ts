@@ -50,6 +50,13 @@ import { IDB_LIST_APPS_DOCS } from './idb/list-apps.js';
 // Cache documentation (non-consolidated only)
 import { CACHE_LIST_CACHED_RESPONSES_DOCS } from './cache/list-cached.js';
 
+// Tool search documentation (v3.0.0)
+import { TOOL_SEARCH_DOCS } from './tool-search.js';
+
+// Workflow documentation (v3.0.0)
+import { WORKFLOW_TAP_ELEMENT_DOCS } from './workflows/tap-element.js';
+import { WORKFLOW_FRESH_INSTALL_DOCS } from './workflows/fresh-install.js';
+
 // Consolidated router documentation (v2.0+)
 import { SIMCTL_DEVICE_DOCS } from './simctl/device/index.js';
 import { SIMCTL_APP_DOCS } from './simctl/app/index.js';
@@ -464,8 +471,10 @@ export const TOOL_CATEGORIES: Record<string, string[]> = {
     'persistence-disable',
     'persistence-status',
     'rtfm',
+    'tool-search',
     'screenshot-save',
   ],
+  workflow: ['workflow-tap-element', 'workflow-fresh-install'],
 };
 
 export const CATEGORY_DESCRIPTIONS: Record<string, { name: string; description: string }> = {
@@ -500,6 +509,10 @@ export const CATEGORY_DESCRIPTIONS: Record<string, { name: string; description: 
   system: {
     name: 'System & Documentation',
     description: 'Persistence, documentation, and utility tools',
+  },
+  workflow: {
+    name: 'Workflow Orchestration',
+    description: 'Multi-step automated workflows for common tasks (v3.0.0)',
   },
 };
 
@@ -583,8 +596,13 @@ export const TOOL_DOCS: Record<string, string> = {
   cache: CACHE_DOCS,
   persistence: PERSISTENCE_DOCS,
 
-  // Documentation tool
+  // Documentation and discovery tools
   rtfm: RTFM_DOCS,
+  'tool-search': TOOL_SEARCH_DOCS,
+
+  // Workflow tools (v3.0.0)
+  'workflow-tap-element': WORKFLOW_TAP_ELEMENT_DOCS,
+  'workflow-fresh-install': WORKFLOW_FRESH_INSTALL_DOCS,
 
   // Backwards compatibility aliases (v1.x tools → v2.0 consolidated tools)
   // Simctl device consolidation
