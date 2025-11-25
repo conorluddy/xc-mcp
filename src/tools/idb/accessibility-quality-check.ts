@@ -141,6 +141,10 @@ const assessment = await accessibilityQualityCheckTool({
 - Saves tokens by preventing unnecessary screenshots
 - Identifies when UI has minimal accessibility support
 `;
+
+export const ACCESSIBILITY_QUALITY_CHECK_DOCS_MINI =
+  'Assess accessibility tree quality. Use rtfm({ toolName: "accessibility-quality-check" }) for docs.';
+
 export async function accessibilityQualityCheckTool(args: AccessibilityQualityCheckArgs) {
   const { udid, screenContext } = args;
 

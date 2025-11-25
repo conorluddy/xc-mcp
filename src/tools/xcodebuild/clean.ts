@@ -1,6 +1,6 @@
 import { validateProjectPath, validateScheme } from '../../utils/validation.js';
 import { executeCommand, buildXcodebuildCommand } from '../../utils/command.js';
-import type { ToolResult } from '../../types/xcode.js';
+import type { ToolResult as _ToolResult } from '../../types/xcode.js';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 
 interface CleanToolArgs {
@@ -165,3 +165,6 @@ const cleanRelease = await xcodebuildCleanTool({
 - xcodebuild-build: Build after cleaning
 - xcodebuild-list: Discover available schemes
 `;
+
+export const XCODEBUILD_CLEAN_DOCS_MINI =
+  'Clean build artifacts. Use rtfm({ toolName: "xcodebuild-clean" }) for docs.';

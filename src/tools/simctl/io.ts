@@ -453,3 +453,6 @@ This enables accurate element tapping even with optimized screenshots.
 3. **Analyze with LLM**: Use optimized size for token-efficient analysis
 4. **Use coordinates**: Apply transform to map screenshot coords to device
 `;
+
+export const SIMCTL_IO_DOCS_MINI =
+  'Capture screenshots or record video. Use rtfm({ toolName: "simctl-io" }) for docs.';

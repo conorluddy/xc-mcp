@@ -2,26 +2,41 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { validateXcodeInstallation } from '../utils/validation.js';
-import { simctlListTool } from '../tools/simctl/list.js';
-import { SIMCTL_LIST_DOCS } from '../tools/simctl/list.js';
-import { simctlGetDetailsTool } from '../tools/simctl/get-details.js';
-import { SIMCTL_GET_DETAILS_DOCS } from '../tools/simctl/get-details.js';
-import { simctlDeviceTool } from '../tools/simctl/device/index.js';
-import { SIMCTL_DEVICE_DOCS } from '../tools/simctl/device/index.js';
-import { simctlHealthCheckTool } from '../tools/simctl/health-check.js';
-import { SIMCTL_HEALTH_CHECK_DOCS } from '../tools/simctl/health-check.js';
-import { simctlAppTool } from '../tools/simctl/app/index.js';
-import { SIMCTL_APP_DOCS } from '../tools/simctl/app/index.js';
-import { simctlGetAppContainerTool } from '../tools/simctl/get-app-container.js';
-import { SIMCTL_GET_APP_CONTAINER_DOCS } from '../tools/simctl/get-app-container.js';
-import { simctlOpenUrlTool } from '../tools/simctl/openurl.js';
-import { SIMCTL_OPENURL_DOCS } from '../tools/simctl/openurl.js';
-import { simctlIoTool } from '../tools/simctl/io.js';
-import { SIMCTL_IO_DOCS } from '../tools/simctl/io.js';
-import { simctlPushTool } from '../tools/simctl/push.js';
-import { SIMCTL_PUSH_DOCS } from '../tools/simctl/push.js';
-import { simctlScreenshotInlineTool } from '../tools/simctl/screenshot-inline.js';
-import { SIMCTL_SCREENSHOT_INLINE_DOCS } from '../tools/simctl/screenshot-inline.js';
+import { getDescription } from './types.js';
+import { simctlListTool, SIMCTL_LIST_DOCS, SIMCTL_LIST_DOCS_MINI } from '../tools/simctl/list.js';
+import {
+  simctlGetDetailsTool,
+  SIMCTL_GET_DETAILS_DOCS,
+  SIMCTL_GET_DETAILS_DOCS_MINI,
+} from '../tools/simctl/get-details.js';
+import {
+  simctlDeviceTool,
+  SIMCTL_DEVICE_DOCS,
+  SIMCTL_DEVICE_DOCS_MINI,
+} from '../tools/simctl/device/index.js';
+import {
+  simctlHealthCheckTool,
+  SIMCTL_HEALTH_CHECK_DOCS,
+  SIMCTL_HEALTH_CHECK_DOCS_MINI,
+} from '../tools/simctl/health-check.js';
+import { simctlAppTool, SIMCTL_APP_DOCS, SIMCTL_APP_DOCS_MINI } from '../tools/simctl/app/index.js';
+import {
+  simctlGetAppContainerTool,
+  SIMCTL_GET_APP_CONTAINER_DOCS,
+  SIMCTL_GET_APP_CONTAINER_DOCS_MINI,
+} from '../tools/simctl/get-app-container.js';
+import {
+  simctlOpenUrlTool,
+  SIMCTL_OPENURL_DOCS,
+  SIMCTL_OPENURL_DOCS_MINI,
+} from '../tools/simctl/openurl.js';
+import { simctlIoTool, SIMCTL_IO_DOCS, SIMCTL_IO_DOCS_MINI } from '../tools/simctl/io.js';
+import { simctlPushTool, SIMCTL_PUSH_DOCS, SIMCTL_PUSH_DOCS_MINI } from '../tools/simctl/push.js';
+import {
+  simctlScreenshotInlineTool,
+  SIMCTL_SCREENSHOT_INLINE_DOCS,
+  SIMCTL_SCREENSHOT_INLINE_DOCS_MINI,
+} from '../tools/simctl/screenshot-inline.js';
 
 const ENABLE_DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
 const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
@@ -33,7 +48,7 @@ export function registerSimctlTools(server: McpServer): void {
   server.registerTool(
     'simctl-list',
     {
-      description: SIMCTL_LIST_DOCS,
+      description: getDescription(SIMCTL_LIST_DOCS, SIMCTL_LIST_DOCS_MINI),
       inputSchema: {
         deviceType: z.string().optional(),
         runtime: z.string().optional(),
@@ -62,7 +77,7 @@ export function registerSimctlTools(server: McpServer): void {
   server.registerTool(
     'simctl-get-details',
     {
-      description: SIMCTL_GET_DETAILS_DOCS,
+      description: getDescription(SIMCTL_GET_DETAILS_DOCS, SIMCTL_GET_DETAILS_DOCS_MINI),
       inputSchema: {
         cacheId: z.string(),
         detailType: z.enum(['full-list', 'devices-only', 'runtimes-only', 'available-only']),
@@ -90,7 +105,7 @@ export function registerSimctlTools(server: McpServer): void {
   server.registerTool(
     'simctl-device',
     {
-      description: SIMCTL_DEVICE_DOCS,
+      description: getDescription(SIMCTL_DEVICE_DOCS, SIMCTL_DEVICE_DOCS_MINI),
       inputSchema: {
         operation: z.enum(['boot', 'shutdown', 'create', 'delete', 'erase', 'clone', 'rename']),
         deviceId: z.string().optional(),
@@ -122,7 +137,7 @@ export function registerSimctlTools(server: McpServer): void {
   server.registerTool(
     'simctl-health-check',
     {
-      description: SIMCTL_HEALTH_CHECK_DOCS,
+      description: getDescription(SIMCTL_HEALTH_CHECK_DOCS, SIMCTL_HEALTH_CHECK_DOCS_MINI),
       inputSchema: {},
       ...DEFER_LOADING_CONFIG,
     },
@@ -144,7 +159,7 @@ export function registerSimctlTools(server: McpServer): void {
   server.registerTool(
     'simctl-app',
     {
-      description: SIMCTL_APP_DOCS,
+      description: getDescription(SIMCTL_APP_DOCS, SIMCTL_APP_DOCS_MINI),
       inputSchema: {
         operation: z.enum(['install', 'uninstall', 'launch', 'terminate']),
         udid: z.string().optional(),
@@ -173,7 +188,10 @@ export function registerSimctlTools(server: McpServer): void {
   server.registerTool(
     'simctl-get-app-container',
     {
-      description: SIMCTL_GET_APP_CONTAINER_DOCS,
+      description: getDescription(
+        SIMCTL_GET_APP_CONTAINER_DOCS,
+        SIMCTL_GET_APP_CONTAINER_DOCS_MINI
+      ),
       inputSchema: {
         udid: z.string(),
         bundleId: z.string(),
@@ -199,7 +217,7 @@ export function registerSimctlTools(server: McpServer): void {
   server.registerTool(
     'simctl-openurl',
     {
-      description: SIMCTL_OPENURL_DOCS,
+      description: getDescription(SIMCTL_OPENURL_DOCS, SIMCTL_OPENURL_DOCS_MINI),
       inputSchema: {
         udid: z.string(),
         url: z.string(),
@@ -224,7 +242,7 @@ export function registerSimctlTools(server: McpServer): void {
   server.registerTool(
     'simctl-io',
     {
-      description: SIMCTL_IO_DOCS,
+      description: getDescription(SIMCTL_IO_DOCS, SIMCTL_IO_DOCS_MINI),
       inputSchema: {
         udid: z.string(),
         operation: z.enum(['screenshot', 'video']),
@@ -255,7 +273,7 @@ export function registerSimctlTools(server: McpServer): void {
   server.registerTool(
     'simctl-push',
     {
-      description: SIMCTL_PUSH_DOCS,
+      description: getDescription(SIMCTL_PUSH_DOCS, SIMCTL_PUSH_DOCS_MINI),
       inputSchema: {
         udid: z.string(),
         bundleId: z.string(),
@@ -283,7 +301,10 @@ export function registerSimctlTools(server: McpServer): void {
   server.registerTool(
     'screenshot',
     {
-      description: SIMCTL_SCREENSHOT_INLINE_DOCS,
+      description: getDescription(
+        SIMCTL_SCREENSHOT_INLINE_DOCS,
+        SIMCTL_SCREENSHOT_INLINE_DOCS_MINI
+      ),
       inputSchema: {
         udid: z.string().optional(),
         size: z.enum(['full', 'half', 'quarter', 'thumb']).optional(),

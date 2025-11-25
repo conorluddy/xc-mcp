@@ -84,7 +84,7 @@ export async function xcodebuildGetDetailsTool(args: any) {
     let responseText: string;
 
     switch (detailType) {
-      case 'full-log':
+      case 'full-log': {
         const fullLog =
           cached.fullOutput + (cached.stderr ? '\n--- STDERR ---\n' + cached.stderr : '');
         const lines = fullLog.split('\n');
@@ -114,8 +114,9 @@ export async function xcodebuildGetDetailsTool(args: any) {
           );
         }
         break;
+      }
 
-      case 'errors-only':
+      case 'errors-only': {
         const allOutput = cached.fullOutput + '\n' + cached.stderr;
         const errorLines = allOutput
           .split('\n')
@@ -137,8 +138,9 @@ export async function xcodebuildGetDetailsTool(args: any) {
           2
         );
         break;
+      }
 
-      case 'warnings-only':
+      case 'warnings-only': {
         const warningLines = (cached.fullOutput + '\n' + cached.stderr)
           .split('\n')
           .filter(line => line.includes('warning:'));
@@ -154,6 +156,7 @@ export async function xcodebuildGetDetailsTool(args: any) {
           2
         );
         break;
+      }
 
       case 'summary':
         responseText = JSON.stringify(
@@ -277,3 +280,6 @@ Provides on-demand access to full build and test logs that were cached during xc
 - Cache IDs expire after 30 minutes
 - Use for debugging build failures and test issues
 `;
+
+export const XCODEBUILD_GET_DETAILS_DOCS_MINI =
+  'Get build/test logs from cache. Use rtfm({ toolName: "xcodebuild-get-details" }) for docs.';

@@ -1,5 +1,5 @@
 import { executeCommand } from '../../utils/command.js';
-import type { ToolResult, OutputFormat } from '../../types/xcode.js';
+import type { ToolResult as _ToolResult, OutputFormat } from '../../types/xcode.js';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 
 interface VersionToolArgs {
@@ -76,7 +76,7 @@ export async function xcodebuildVersionTool(args: any) {
         // Parse and format JSON response
         const versionInfo = JSON.parse(result.stdout);
         responseText = JSON.stringify(versionInfo, null, 2);
-      } catch (_parseError) {
+      } catch {
         // If JSON parsing fails, the output might be plain text
         // This can happen with older Xcode versions
         responseText = JSON.stringify(
@@ -154,3 +154,6 @@ const sdkInfo = await xcodebuildVersionTool({ sdk: "iphoneos" });
 - xcodebuild-showsdks: Show all available SDKs
 - xcodebuild-list: List project information
 `;
+
+export const XCODEBUILD_VERSION_DOCS_MINI =
+  'Get Xcode and SDK version info. Use rtfm({ toolName: "xcodebuild-version" }) for docs.';

@@ -1,8 +1,9 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
+import { getDescription } from './types.js';
 import { getToolDocsTool } from '../tools/get-tool-docs.js';
-import { RTFM_DOCS } from '../tools/docs-registry.js';
+import { RTFM_DOCS, RTFM_DOCS_MINI } from '../tools/docs-registry.js';
 
 const ENABLE_DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
 const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
@@ -14,7 +15,7 @@ export function registerSystemTools(server: McpServer): void {
   server.registerTool(
     'rtfm',
     {
-      description: RTFM_DOCS,
+      description: getDescription(RTFM_DOCS, RTFM_DOCS_MINI),
       inputSchema: {
         toolName: z.string().optional(),
         categoryName: z.string().optional(),

@@ -190,3 +190,6 @@ await idbTargetsToolUnified({
 - \`idb-app\`: App management on IDB targets
 - \`idb-ui-tap\`, \`idb-ui-input\`, \`idb-ui-gesture\`: UI automation on targets
 `;
+
+export const IDB_TARGETS_DOCS_MINI =
+  'Manage IDB targets (list/describe/connect). Use rtfm({ toolName: "idb-targets" }) for docs.';

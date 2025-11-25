@@ -5,9 +5,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { registerAllTools } from './registry/index.js';
 import { debugWorkflowPrompt } from './tools/prompts/debug-workflow.js';
-
-// Environment variable to disable defer_loading (for debugging/testing)
-const ENABLE_DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
+import { config } from './config.js';
 
 class XcodeCLIMCPServer {
   private server: McpServer;
@@ -100,7 +98,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
     registerAllTools(this.server);
 
     console.error(
-      `XC-MCP v3.0.1: ${ENABLE_DEFER_LOADING ? 'defer_loading enabled' : 'defer_loading disabled'} for all tools.`
+      `XC-MCP v3.0.1: descriptions=${config.minimalDescriptions ? 'mini' : 'full'}, defer_loading=${config.deferLoading ? 'enabled' : 'disabled'}`
     );
   }
 

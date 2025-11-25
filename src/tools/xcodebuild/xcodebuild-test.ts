@@ -693,3 +693,6 @@ const quick = await xcodebuildTestTool({
 - xcodebuild-get-details: Get full test logs (use with testId)
 - simctl-list: See available test simulators
 `;
+
+export const XCODEBUILD_TEST_DOCS_MINI =
+  'Run Xcode tests with filtering. Use rtfm({ toolName: "xcodebuild-test" }) for docs.';

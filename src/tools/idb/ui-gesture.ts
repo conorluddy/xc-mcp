@@ -641,3 +641,6 @@ await idbUiGestureTool({ operation: 'button', buttonType: 'HOME' });
 - idb-ui-tap: For precise element tapping
 - idb-ui-describe: Find element coordinates
 `;
+
+export const IDB_UI_GESTURE_DOCS_MINI =
+  'Perform gestures and button presses. Use rtfm({ toolName: "idb-ui-gesture" }) for docs.';

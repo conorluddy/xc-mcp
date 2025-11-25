@@ -396,6 +396,11 @@ rtfm({ toolName: "simctl" })  // Shows simctl-* suggestions
 - The TOOL_DOCS registry is automatically updated when tools are added/removed
 `;
 
+export const RTFM_DOCS_MINI = 'Get tool documentation. Use rtfm({ toolName: "rtfm" }) for docs.';
+
+export const SCREENSHOT_SAVE_DOCS_MINI =
+  'Save screenshot to file. Use rtfm({ toolName: "screenshot-save" }) for docs.';
+
 /**
  * Tool categories for progressive discovery
  */

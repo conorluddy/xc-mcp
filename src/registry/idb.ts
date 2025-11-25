@@ -1,23 +1,43 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { idbTargetsRouter } from '../tools/idb/targets/index.js';
-import { IDB_TARGETS_DOCS } from '../tools/idb/targets/index.js';
-import { idbUiTapTool } from '../tools/idb/ui-tap.js';
-import { IDB_UI_TAP_DOCS } from '../tools/idb/ui-tap.js';
-import { idbUiInputTool } from '../tools/idb/ui-input.js';
-import { IDB_UI_INPUT_DOCS } from '../tools/idb/ui-input.js';
-import { idbUiGestureTool } from '../tools/idb/ui-gesture.js';
-import { IDB_UI_GESTURE_DOCS } from '../tools/idb/ui-gesture.js';
-import { idbUiDescribeTool } from '../tools/idb/ui-describe.js';
-import { IDB_UI_DESCRIBE_DOCS } from '../tools/idb/ui-describe.js';
-import { idbUiFindElementTool } from '../tools/idb/ui-find-element.js';
-import { IDB_UI_FIND_ELEMENT_DOCS } from '../tools/idb/ui-find-element.js';
-import { accessibilityQualityCheckTool } from '../tools/idb/accessibility-quality-check.js';
-import { ACCESSIBILITY_QUALITY_CHECK_DOCS } from '../tools/idb/accessibility-quality-check.js';
-import { idbListAppsTool } from '../tools/idb/list-apps.js';
-import { IDB_LIST_APPS_DOCS } from '../tools/idb/list-apps.js';
-import { idbAppTool } from '../tools/idb/app/index.js';
-import { IDB_APP_DOCS } from '../tools/idb/app/index.js';
+import { getDescription } from './types.js';
+import {
+  idbTargetsRouter,
+  IDB_TARGETS_DOCS,
+  IDB_TARGETS_DOCS_MINI,
+} from '../tools/idb/targets/index.js';
+import { idbUiTapTool, IDB_UI_TAP_DOCS, IDB_UI_TAP_DOCS_MINI } from '../tools/idb/ui-tap.js';
+import {
+  idbUiInputTool,
+  IDB_UI_INPUT_DOCS,
+  IDB_UI_INPUT_DOCS_MINI,
+} from '../tools/idb/ui-input.js';
+import {
+  idbUiGestureTool,
+  IDB_UI_GESTURE_DOCS,
+  IDB_UI_GESTURE_DOCS_MINI,
+} from '../tools/idb/ui-gesture.js';
+import {
+  idbUiDescribeTool,
+  IDB_UI_DESCRIBE_DOCS,
+  IDB_UI_DESCRIBE_DOCS_MINI,
+} from '../tools/idb/ui-describe.js';
+import {
+  idbUiFindElementTool,
+  IDB_UI_FIND_ELEMENT_DOCS,
+  IDB_UI_FIND_ELEMENT_DOCS_MINI,
+} from '../tools/idb/ui-find-element.js';
+import {
+  accessibilityQualityCheckTool,
+  ACCESSIBILITY_QUALITY_CHECK_DOCS,
+  ACCESSIBILITY_QUALITY_CHECK_DOCS_MINI,
+} from '../tools/idb/accessibility-quality-check.js';
+import {
+  idbListAppsTool,
+  IDB_LIST_APPS_DOCS,
+  IDB_LIST_APPS_DOCS_MINI,
+} from '../tools/idb/list-apps.js';
+import { idbAppTool, IDB_APP_DOCS, IDB_APP_DOCS_MINI } from '../tools/idb/app/index.js';
 
 const ENABLE_DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
 const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
@@ -29,7 +49,7 @@ export function registerIdbTools(server: McpServer): void {
   server.registerTool(
     'idb-targets',
     {
-      description: IDB_TARGETS_DOCS,
+      description: getDescription(IDB_TARGETS_DOCS, IDB_TARGETS_DOCS_MINI),
       inputSchema: {
         operation: z.enum(['list', 'describe', 'focus', 'connect', 'disconnect']),
         udid: z.string().optional(),
@@ -45,7 +65,7 @@ export function registerIdbTools(server: McpServer): void {
   server.registerTool(
     'idb-ui-tap',
     {
-      description: IDB_UI_TAP_DOCS,
+      description: getDescription(IDB_UI_TAP_DOCS, IDB_UI_TAP_DOCS_MINI),
       inputSchema: {
         udid: z.string().optional(),
         x: z.number(),
@@ -70,7 +90,7 @@ export function registerIdbTools(server: McpServer): void {
   server.registerTool(
     'idb-ui-input',
     {
-      description: IDB_UI_INPUT_DOCS,
+      description: getDescription(IDB_UI_INPUT_DOCS, IDB_UI_INPUT_DOCS_MINI),
       inputSchema: {
         udid: z.string().optional(),
         operation: z.enum(['text', 'key', 'key-sequence']),
@@ -106,7 +126,7 @@ export function registerIdbTools(server: McpServer): void {
   server.registerTool(
     'idb-ui-gesture',
     {
-      description: IDB_UI_GESTURE_DOCS,
+      description: getDescription(IDB_UI_GESTURE_DOCS, IDB_UI_GESTURE_DOCS_MINI),
       inputSchema: {
         udid: z.string().optional(),
         operation: z.enum(['swipe', 'button']),
@@ -134,7 +154,7 @@ export function registerIdbTools(server: McpServer): void {
   server.registerTool(
     'idb-ui-describe',
     {
-      description: IDB_UI_DESCRIBE_DOCS,
+      description: getDescription(IDB_UI_DESCRIBE_DOCS, IDB_UI_DESCRIBE_DOCS_MINI),
       inputSchema: {
         udid: z.string().optional(),
         operation: z.enum(['all', 'point']),
@@ -152,7 +172,7 @@ export function registerIdbTools(server: McpServer): void {
   server.registerTool(
     'idb-ui-find-element',
     {
-      description: IDB_UI_FIND_ELEMENT_DOCS,
+      description: getDescription(IDB_UI_FIND_ELEMENT_DOCS, IDB_UI_FIND_ELEMENT_DOCS_MINI),
       inputSchema: {
         udid: z.string().optional(),
         query: z.string(),
@@ -166,7 +186,10 @@ export function registerIdbTools(server: McpServer): void {
   server.registerTool(
     'accessibility-quality-check',
     {
-      description: ACCESSIBILITY_QUALITY_CHECK_DOCS,
+      description: getDescription(
+        ACCESSIBILITY_QUALITY_CHECK_DOCS,
+        ACCESSIBILITY_QUALITY_CHECK_DOCS_MINI
+      ),
       inputSchema: {
         udid: z.string().optional(),
         screenContext: z.string().optional(),
@@ -180,7 +203,7 @@ export function registerIdbTools(server: McpServer): void {
   server.registerTool(
     'idb-list-apps',
     {
-      description: IDB_LIST_APPS_DOCS,
+      description: getDescription(IDB_LIST_APPS_DOCS, IDB_LIST_APPS_DOCS_MINI),
       inputSchema: {
         udid: z.string().optional(),
         filterType: z.enum(['system', 'user', 'internal']).optional(),
@@ -195,7 +218,7 @@ export function registerIdbTools(server: McpServer): void {
   server.registerTool(
     'idb-app',
     {
-      description: IDB_APP_DOCS,
+      description: getDescription(IDB_APP_DOCS, IDB_APP_DOCS_MINI),
       inputSchema: {
         operation: z.enum(['install', 'uninstall', 'launch', 'terminate']),
         udid: z.string().optional(),

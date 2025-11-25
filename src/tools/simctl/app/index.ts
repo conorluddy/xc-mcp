@@ -204,3 +204,6 @@ await simctlAppTool({
 - \`simctl-list\`: Discover simulators and their UDIDs
 - \`idb-app\`: IDB-based app management
 `;
+
+export const SIMCTL_APP_DOCS_MINI =
+  'Manage apps on simulators (install/launch/etc). Use rtfm({ toolName: "simctl-app" }) for docs.';

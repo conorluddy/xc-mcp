@@ -197,3 +197,6 @@ await cacheTool({
 - \`xcodebuild-get-details\`: Retrieve cached build output
 - \`simctl-get-details\`: Retrieve cached simulator details
 `;
+
+export const CACHE_DOCS_MINI =
+  'Manage cache (stats/config/clear). Use rtfm({ toolName: "cache" }) for docs.';

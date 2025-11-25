@@ -261,7 +261,7 @@ async function checkDiskSpace() {
       name: 'Disk Space',
       status: 'Unable to determine (continue with caution)',
     };
-  } catch (error) {
+  } catch {
     return {
       pass: true,
       name: 'Disk Space',
@@ -351,3 +351,6 @@ if (!health.healthy) {
 - Perfect for troubleshooting when operations fail unexpectedly
 - Use before CI/CD pipeline execution to ensure environment health
 `;
+
+export const SIMCTL_HEALTH_CHECK_DOCS_MINI =
+  'Check simulator environment health. Use rtfm({ toolName: "simctl-health-check" }) for docs.';

@@ -792,3 +792,6 @@ const element = await idbUiDescribeTool({
 - idb-ui-find-element: Semantic element search by label/identifier
 - accessibility-quality-check: Quick assessment before choosing approach
 `;
+
+export const IDB_UI_DESCRIBE_DOCS_MINI =
+  'Query UI accessibility tree. Use rtfm({ toolName: "idb-ui-describe" }) for docs.';

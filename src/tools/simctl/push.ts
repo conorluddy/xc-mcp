@@ -342,3 +342,6 @@ This enables agents to track push notification tests and verify expected behavio
 - **Notification grouping**: Test thread-id for notification grouping
 `;
 
+export const SIMCTL_PUSH_DOCS_MINI =
+  'Send push notifications to simulator. Use rtfm({ toolName: "simctl-push" }) for docs.';
+

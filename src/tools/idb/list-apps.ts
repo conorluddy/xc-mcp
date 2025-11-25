@@ -393,3 +393,6 @@ const all = await idbListAppsTool({
 - Running status helps identify active processes for UI automation
 - Debuggable status indicates if debugger can be attached
 `;
+
+export const IDB_LIST_APPS_DOCS_MINI =
+  'List installed apps with bundle IDs. Use rtfm({ toolName: "idb-list-apps" }) for docs.';

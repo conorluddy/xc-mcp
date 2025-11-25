@@ -426,3 +426,6 @@ const release = await xcodebuildBuildTool({
 - xcodebuild-clean: Clean build artifacts
 - xcodebuild-get-details: Get full build logs (use with buildId)
 `;
+
+export const XCODEBUILD_BUILD_DOCS_MINI =
+  'Build Xcode projects with smart defaults. Use rtfm({ toolName: "xcodebuild-build" }) for docs.';

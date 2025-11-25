@@ -255,3 +255,6 @@ await simctlGetAppContainerTool({
 4. **Inspect specific file**: \`cat "<container-path>/Documents/data.json"\`
 `;
 
+export const SIMCTL_GET_APP_CONTAINER_DOCS_MINI =
+  'Get app container path on simulator. Use rtfm({ toolName: "simctl-get-app-container" }) for docs.';
+

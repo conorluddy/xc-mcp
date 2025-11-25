@@ -2,18 +2,37 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { validateXcodeInstallation } from '../utils/validation.js';
-import { xcodebuildVersionTool } from '../tools/xcodebuild/version.js';
-import { XCODEBUILD_VERSION_DOCS } from '../tools/xcodebuild/version.js';
-import { xcodebuildListTool } from '../tools/xcodebuild/list.js';
-import { XCODEBUILD_LIST_DOCS } from '../tools/xcodebuild/list.js';
-import { xcodebuildBuildTool } from '../tools/xcodebuild/build.js';
-import { XCODEBUILD_BUILD_DOCS } from '../tools/xcodebuild/build.js';
-import { xcodebuildCleanTool } from '../tools/xcodebuild/clean.js';
-import { XCODEBUILD_CLEAN_DOCS } from '../tools/xcodebuild/clean.js';
-import { xcodebuildTestTool } from '../tools/xcodebuild/xcodebuild-test.js';
-import { XCODEBUILD_TEST_DOCS } from '../tools/xcodebuild/xcodebuild-test.js';
-import { xcodebuildGetDetailsTool } from '../tools/xcodebuild/get-details.js';
-import { XCODEBUILD_GET_DETAILS_DOCS } from '../tools/xcodebuild/get-details.js';
+import { getDescription } from './types.js';
+import {
+  xcodebuildVersionTool,
+  XCODEBUILD_VERSION_DOCS,
+  XCODEBUILD_VERSION_DOCS_MINI,
+} from '../tools/xcodebuild/version.js';
+import {
+  xcodebuildListTool,
+  XCODEBUILD_LIST_DOCS,
+  XCODEBUILD_LIST_DOCS_MINI,
+} from '../tools/xcodebuild/list.js';
+import {
+  xcodebuildBuildTool,
+  XCODEBUILD_BUILD_DOCS,
+  XCODEBUILD_BUILD_DOCS_MINI,
+} from '../tools/xcodebuild/build.js';
+import {
+  xcodebuildCleanTool,
+  XCODEBUILD_CLEAN_DOCS,
+  XCODEBUILD_CLEAN_DOCS_MINI,
+} from '../tools/xcodebuild/clean.js';
+import {
+  xcodebuildTestTool,
+  XCODEBUILD_TEST_DOCS,
+  XCODEBUILD_TEST_DOCS_MINI,
+} from '../tools/xcodebuild/xcodebuild-test.js';
+import {
+  xcodebuildGetDetailsTool,
+  XCODEBUILD_GET_DETAILS_DOCS,
+  XCODEBUILD_GET_DETAILS_DOCS_MINI,
+} from '../tools/xcodebuild/get-details.js';
 
 const ENABLE_DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
 const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
@@ -25,7 +44,7 @@ export function registerXcodebuildTools(server: McpServer): void {
   server.registerTool(
     'xcodebuild-version',
     {
-      description: XCODEBUILD_VERSION_DOCS,
+      description: getDescription(XCODEBUILD_VERSION_DOCS, XCODEBUILD_VERSION_DOCS_MINI),
       inputSchema: {
         sdk: z.string().optional(),
         outputFormat: z.enum(['json', 'text']).default('json'),
@@ -50,7 +69,7 @@ export function registerXcodebuildTools(server: McpServer): void {
   server.registerTool(
     'xcodebuild-list',
     {
-      description: XCODEBUILD_LIST_DOCS,
+      description: getDescription(XCODEBUILD_LIST_DOCS, XCODEBUILD_LIST_DOCS_MINI),
       inputSchema: {
         projectPath: z.string(),
         outputFormat: z.enum(['json', 'text']).default('json'),
@@ -75,7 +94,7 @@ export function registerXcodebuildTools(server: McpServer): void {
   server.registerTool(
     'xcodebuild-build',
     {
-      description: XCODEBUILD_BUILD_DOCS,
+      description: getDescription(XCODEBUILD_BUILD_DOCS, XCODEBUILD_BUILD_DOCS_MINI),
       inputSchema: {
         projectPath: z.string(),
         scheme: z.string(),
@@ -104,7 +123,7 @@ export function registerXcodebuildTools(server: McpServer): void {
   server.registerTool(
     'xcodebuild-clean',
     {
-      description: XCODEBUILD_CLEAN_DOCS,
+      description: getDescription(XCODEBUILD_CLEAN_DOCS, XCODEBUILD_CLEAN_DOCS_MINI),
       inputSchema: {
         projectPath: z.string(),
         scheme: z.string(),
@@ -130,7 +149,7 @@ export function registerXcodebuildTools(server: McpServer): void {
   server.registerTool(
     'xcodebuild-test',
     {
-      description: XCODEBUILD_TEST_DOCS,
+      description: getDescription(XCODEBUILD_TEST_DOCS, XCODEBUILD_TEST_DOCS_MINI),
       inputSchema: {
         projectPath: z.string(),
         scheme: z.string(),
@@ -163,7 +182,7 @@ export function registerXcodebuildTools(server: McpServer): void {
   server.registerTool(
     'xcodebuild-get-details',
     {
-      description: XCODEBUILD_GET_DETAILS_DOCS,
+      description: getDescription(XCODEBUILD_GET_DETAILS_DOCS, XCODEBUILD_GET_DETAILS_DOCS_MINI),
       inputSchema: {
         buildId: z.string(),
         detailType: z.enum([

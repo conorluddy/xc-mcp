@@ -125,6 +125,10 @@ const search = await idbUiFindElementTool({
 - Much faster than visual analysis (~80ms vs 2000ms for screenshot)
 - 5-6x cheaper token cost (~40 tokens vs ~170 for screenshot)
 `;
+
+export const IDB_UI_FIND_ELEMENT_DOCS_MINI =
+  'Find UI elements by semantic search. Use rtfm({ toolName: "idb-ui-find-element" }) for docs.';
+
 export async function idbUiFindElementTool(args: IdbUiFindElementArgs) {
   const { udid, query } = args;
 
