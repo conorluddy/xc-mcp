@@ -40,6 +40,7 @@ export function registerSimctlTools(server: McpServer): void {
         availability: z.enum(['available', 'unavailable', 'all']).default('available'),
         outputFormat: z.enum(['json', 'text']).default('json'),
         concise: z.boolean().default(true),
+        max: z.number().default(5),
       },
       ...DEFER_LOADING_CONFIG,
     },
