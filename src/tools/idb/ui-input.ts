@@ -421,3 +421,6 @@ await idbUiInputTool({ operation: 'key', key: 'return' });
 - idb-ui-tap: Tap to focus text fields before typing
 - idb-ui-describe: Find text field coordinates
 `;
+
+export const IDB_UI_INPUT_DOCS_MINI =
+  'Input text and keyboard commands. Use rtfm({ toolName: "idb-ui-input" }) for docs.';

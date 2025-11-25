@@ -166,3 +166,6 @@ Persistence status (enabled/disabled), cache directory path, and optional storag
 
 - \`cache\`: Cache management and configuration
 `;
+
+export const PERSISTENCE_DOCS_MINI =
+  'Manage cache persistence (enable/disable/status). Use rtfm({ toolName: "persistence" }) for docs.';

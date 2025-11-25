@@ -80,6 +80,19 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
+**Minimal Mode** (for Claude Code and other clients that don't support `defer_loading`):
+```json
+{
+  "mcpServers": {
+    "xc-mcp": {
+      "command": "npx",
+      "args": ["-y", "xc-mcp", "--mini"]
+    }
+  }
+}
+```
+The `--mini` flag reduces tool descriptions from ~18.7k tokens to ~540 tokens (~97% reduction). Use `rtfm` for full documentation on-demand.
+
 ---
 
 ## Token Optimization Architecture

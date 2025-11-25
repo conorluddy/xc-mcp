@@ -485,3 +485,6 @@ Taps Submit button and captures verification screenshot.
 - Element matching uses partial, case-insensitive search
 - Small delay between tap and input for keyboard appearance
 `;
+
+export const WORKFLOW_TAP_ELEMENT_DOCS_MINI =
+  'Find and tap elements by name. Use rtfm({ toolName: "workflow-tap-element" }) for docs.';

@@ -520,3 +520,6 @@ Targets specific simulator with custom launch configuration.
 - Build artifacts are located automatically
 - Bundle ID is discovered from build settings
 `;
+
+export const WORKFLOW_FRESH_INSTALL_DOCS_MINI =
+  'Build, install and launch app on fresh simulator. Use rtfm({ toolName: "workflow-fresh-install" }) for docs.';

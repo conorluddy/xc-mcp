@@ -159,3 +159,6 @@ const textInfo = await xcodebuildListTool({
 - xcodebuild-build: Build discovered schemes
 - xcodebuild-test: Test discovered schemes
 `;
+
+export const XCODEBUILD_LIST_DOCS_MINI =
+  'List project schemes and targets. Use rtfm({ toolName: "xcodebuild-list" }) for docs.';

@@ -203,3 +203,6 @@ await idbAppTool({
 - \`idb-ui-tap\`, \`idb-ui-input\`, \`idb-ui-gesture\`: UI automation
 - \`simctl-app\`: Simctl-based app management
 `;
+
+export const IDB_APP_DOCS_MINI =
+  'Manage IDB apps (install/launch/etc). Use rtfm({ toolName: "idb-app" }) for docs.';

@@ -249,3 +249,6 @@ await simctlOpenUrlTool({
 - **State preservation**: Verify app state is maintained after URL handling
 `;
 
+export const SIMCTL_OPENURL_DOCS_MINI =
+  'Open URLs and deep links on simulator. Use rtfm({ toolName: "simctl-openurl" }) for docs.';
+

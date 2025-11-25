@@ -404,3 +404,6 @@ const result = await idbUiTapTool({
 - screenshot: Capture screenshot to identify tap targets
 - idb-ui-gesture: For swipes and hardware buttons
 `;
+
+export const IDB_UI_TAP_DOCS_MINI =
+  'Tap at coordinates on iOS screen. Use rtfm({ toolName: "idb-ui-tap" }) for docs.';

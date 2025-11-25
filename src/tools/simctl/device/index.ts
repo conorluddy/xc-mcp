@@ -298,3 +298,6 @@ await simctlDeviceTool({ operation: 'rename', deviceId: 'ABC-123-DEF', newName: 
 - \`simctl-app\`: Install and launch apps on devices
 - \`simctl-io\`: Take screenshots and record videos
 `;
+
+export const SIMCTL_DEVICE_DOCS_MINI =
+  'Manage simulator lifecycle (boot/shutdown/create/etc). Use rtfm({ toolName: "simctl-device" }) for docs.';

@@ -2,10 +2,17 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { validateXcodeInstallation } from '../utils/validation.js';
-import { workflowTapElementTool } from '../tools/workflows/tap-element.js';
-import { WORKFLOW_TAP_ELEMENT_DOCS } from '../tools/workflows/tap-element.js';
-import { workflowFreshInstallTool } from '../tools/workflows/fresh-install.js';
-import { WORKFLOW_FRESH_INSTALL_DOCS } from '../tools/workflows/fresh-install.js';
+import { getDescription } from './types.js';
+import {
+  workflowTapElementTool,
+  WORKFLOW_TAP_ELEMENT_DOCS,
+  WORKFLOW_TAP_ELEMENT_DOCS_MINI,
+} from '../tools/workflows/tap-element.js';
+import {
+  workflowFreshInstallTool,
+  WORKFLOW_FRESH_INSTALL_DOCS,
+  WORKFLOW_FRESH_INSTALL_DOCS_MINI,
+} from '../tools/workflows/fresh-install.js';
 
 const ENABLE_DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
 const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
@@ -17,7 +24,7 @@ export function registerWorkflowTools(server: McpServer): void {
   server.registerTool(
     'workflow-tap-element',
     {
-      description: WORKFLOW_TAP_ELEMENT_DOCS,
+      description: getDescription(WORKFLOW_TAP_ELEMENT_DOCS, WORKFLOW_TAP_ELEMENT_DOCS_MINI),
       inputSchema: {
         elementQuery: z.string().describe('Search term for element (e.g., "Login", "Submit")'),
         inputText: z.string().optional().describe('Text to type after tapping'),
@@ -45,7 +52,7 @@ export function registerWorkflowTools(server: McpServer): void {
   server.registerTool(
     'workflow-fresh-install',
     {
-      description: WORKFLOW_FRESH_INSTALL_DOCS,
+      description: getDescription(WORKFLOW_FRESH_INSTALL_DOCS, WORKFLOW_FRESH_INSTALL_DOCS_MINI),
       inputSchema: {
         projectPath: z.string().describe('Path to .xcodeproj or .xcworkspace'),
         scheme: z.string().describe('Build scheme name'),

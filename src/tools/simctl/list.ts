@@ -338,3 +338,6 @@ await simctlListTool({ runtime: "17.0" });
 - Smart filtering by device type, runtime, and availability
 - Essential: Use this instead of 'xcrun simctl list' for better performance
 `;
+
+export const SIMCTL_LIST_DOCS_MINI =
+  'List iOS simulators with caching. Use rtfm({ toolName: "simctl-list" }) for docs.';

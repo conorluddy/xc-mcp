@@ -2,10 +2,13 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { validateXcodeInstallation } from '../utils/validation.js';
-import { cacheTool } from '../tools/cache/index.js';
-import { CACHE_DOCS } from '../tools/cache/index.js';
-import { persistenceTool } from '../tools/persistence/index.js';
-import { PERSISTENCE_DOCS } from '../tools/persistence/index.js';
+import { getDescription } from './types.js';
+import { cacheTool, CACHE_DOCS, CACHE_DOCS_MINI } from '../tools/cache/index.js';
+import {
+  persistenceTool,
+  PERSISTENCE_DOCS,
+  PERSISTENCE_DOCS_MINI,
+} from '../tools/persistence/index.js';
 
 const ENABLE_DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
 const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
@@ -17,7 +20,7 @@ export function registerCacheTools(server: McpServer): void {
   server.registerTool(
     'cache',
     {
-      description: CACHE_DOCS,
+      description: getDescription(CACHE_DOCS, CACHE_DOCS_MINI),
       inputSchema: {
         operation: z.enum(['get-stats', 'get-config', 'set-config', 'clear']),
         cacheType: z.enum(['simulator', 'project', 'response', 'all']).optional(),
@@ -46,7 +49,7 @@ export function registerCacheTools(server: McpServer): void {
   server.registerTool(
     'persistence',
     {
-      description: PERSISTENCE_DOCS,
+      description: getDescription(PERSISTENCE_DOCS, PERSISTENCE_DOCS_MINI),
       inputSchema: {
         operation: z.enum(['enable', 'disable', 'status']),
         cacheDir: z.string().optional(),

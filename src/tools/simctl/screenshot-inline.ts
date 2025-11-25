@@ -662,3 +662,6 @@ Token counts are estimates based on Claude's image processing (170 tokens per 51
 | Use case | MCP responses | File storage |
 | Token usage | Optimized | Depends on size |
 `;
+
+export const SIMCTL_SCREENSHOT_INLINE_DOCS_MINI =
+  'Capture screenshot with base64 encoding. Use rtfm({ toolName: "screenshot" }) for docs.';

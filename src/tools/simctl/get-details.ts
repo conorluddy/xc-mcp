@@ -311,3 +311,6 @@ Retrieves on-demand access to full simulator and runtime lists that were cached 
 - Cache IDs expire after 1 hour
 - Use for discovering available devices and runtimes
 `;
+
+export const SIMCTL_GET_DETAILS_DOCS_MINI =
+  'Get simulator details from cache. Use rtfm({ toolName: "simctl-get-details" }) for docs.';
