@@ -650,6 +650,43 @@ const quick = await xcodebuildTestTool({
 });
 \`\`\`
 
+## Complete JSON Examples
+
+### Run All Tests
+\`\`\`json
+{"projectPath": "/path/to/MyApp.xcodeproj", "scheme": "MyApp"}
+\`\`\`
+
+### Run Specific Test Plan
+\`\`\`json
+{"projectPath": "/path/to/MyApp.xcodeproj", "scheme": "MyApp", "testPlan": "IntegrationTests"}
+\`\`\`
+
+### Run Only Specific Tests
+\`\`\`json
+{"projectPath": "/path/to/MyApp.xcodeproj", "scheme": "MyApp", "onlyTesting": ["MyAppTests/LoginTests", "MyAppTests/AuthTests/testLogin"]}
+\`\`\`
+
+### Skip Specific Tests
+\`\`\`json
+{"projectPath": "/path/to/MyApp.xcodeproj", "scheme": "MyApp", "skipTesting": ["MyAppTests/SlowTests", "MyAppUITests"]}
+\`\`\`
+
+### Test Without Building (Using Previous Build)
+\`\`\`json
+{"projectPath": "/path/to/MyApp.xcodeproj", "scheme": "MyApp", "testWithoutBuilding": true}
+\`\`\`
+
+### Test with Specific Destination
+\`\`\`json
+{"projectPath": "/path/to/MyApp.xcodeproj", "scheme": "MyApp", "destination": "platform=iOS Simulator,name=iPhone 16 Pro,OS=18.0"}
+\`\`\`
+
+### Release Configuration Testing
+\`\`\`json
+{"projectPath": "/path/to/MyApp.xcodeproj", "scheme": "MyApp", "configuration": "Release"}
+\`\`\`
+
 ## Related Tools
 
 - xcodebuild-build: Build before testing

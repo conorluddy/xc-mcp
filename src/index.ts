@@ -48,8 +48,19 @@ import { idbAppTool } from './tools/idb/app/index.js';
 import { cacheTool } from './tools/cache/index.js';
 import { persistenceTool } from './tools/persistence/index.js';
 import { getToolDocsTool } from './tools/get-tool-docs.js';
+import { workflowTapElementTool } from './tools/workflows/tap-element.js';
+import { workflowFreshInstallTool } from './tools/workflows/fresh-install.js';
 import { debugWorkflowPrompt } from './tools/prompts/debug-workflow.js';
 import { validateXcodeInstallation } from './utils/validation.js';
+
+// Environment variable to disable defer_loading (for debugging/testing)
+const ENABLE_DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
+
+// defer_loading config - passed through by MCP SDK to Claude
+// TypeScript doesn't know about this property, so we use a spread with type assertion
+const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
+  ? ({ defer_loading: true } as Record<string, unknown>)
+  : {};
 
 class XcodeCLIMCPServer {
   private server: McpServer;
@@ -58,7 +69,7 @@ class XcodeCLIMCPServer {
     this.server = new McpServer(
       {
         name: 'xc-mcp',
-        version: '2.0.0',
+        version: '3.0.0',
         description:
           'Wraps xcodebuild, simctl, and IDB with intelligent caching, for efficient iOS development. The RTFM tool can be called with any of the tool names to return further documentation if required. Tool descriptions are intentionally minimal to reduce MCP context usage.',
       },
@@ -147,6 +158,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           sdk: z.string().optional(),
           outputFormat: z.enum(['json', 'text']).default('json'),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -170,6 +182,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           projectPath: z.string(),
           outputFormat: z.enum(['json', 'text']).default('json'),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -220,6 +233,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           sdk: z.string().optional(),
           derivedDataPath: z.string().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -244,6 +258,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           scheme: z.string(),
           configuration: z.string().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -275,6 +290,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           skipTesting: z.array(z.string()).optional(),
           testWithoutBuilding: z.boolean().default(false),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -306,6 +322,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           ]),
           maxLines: z.number().default(100),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -333,6 +350,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           outputFormat: z.enum(['json', 'text']).default('json'),
           concise: z.boolean().default(true),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -359,6 +377,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           runtime: z.string().optional(),
           maxDevices: z.number().default(20),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -389,6 +408,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           force: z.boolean().default(false),
           newName: z.string().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -435,6 +455,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
       {
         description: 'Validate iOS development environment.',
         inputSchema: {},
+        ...DEFER_LOADING_CONFIG,
       },
       async _args => {
         try {
@@ -464,6 +485,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           arguments: z.array(z.string()).optional(),
           environment: z.record(z.string()).optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -488,6 +510,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           bundleId: z.string(),
           containerType: z.enum(['bundle', 'data', 'group']).optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -511,6 +534,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           udid: z.string(),
           url: z.string(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -541,6 +565,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           screenName: z.string().optional(),
           state: z.string().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -620,6 +645,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           testName: z.string().optional(),
           expectedBehavior: z.string().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -700,6 +726,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           state: z.string().optional(),
           enableCoordinateCaching: z.boolean().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -726,6 +753,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           state: z.enum(['Booted', 'Shutdown']).optional(),
           type: z.enum(['device', 'simulator']).optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => idbTargetsRouter(args)
     );
@@ -749,6 +777,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           testScenario: z.string().optional(),
           step: z.number().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => idbUiTapTool(args)
     );
@@ -783,6 +812,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           expectedOutcome: z.string().optional(),
           isSensitive: z.boolean().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => idbUiInputTool(args)
     );
@@ -809,6 +839,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           actionName: z.string().optional(),
           expectedOutcome: z.string().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => idbUiGestureTool(args)
     );
@@ -826,6 +857,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           screenContext: z.string().optional(),
           purposeDescription: z.string().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => idbUiDescribeTool(args)
     );
@@ -839,6 +871,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           udid: z.string().optional(),
           query: z.string(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => idbUiFindElementTool(args)
     );
@@ -852,6 +885,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           udid: z.string().optional(),
           screenContext: z.string().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => accessibilityQualityCheckTool(args)
     );
@@ -865,6 +899,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           filterType: z.enum(['system', 'user', 'internal']).optional(),
           runningOnly: z.boolean().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => idbListAppsTool(args)
     );
@@ -882,6 +917,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           arguments: z.array(z.string()).optional(),
           environment: z.record(z.string()).optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => idbAppTool(args)
     );
@@ -922,6 +958,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           maxAgeMinutes: z.number().optional(),
           maxAgeHours: z.number().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -948,6 +985,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           clearData: z.boolean().default(false),
           includeStorageInfo: z.boolean().default(true),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -973,6 +1011,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           toolName: z.string().optional(),
           categoryName: z.string().optional(),
         },
+        ...DEFER_LOADING_CONFIG,
       },
       async args => {
         try {
@@ -985,6 +1024,69 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
           );
         }
       }
+    );
+
+    // Workflow Tools (v3.0.0) - Multi-step orchestration
+    this.server.registerTool(
+      'workflow-tap-element',
+      {
+        description:
+          'High-level semantic UI tap - find element by name and tap it. Orchestrates accessibility check, element search, and tap in one call.',
+        inputSchema: {
+          elementQuery: z.string().describe('Search term for element (e.g., "Login", "Submit")'),
+          inputText: z.string().optional().describe('Text to type after tapping'),
+          verifyResult: z.boolean().default(false).describe('Take screenshot after action'),
+          udid: z.string().optional().describe('Target device'),
+          screenContext: z.string().optional().describe('Screen name for tracking'),
+        },
+        ...DEFER_LOADING_CONFIG,
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await workflowTapElementTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    this.server.registerTool(
+      'workflow-fresh-install',
+      {
+        description:
+          'Clean slate app installation - shutdown, (erase), boot, build, install, launch in one call.',
+        inputSchema: {
+          projectPath: z.string().describe('Path to .xcodeproj or .xcworkspace'),
+          scheme: z.string().describe('Build scheme name'),
+          simulatorUdid: z.string().optional().describe('Target simulator'),
+          eraseSimulator: z.boolean().default(false).describe('Wipe simulator data'),
+          configuration: z.enum(['Debug', 'Release']).default('Debug'),
+          launchArguments: z.array(z.string()).optional(),
+          environmentVariables: z.record(z.string()).optional(),
+        },
+        ...DEFER_LOADING_CONFIG,
+      },
+      async args => {
+        try {
+          await validateXcodeInstallation();
+          return await workflowFreshInstallTool(args);
+        } catch (error) {
+          if (error instanceof McpError) throw error;
+          throw new McpError(
+            ErrorCode.InternalError,
+            `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+          );
+        }
+      }
+    );
+
+    console.error(
+      `XC-MCP v3.0.0: ${ENABLE_DEFER_LOADING ? 'defer_loading enabled' : 'defer_loading disabled'} for all tools.`
     );
   }
 

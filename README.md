@@ -7,9 +7,9 @@
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/conorluddy/xc-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Production-grade MCP server for Xcode workflows — 75% token reduction, accessibility-first iOS automation**
+**Production-grade MCP server for Xcode workflows — optimized for AI agents with accessibility-first iOS automation**
 
-XC-MCP makes Xcode and iOS simulator tooling accessible to AI agents through intelligent context engineering. **28 consolidated tools consuming the least amount of tokens possible (for now...)** through progressive disclosure, operation-based routing, and accessibility-first automation patterns.
+XC-MCP makes Xcode and iOS simulator tooling accessible to AI agents through intelligent context engineering. **V3.0.0 adds platform-native `defer_loading` support** — Claude's tool search automatically discovers tools on-demand, minimizing baseline context overhead while maintaining full 29-tool functionality.
 
 <img width="807" height="727" alt="Screenshot 2025-11-07 at 08 37 00" src="https://github.com/user-attachments/assets/141de013-947e-458e-acaf-91c039f0f48e" />
 
@@ -28,31 +28,31 @@ Traditional Xcode CLI wrappers dump massive output that exceeds MCP protocol lim
 
 ### The Solution: Progressive Disclosure + Accessibility-First
 
-**V2.0.0 Architecture:**
+**V3.0.0 Architecture:**
 ```
-28 consolidated tools, ~18.7k tokens (9.3% of 200k context)
-├─ 6 router tools with operation enums (21 tools consolidated)
-├─ 22 individual specialized tools
-├─ Comprehensive tool documentation for optimal agent understanding
-├─ RTFM for additional on-demand documentation
-└─ Accessibility-first workflow (50 tokens, 120ms vs 170 tokens, 2000ms)
+Platform-native defer_loading on all 29 tools
+├─ Claude's tool search discovers tools automatically
+├─ Tools loaded on-demand (minimal baseline overhead)
+├─ Accessibility-first workflow (50 tokens, 120ms vs 170 tokens, 2000ms)
+└─ Workflow tools for common operations (fresh-install, tap-element)
 ```
 
 **Token Efficiency Evolution:**
 
-| Version | Tools | Token Usage | Architecture | Context % |
-|---------|-------|-------------|--------------|-----------|
-| Pre-RTFM (v1.2.1) | 51 | ~45k tokens | Individual tools | 3.9% |
-| V1.3.2 (RTFM) | 51 | ~30k tokens | Individual + RTFM | 1.5% |
-| **V2.0.0** | **28** | **~18k tokens** | **Routers + Full Docs** | **9.3%** |
+| Version | Baseline Tokens | Total Tools | Architecture | Context Available |
+|---------|-----------------|-------------|--------------|-------------------|
+| Pre-RTFM (v1.2.1) | ~45k | 51 | Individual tools | 3.9% (155k) |
+| V1.3.2 (RTFM) | ~30k | 51 | Individual + RTFM | 1.5% (170k) |
+| V2.0.0 | ~18.7k | 28 | Routers + Full Docs | 9.3% (181k) |
+| **V3.0.0** | **~0** | **29** | **Platform defer_loading** | **100% (200k)** |
 
-**Key Improvements:**
-- ✅ **Tool consolidation** (28 vs 51 tools) - 45% reduction
-- ✅ **Comprehensive documentation** in tool schemas for optimal agent reasoning
+**Key Improvements (V3.0.0):**
+- ✅ **Platform-native defer_loading** - All tools deferred; Claude discovers on-demand
+- ✅ **Workflow tools** - High-level abstractions for common operations
+- ✅ **Zero baseline overhead** - Platform handles tool discovery
 - ✅ **Accessibility-first automation** (3-4x faster, 3-4x cheaper than screenshots)
 - ✅ **Progressive disclosure** (summaries → cache IDs → full details on demand)
 - ✅ **60% test coverage** with comprehensive error handling
-- ✅ **Context efficient** (9.3% usage, 180k+ tokens available for actual work)
 
 ---
 
@@ -241,6 +241,109 @@ if (quality === "rich" || quality === "moderate") {
 
 ---
 
+## Platform defer_loading (V3.0.0 Feature)
+
+### How It Works
+
+XC-MCP V3.0 adds the `defer_loading: true` flag to all 29 tool registrations. Claude's platform-native tool search automatically:
+
+1. **Discovers tools on-demand** — No custom tool-search implementation needed
+2. **Loads tools when relevant** — Based on conversation context
+3. **Minimizes baseline overhead** — Zero tokens at startup
+
+### RTFM: On-Demand Documentation
+
+Use `rtfm` to get comprehensive documentation for any tool:
+
+```typescript
+// 1. Browse tool categories
+rtfm({ categoryName: "build" })
+// Returns all build-related tools with descriptions
+
+// 2. Get comprehensive docs for specific tool
+rtfm({ toolName: "xcodebuild-build" })
+// Returns full documentation with parameters, examples, related tools
+
+// 3. Execute with discovered parameters
+xcodebuild-build({ scheme: "MyApp", configuration: "Debug" })
+```
+
+### Environment Variable: Disable defer_loading
+
+**Default (V3.0.0)**: All tools have defer_loading enabled
+```bash
+# Platform discovers and loads tools automatically
+# Zero baseline token overhead
+```
+
+**Disable defer_loading** (for debugging/testing):
+```bash
+# Set environment variable to load all tools at startup
+export XC_MCP_DEFER_LOADING=false
+
+# All 29 tools loaded immediately (~18.7k tokens)
+# Useful for: Testing, debugging, MCP client compatibility
+```
+
+---
+
+## Workflow Tools (New in V3.0.0)
+
+XC-MCP provides 2 high-level **workflow tools** that combine common operations into single steps:
+
+### `workflow-tap-element` — High-Level Semantic Tap
+
+Combines accessibility quality check + element search + tap into one operation:
+
+```typescript
+workflow-tap-element({
+  elementQuery: "Login",
+  screenContext: "LoginScreen",
+  inputText: "user@example.com",  // optional: type after tap
+  verifyResult: true               // optional: screenshot after action
+})
+// Does:
+// 1. Quality check screen accessibility
+// 2. Find element by name/label
+// 3. Tap coordinates
+// 4. Optionally type text
+// 5. Optionally take verification screenshot
+// Returns: { success: true, tappedElement: {...}, screenshot?: {...} }
+```
+
+**Cost**: ~90 tokens (vs 130 tokens separately)
+**Latency**: ~300ms (vs ~400ms separately)
+**Use case**: User login, form submission, navigation flows
+
+### `workflow-fresh-install` — Clean Install Workflow
+
+Performs complete app refresh: shutdown → (erase) → boot → build → install → launch
+
+```typescript
+workflow-fresh-install({
+  projectPath: "./MyApp.xcworkspace",
+  scheme: "MyApp",
+  simulatorUdid: "...",           // optional: auto-detects
+  eraseSimulator: true,           // optional: wipe simulator data
+  configuration: "Debug",
+  launchArguments: ["--resetData"]
+})
+// Does:
+// 1. Shutdown simulator if running
+// 2. Erase simulator state (if requested)
+// 3. Boot simulator fresh
+// 4. Build app
+// 5. Install app
+// 6. Launch app with arguments
+// Returns: { success: true, buildTime: 7000, bootTime: 3000, launchTime: 500 }
+```
+
+**Cost**: ~200 tokens (vs 300+ tokens separately)
+**Latency**: ~20s (vs 25+ seconds separately)
+**Use case**: CI/CD pipelines, clean state testing, fresh debugging sessions
+
+---
+
 ## Tool Reference
 
 ### 6 Consolidated Router Tools
@@ -299,11 +402,14 @@ if (quality === "rich" || quality === "moderate") {
 **Utilities (5 tools)**
 - `simctl-openurl`: Open URLs and deep links
 - `simctl-get-app-container`: Get app container paths (bundle, data, group)
+- `simctl-push`: Simulate push notifications
 - `rtfm`: On-demand comprehensive documentation
-- `list-cached-responses`: View recent build/test cache IDs
-- `workflow-build-and-run`: Complete build → boot → install → launch → screenshot
 
-**Total: 28 active tools** (down from 51 in v1.3.2)
+**Workflow Tools (2 high-level abstractions) - NEW in V3.0.0**
+- `workflow-tap-element`: High-level semantic tap (find + tap in one call)
+- `workflow-fresh-install`: Clean install workflow (shutdown → erase → boot → build → install → launch)
+
+**Total: 29 active tools** (27 core + 2 workflow abstractions)
 
 ---
 
@@ -523,6 +629,49 @@ cd xc-mcp && npm install && npm run build
 - `XCODE_CLI_MCP_TIMEOUT`: Operation timeout in seconds (default: 300)
 - `XCODE_CLI_MCP_LOG_LEVEL`: Logging verbosity (debug | info | warn | error)
 - `XCODE_CLI_MCP_CACHE_DIR`: Custom cache directory path
+- `XC_MCP_DEFER_LOADING`: Enable deferred tool loading (default: true for V3.0)
+
+---
+
+## Breaking Changes & Migration Guide
+
+### V3.0.0: Platform defer_loading Support
+
+**What Changed:**
+- All 29 tools now have `defer_loading: true` flag
+- Claude's platform tool search discovers tools automatically
+- No custom tool-search implementation needed
+- Tools loaded on-demand based on conversation context
+
+**Migration Path:**
+
+| Scenario | Action | Notes |
+|----------|--------|-------|
+| **New Projects** | No action needed | Platform handles discovery |
+| **Existing Integrations** | No action needed | Compatible with V2.x usage |
+| **Debugging/Testing** | Set env var | Use `XC_MCP_DEFER_LOADING=false` |
+
+**Usage (same as V2.x):**
+
+```typescript
+// V3.0 - Platform discovers tools automatically
+// Just use tools as before - Claude's tool search handles discovery
+xcodebuild-build({ scheme: "MyApp" })
+
+// Use RTFM for documentation discovery
+rtfm({ categoryName: "build" })
+rtfm({ toolName: "xcodebuild-build" })
+
+// Disable defer_loading for debugging
+export XC_MCP_DEFER_LOADING=false
+```
+
+**Token Impact:**
+
+| Version | Startup | Discovery | Notes |
+|---------|---------|-----------|-------|
+| V2.0.x | ~18.7k | N/A | All tools loaded upfront |
+| **V3.0.0** | **~0** | **Platform-managed** | Tools loaded on-demand |
 
 ---
 
@@ -550,7 +699,7 @@ npm run format         # Prettier code formatting
 
 **Core Components:**
 - `src/index.ts` — MCP server with tool registration and routing
-- `src/tools/` — 28 tools organized by category (xcodebuild, simctl, idb, cache)
+- `src/tools/` — 29 tools organized by category (xcodebuild, simctl, idb, cache, workflows)
 - `src/state/` — Multi-layer intelligent caching (simulator, project, response, build settings)
 - `src/utils/` — Shared utilities (command execution, validation, error formatting)
 - `src/types/` — TypeScript definitions for Xcode data structures

@@ -538,6 +538,73 @@ Executes swipe gestures (directional or custom paths) and hardware button presse
 
 All coordinates in POINT space (393×852 for iPhone 16 Pro), NOT pixel space. All profiles tested and verified working on iOS 18.5 home screen.
 
+## Complete JSON Examples
+
+### Swipe Up (Scroll Down)
+\`\`\`json
+{"operation": "swipe", "direction": "up", "profile": "standard", "actionName": "Scroll Down"}
+\`\`\`
+
+### Swipe Down (Scroll Up)
+\`\`\`json
+{"operation": "swipe", "direction": "down", "profile": "standard", "actionName": "Scroll Up"}
+\`\`\`
+
+### Swipe Left (Navigate Forward)
+\`\`\`json
+{"operation": "swipe", "direction": "left", "profile": "standard", "actionName": "Go to Next Page"}
+\`\`\`
+
+### Swipe Right (Navigate Back)
+\`\`\`json
+{"operation": "swipe", "direction": "right", "profile": "standard", "actionName": "Go to Previous Page"}
+\`\`\`
+
+### Flick Swipe (Fast Page Navigation)
+\`\`\`json
+{"operation": "swipe", "direction": "left", "profile": "flick", "duration": 120, "actionName": "Fast Swipe to Next"}
+\`\`\`
+
+### Gentle Swipe (Slow Scrolling)
+\`\`\`json
+{"operation": "swipe", "direction": "up", "profile": "gentle", "duration": 300, "actionName": "Slow Scroll Down"}
+\`\`\`
+
+### Custom Swipe Path (Precise Coordinates)
+\`\`\`json
+{"operation": "swipe", "startX": 196, "startY": 600, "endX": 196, "endY": 200, "duration": 200, "actionName": "Custom Scroll"}
+\`\`\`
+
+### Press Home Button
+\`\`\`json
+{"operation": "button", "buttonType": "HOME", "actionName": "Background App"}
+\`\`\`
+
+### Press Lock Button
+\`\`\`json
+{"operation": "button", "buttonType": "LOCK", "actionName": "Lock Device"}
+\`\`\`
+
+### Press Side Button
+\`\`\`json
+{"operation": "button", "buttonType": "SIDE_BUTTON", "actionName": "Trigger Side Button Action"}
+\`\`\`
+
+### Press Siri Button
+\`\`\`json
+{"operation": "button", "buttonType": "SIRI", "actionName": "Activate Siri"}
+\`\`\`
+
+### Press Screenshot Button
+\`\`\`json
+{"operation": "button", "buttonType": "SCREENSHOT", "actionName": "Capture Screenshot"}
+\`\`\`
+
+### Press App Switch Button
+\`\`\`json
+{"operation": "button", "buttonType": "APP_SWITCH", "actionName": "Show App Switcher"}
+\`\`\`
+
 ## Returns
 
 Gesture execution status with operation details (direction/button, path coordinates for swipes), duration, velocity info, gesture context metadata, error details if failed, and verification guidance.
