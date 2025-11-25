@@ -322,4 +322,294 @@ describe('simctlListTool', () => {
       await expect(simctlListTool(null)).rejects.toThrow();
     });
   });
+
+  describe('device limiting with max parameter', () => {
+    it('should limit devices to 5 by default when concise=false', async () => {
+      // Create mock data with 10 devices across multiple runtimes
+      const largeSimulatorList = {
+        devices: {
+          'iOS 18.5': [
+            {
+              name: 'iPhone 15-1',
+              udid: 'uuid-1',
+              state: 'Shutdown',
+              isAvailable: true,
+              deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15',
+              lastUsed: new Date('2025-01-15T10:00:00Z'),
+              bootHistory: [],
+            },
+            {
+              name: 'iPhone 15-2',
+              udid: 'uuid-2',
+              state: 'Shutdown',
+              isAvailable: true,
+              deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15',
+              lastUsed: new Date('2025-01-14T10:00:00Z'),
+              bootHistory: [],
+            },
+            {
+              name: 'iPhone 15-3',
+              udid: 'uuid-3',
+              state: 'Shutdown',
+              isAvailable: true,
+              deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15',
+              lastUsed: new Date('2025-01-13T10:00:00Z'),
+              bootHistory: [],
+            },
+            {
+              name: 'iPhone 15-4',
+              udid: 'uuid-4',
+              state: 'Shutdown',
+              isAvailable: true,
+              deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15',
+              lastUsed: new Date('2025-01-12T10:00:00Z'),
+              bootHistory: [],
+            },
+            {
+              name: 'iPhone 15-5',
+              udid: 'uuid-5',
+              state: 'Shutdown',
+              isAvailable: true,
+              deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15',
+              lastUsed: new Date('2025-01-11T10:00:00Z'),
+              bootHistory: [],
+            },
+          ],
+          'iOS 17.5': [
+            {
+              name: 'iPhone 14-1',
+              udid: 'uuid-6',
+              state: 'Shutdown',
+              isAvailable: true,
+              deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-14',
+              lastUsed: new Date('2025-01-10T10:00:00Z'),
+              bootHistory: [],
+            },
+            {
+              name: 'iPhone 14-2',
+              udid: 'uuid-7',
+              state: 'Shutdown',
+              isAvailable: true,
+              deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-14',
+              lastUsed: new Date('2025-01-09T10:00:00Z'),
+              bootHistory: [],
+            },
+            {
+              name: 'iPhone 14-3',
+              udid: 'uuid-8',
+              state: 'Shutdown',
+              isAvailable: true,
+              deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-14',
+              lastUsed: new Date('2025-01-08T10:00:00Z'),
+              bootHistory: [],
+            },
+            {
+              name: 'iPhone 14-4',
+              udid: 'uuid-9',
+              state: 'Shutdown',
+              isAvailable: true,
+              deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-14',
+              lastUsed: new Date('2025-01-07T10:00:00Z'),
+              bootHistory: [],
+            },
+            {
+              name: 'iPhone 14-5',
+              udid: 'uuid-10',
+              state: 'Shutdown',
+              isAvailable: true,
+              deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-14',
+              lastUsed: new Date('2025-01-06T10:00:00Z'),
+              bootHistory: [],
+            },
+          ],
+        },
+        runtimes: mockSimulatorList.runtimes,
+        devicetypes: [],
+        lastUpdated: new Date(),
+      };
+
+      mockSimulatorCache.getSimulatorList.mockResolvedValue(largeSimulatorList as any);
+
+      const result = await simctlListTool({ concise: false, outputFormat: 'json' });
+      const responseData = JSON.parse(result.content[0].text);
+
+      // Should have metadata
+      expect(responseData).toHaveProperty('metadata');
+      expect(responseData.metadata.totalDevicesInCache).toBe(10);
+      expect(responseData.metadata.devicesReturned).toBe(5);
+      expect(responseData.metadata.limitApplied).toBe(5);
+
+      // Count total devices in response
+      const totalDevicesInResponse = Object.values(responseData.devices).reduce(
+        (sum: number, devices: any) => sum + (Array.isArray(devices) ? devices.length : 0),
+        0
+      );
+      expect(totalDevicesInResponse).toBe(5);
+    });
+
+    it('should respect custom max parameter', async () => {
+      const largeList = {
+        devices: {
+          'iOS 18.5': [
+            {
+              name: 'iPhone 15-1',
+              udid: 'uuid-1',
+              lastUsed: new Date('2025-01-15T10:00:00Z'),
+              bootHistory: [],
+              state: 'Shutdown',
+              isAvailable: true,
+              deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15',
+            },
+            {
+              name: 'iPhone 15-2',
+              udid: 'uuid-2',
+              lastUsed: new Date('2025-01-14T10:00:00Z'),
+              bootHistory: [],
+              state: 'Shutdown',
+              isAvailable: true,
+              deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15',
+            },
+            {
+              name: 'iPhone 15-3',
+              udid: 'uuid-3',
+              lastUsed: new Date('2025-01-13T10:00:00Z'),
+              bootHistory: [],
+              state: 'Shutdown',
+              isAvailable: true,
+              deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15',
+            },
+          ],
+        },
+        runtimes: mockSimulatorList.runtimes,
+        devicetypes: [],
+        lastUpdated: new Date(),
+      };
+
+      mockSimulatorCache.getSimulatorList.mockResolvedValue(largeList as any);
+
+      // Test max=2
+      const result = await simctlListTool({ concise: false, outputFormat: 'json', max: 2 });
+      const responseData = JSON.parse(result.content[0].text);
+
+      expect(responseData.metadata.limitApplied).toBe(2);
+      expect(responseData.metadata.devicesReturned).toBe(2);
+    });
+
+    it('should sort devices by lastUsed date', async () => {
+      const sortableList = {
+        devices: {
+          'iOS 18.5': [
+            {
+              name: 'Old Device',
+              udid: 'uuid-old',
+              lastUsed: new Date('2025-01-01T10:00:00Z'),
+              bootHistory: [],
+              state: 'Shutdown',
+              isAvailable: true,
+              deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15',
+            },
+            {
+              name: 'New Device',
+              udid: 'uuid-new',
+              lastUsed: new Date('2025-01-20T10:00:00Z'),
+              bootHistory: [],
+              state: 'Shutdown',
+              isAvailable: true,
+              deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15',
+            },
+            {
+              name: 'Middle Device',
+              udid: 'uuid-mid',
+              lastUsed: new Date('2025-01-10T10:00:00Z'),
+              bootHistory: [],
+              state: 'Shutdown',
+              isAvailable: true,
+              deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15',
+            },
+          ],
+        },
+        runtimes: mockSimulatorList.runtimes,
+        devicetypes: [],
+        lastUpdated: new Date(),
+      };
+
+      mockSimulatorCache.getSimulatorList.mockResolvedValue(sortableList as any);
+
+      const result = await simctlListTool({ concise: false, outputFormat: 'json', max: 3 });
+      const responseData = JSON.parse(result.content[0].text);
+
+      const devices = Object.values(responseData.devices).flat() as any[];
+      expect(devices[0].name).toBe('New Device');
+      expect(devices[1].name).toBe('Middle Device');
+      expect(devices[2].name).toBe('Old Device');
+    });
+
+    it('should handle devices without lastUsed date', async () => {
+      const mixedList = {
+        devices: {
+          'iOS 18.5': [
+            {
+              name: 'Device with date',
+              udid: 'uuid-1',
+              lastUsed: new Date('2025-01-20T10:00:00Z'),
+              bootHistory: [],
+              state: 'Shutdown',
+              isAvailable: true,
+              deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15',
+            },
+            {
+              name: 'Device without date',
+              udid: 'uuid-2',
+              lastUsed: undefined,
+              bootHistory: [],
+              state: 'Shutdown',
+              isAvailable: true,
+              deviceTypeIdentifier: 'com.apple.CoreSimulator.SimDeviceType.iPhone-15',
+            },
+          ],
+        },
+        runtimes: mockSimulatorList.runtimes,
+        devicetypes: [],
+        lastUpdated: new Date(),
+      };
+
+      mockSimulatorCache.getSimulatorList.mockResolvedValue(mixedList as any);
+
+      const result = await simctlListTool({ concise: false, outputFormat: 'json', max: 2 });
+      const responseData = JSON.parse(result.content[0].text);
+
+      const devices = Object.values(responseData.devices).flat() as any[];
+      // Device with lastUsed should come first
+      expect(devices[0].name).toBe('Device with date');
+      expect(devices[1].name).toBe('Device without date');
+    });
+
+    it('should include metadata about limiting', async () => {
+      const result = await simctlListTool({ concise: false, outputFormat: 'json', max: 10 });
+      const responseData = JSON.parse(result.content[0].text);
+
+      expect(responseData.metadata).toEqual({
+        totalDevicesInCache: 3,
+        devicesReturned: 3,
+        limitApplied: 10,
+      });
+    });
+
+    it('should ignore max parameter in concise mode', async () => {
+      const result = await simctlListTool({ concise: true, max: 2 });
+
+      // In concise mode, should use progressive disclosure, not limiting
+      expect(createProgressiveSimulatorResponse).toHaveBeenCalled();
+      expect(mockResponseCache.store).toHaveBeenCalled();
+    });
+
+    it('should return all devices when max >= total devices', async () => {
+      // mockSimulatorList has 3 devices total
+      const result = await simctlListTool({ concise: false, outputFormat: 'json', max: 100 });
+      const responseData = JSON.parse(result.content[0].text);
+
+      expect(responseData.metadata.devicesReturned).toBe(3);
+      expect(responseData.metadata.limitApplied).toBe(100);
+    });
+  });
 });
