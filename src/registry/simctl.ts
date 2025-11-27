@@ -43,8 +43,10 @@ const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
   ? ({ defer_loading: true } as Record<string, unknown>)
   : {};
 
-export function registerSimctlTools(server: McpServer): void {
-  // simctl-list
+/**
+ * Register only simctl-list tool (used in build-only mode for simulator discovery)
+ */
+export function registerSimctlListTool(server: McpServer): void {
   server.registerTool(
     'simctl-list',
     {
@@ -72,7 +74,12 @@ export function registerSimctlTools(server: McpServer): void {
       }
     }
   );
+}
 
+/**
+ * Register all simctl tools except simctl-list (which is registered separately)
+ */
+export function registerSimctlTools(server: McpServer): void {
   // simctl-get-details
   server.registerTool(
     'simctl-get-details',

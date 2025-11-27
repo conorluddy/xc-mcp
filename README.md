@@ -93,6 +93,19 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 ```
 The `--mini` flag reduces tool descriptions from ~18.7k tokens to ~540 tokens (~97% reduction). Use `rtfm` for full documentation on-demand.
 
+**Build-Only Mode** (for build-focused workflows without UI automation):
+```json
+{
+  "mcpServers": {
+    "xc-mcp": {
+      "command": "npx",
+      "args": ["-y", "xc-mcp", "--build-only"]
+    }
+  }
+}
+```
+The `--build-only` flag loads only 11 tools (vs 30): xcodebuild tools, simctl-list, cache, and system tools. Excludes IDB/UI automation and workflow tools. Combine with `--mini` for maximum reduction: `["--mini", "--build-only"]`.
+
 ---
 
 ## Token Optimization Architecture
