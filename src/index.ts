@@ -14,7 +14,7 @@ class XcodeCLIMCPServer {
     this.server = new McpServer(
       {
         name: 'xc-mcp',
-        version: '3.0.1',
+        version: '3.1.0',
         description:
           'Wraps xcodebuild, simctl, and IDB with intelligent caching, for efficient iOS development. The RTFM tool can be called with any of the tool names to return further documentation if required. Tool descriptions are intentionally minimal to reduce MCP context usage.',
       },
@@ -98,7 +98,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
     registerAllTools(this.server);
 
     console.error(
-      `XC-MCP v3.0.1: descriptions=${config.minimalDescriptions ? 'mini' : 'full'}, defer_loading=${config.deferLoading ? 'enabled' : 'disabled'}`
+      `XC-MCP v3.1.0: descriptions=${config.minimalDescriptions ? 'mini' : 'full'}, defer_loading=${config.deferLoading ? 'enabled' : 'disabled'}, build_only=${config.buildOnly ? 'enabled' : 'disabled'}`
     );
   }
 
