@@ -385,4 +385,165 @@ Test Case '-[MyAppTests testAnotherFailure]' failed (0.003 seconds)`,
       })
     );
   });
+
+  // Swift Testing Framework Tests
+  describe('Swift Testing framework parsing', () => {
+    it('should parse Swift Testing passed tests', async () => {
+      const args = {
+        projectPath: '/path/to/MyApp.xcodeproj',
+        scheme: 'MyApp',
+      };
+
+      mockValidateProjectPath.mockResolvedValue(undefined);
+      mockValidateScheme.mockReturnValue(undefined);
+      (projectCache.getPreferredBuildConfig as jest.MockedFunction<any>).mockResolvedValue(null);
+
+      jest.spyOn(Date, 'now').mockReturnValueOnce(1640995200000).mockReturnValueOnce(1640995210000);
+
+      // Swift Testing output format (Xcode 16+)
+      mockExecuteCommand.mockResolvedValue({
+        code: 0,
+        stdout: `Test run started.
+Test case 'MyTests/testExample()' passed on 'iPhone 16 Pro' (0.001 seconds)
+Test case 'MyTests/testAnother()' passed on 'iPhone 16 Pro' (0.002 seconds)
+Test case 'MyTests/testThird()' passed on 'iPhone 16 Pro' (0.003 seconds)
+** TEST SUCCEEDED **`,
+        stderr: '',
+      });
+
+      const result = await xcodebuildTestTool(args);
+
+      expect(result.isError).toBe(false);
+      const response = JSON.parse(result.content[0].text);
+      expect(response.success).toBe(true);
+      expect(response.summary.passed).toBe(3);
+      expect(response.summary.failed).toBe(0);
+      expect(response.summary.totalTests).toBe(3);
+    });
+
+    it('should parse Swift Testing failed tests', async () => {
+      const args = {
+        projectPath: '/path/to/MyApp.xcodeproj',
+        scheme: 'MyApp',
+      };
+
+      mockValidateProjectPath.mockResolvedValue(undefined);
+      mockValidateScheme.mockReturnValue(undefined);
+      (projectCache.getPreferredBuildConfig as jest.MockedFunction<any>).mockResolvedValue(null);
+
+      jest.spyOn(Date, 'now').mockReturnValueOnce(1640995200000).mockReturnValueOnce(1640995210000);
+
+      // Swift Testing output with failures
+      mockExecuteCommand.mockResolvedValue({
+        code: 1,
+        stdout: `Test run started.
+Test case 'MyTests/testExample()' passed on 'iPhone 16 Pro' (0.001 seconds)
+Test case 'MyTests/testFailure()' failed on 'iPhone 16 Pro' (0.002 seconds)
+Test case 'MyTests/testAnotherFailure()' failed on 'iPhone 16 Pro' (0.003 seconds)
+** TEST FAILED **`,
+        stderr: '',
+      });
+
+      const result = await xcodebuildTestTool(args);
+
+      expect(result.isError).toBe(true);
+      const response = JSON.parse(result.content[0].text);
+      expect(response.success).toBe(false);
+      expect(response.summary.passed).toBe(1);
+      expect(response.summary.failed).toBe(2);
+      expect(response.summary.totalTests).toBe(3);
+      expect(response.failureDetails.examples).toContain('MyTests/testFailure()');
+    });
+
+    it('should handle mixed XCTest and Swift Testing output', async () => {
+      const args = {
+        projectPath: '/path/to/MyApp.xcodeproj',
+        scheme: 'MyApp',
+      };
+
+      mockValidateProjectPath.mockResolvedValue(undefined);
+      mockValidateScheme.mockReturnValue(undefined);
+      (projectCache.getPreferredBuildConfig as jest.MockedFunction<any>).mockResolvedValue(null);
+
+      jest.spyOn(Date, 'now').mockReturnValueOnce(1640995200000).mockReturnValueOnce(1640995210000);
+
+      // Mixed output from both XCTest and Swift Testing
+      mockExecuteCommand.mockResolvedValue({
+        code: 0,
+        stdout: `Test run started.
+Test Case '-[MyXCTests testOldStyle]' passed (0.001 seconds)
+Test Case '-[MyXCTests testAnother]' passed (0.002 seconds)
+Test case 'MySwiftTests/testNewStyle()' passed on 'iPhone 16 Pro' (0.001 seconds)
+Test case 'MySwiftTests/testModern()' passed on 'iPhone 16 Pro' (0.002 seconds)
+** TEST SUCCEEDED **`,
+        stderr: '',
+      });
+
+      const result = await xcodebuildTestTool(args);
+
+      expect(result.isError).toBe(false);
+      const response = JSON.parse(result.content[0].text);
+      expect(response.success).toBe(true);
+      expect(response.summary.passed).toBe(4); // 2 XCTest + 2 Swift Testing
+      expect(response.summary.totalTests).toBe(4);
+    });
+
+    it('should use TEST FAILED marker when no individual tests parsed', async () => {
+      const args = {
+        projectPath: '/path/to/MyApp.xcodeproj',
+        scheme: 'MyApp',
+      };
+
+      mockValidateProjectPath.mockResolvedValue(undefined);
+      mockValidateScheme.mockReturnValue(undefined);
+      (projectCache.getPreferredBuildConfig as jest.MockedFunction<any>).mockResolvedValue(null);
+
+      jest.spyOn(Date, 'now').mockReturnValueOnce(1640995200000).mockReturnValueOnce(1640995210000);
+
+      // Output with no parseable test results but with failure marker
+      mockExecuteCommand.mockResolvedValue({
+        code: 1,
+        stdout: `Test run started.
+Some unparseable output format
+** TEST FAILED **`,
+        stderr: '',
+      });
+
+      const result = await xcodebuildTestTool(args);
+
+      expect(result.isError).toBe(true);
+      const response = JSON.parse(result.content[0].text);
+      expect(response.success).toBe(false);
+      expect(response.summary.failed).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should use TEST SUCCEEDED marker when no individual tests parsed', async () => {
+      const args = {
+        projectPath: '/path/to/MyApp.xcodeproj',
+        scheme: 'MyApp',
+      };
+
+      mockValidateProjectPath.mockResolvedValue(undefined);
+      mockValidateScheme.mockReturnValue(undefined);
+      (projectCache.getPreferredBuildConfig as jest.MockedFunction<any>).mockResolvedValue(null);
+
+      jest.spyOn(Date, 'now').mockReturnValueOnce(1640995200000).mockReturnValueOnce(1640995210000);
+
+      // Output with no parseable test results but with success marker
+      mockExecuteCommand.mockResolvedValue({
+        code: 0,
+        stdout: `Test run started.
+Some unparseable output format
+** TEST SUCCEEDED **`,
+        stderr: '',
+      });
+
+      const result = await xcodebuildTestTool(args);
+
+      // Even without parsed tests, success marker means no error
+      expect(result.isError).toBe(false);
+      const response = JSON.parse(result.content[0].text);
+      expect(response.success).toBe(true);
+    });
+  });
 });
