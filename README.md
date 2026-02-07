@@ -740,7 +740,10 @@ npm run format         # Prettier code formatting
 
 ## Contributing
 
-Contributions welcome! Please ensure:
+> [!WARNING]
+> I appreciate contributions, but please note that this repo and my other public repos are far down in the priority queue of what I'm working on, so I'll be slow to review anything. Your best bet is really just to fork the repo and customise it to your own needs.
+
+PR requirements:
 - Tests pass (`npm test`)
 - Coverage remains ≥60% (`npm run test:coverage`)
 - Code passes linting (`npm run lint`)
