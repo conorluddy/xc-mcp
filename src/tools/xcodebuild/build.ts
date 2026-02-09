@@ -1,5 +1,5 @@
 import { validateProjectPath, validateScheme } from '../../utils/validation.js';
-import { executeCommand, buildXcodebuildCommand } from '../../utils/command.js';
+import { executeCommandStreaming, buildXcodebuildCommand } from '../../utils/command.js';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { responseCache, extractBuildSummary } from '../../utils/response-cache.js';
 import { projectCache, type BuildConfig } from '../../state/project-cache.js';
@@ -107,21 +107,47 @@ export async function xcodebuildBuildTool(args: any) {
 
     console.error(`[xcodebuild-build] Executing: ${command}`);
 
-    // Execute command with extended timeout for builds
+    // Execute command with early-fatal detection to avoid long retries on bad destinations
+    const fatalPatterns = [
+      /Failed to start remote service "com\.apple\.mobile\.notification_proxy"/i,
+      /The device is passcode protected/i,
+      /Unable to find a device matching the provided destination specifier/i,
+    ];
+    const timeoutMs = 55_000; // Stay under MCP transport limits
     const startTime = Date.now();
-    const result = await executeCommand(command, {
-      timeout: 600000, // 10 minutes for builds
+    const result = await executeCommandStreaming(command, {
+      timeout: timeoutMs,
       maxBuffer: 50 * 1024 * 1024, // 50MB buffer for build logs
+      fatalPatterns,
+      onFatalMatch: line => {
+        console.error(`[xcodebuild-build] Detected fatal xcodebuild output: ${line}`);
+      },
     });
     const duration = Date.now() - startTime;
 
     // Extract build summary
     const summary = extractBuildSummary(result.stdout, result.stderr, result.code);
+    const buildSuccess = summary.success && !result.timedOut;
+    const augmentedErrors = [...summary.errors];
+    if (result.fatalMatch) {
+      augmentedErrors.unshift(`Detected fatal xcodebuild output: ${result.fatalMatch}`);
+    }
+    if (result.timedOut) {
+      augmentedErrors.unshift(`Build aborted after ${timeoutMs}ms (timeout)`);
+    }
+    const adjustedSummary = {
+      ...summary,
+      success: buildSuccess,
+      firstError:
+        summary.firstError ||
+        result.fatalMatch ||
+        (result.timedOut ? `Build timed out after ${timeoutMs}ms` : undefined),
+    };
 
     // Record build result in project cache
     projectCache.recordBuildResult(projectPath, finalConfig, {
       timestamp: new Date(),
-      success: summary.success,
+      success: buildSuccess,
       duration,
       errorCount: summary.errorCount,
       warningCount: summary.warningCount,
@@ -135,7 +161,7 @@ export async function xcodebuildBuildTool(args: any) {
         simulatorCache.recordSimulatorUsage(udidMatch[1], projectPath);
 
         // Save simulator preference to project config if build succeeded
-        if (summary.success) {
+        if (buildSuccess) {
           try {
             const configManager = createConfigManager(projectPath);
             const simulator = await simulatorCache.findSimulatorByUdid(udidMatch[1]);
@@ -162,11 +188,13 @@ export async function xcodebuildBuildTool(args: any) {
         destination: finalConfig.destination,
         sdk: finalConfig.sdk,
         duration,
-        success: summary.success,
+        success: buildSuccess,
         errorCount: summary.errorCount,
         warningCount: summary.warningCount,
         smartDestinationUsed: !destination && smartDestination !== destination,
         smartConfigurationUsed: !args.configuration && finalConfig.configuration !== 'Debug',
+        timedOut: result.timedOut,
+        fatalMatch: result.fatalMatch,
       },
     });
 
@@ -177,7 +205,7 @@ export async function xcodebuildBuildTool(args: any) {
 
     // Handle auto-install if enabled and build succeeded
     let autoInstallResult = undefined;
-    if (autoInstall && summary.success) {
+    if (autoInstall && buildSuccess) {
       try {
         console.error('[xcodebuild-build] Starting auto-install...');
         autoInstallResult = await performAutoInstall({
@@ -196,11 +224,17 @@ export async function xcodebuildBuildTool(args: any) {
       }
     }
 
+    // Destructure errors/warnings from summary for top-level placement
+    const { errors: _ignoredErrors, warnings, ...summaryRest } = adjustedSummary;
+
     const responseData = {
       buildId: cacheId,
-      success: summary.success,
+      success: buildSuccess,
+      // Errors and warnings at top level for immediate visibility
+      errors: augmentedErrors.length > 0 ? augmentedErrors : undefined,
+      warnings: warnings.length > 0 ? warnings : undefined,
       summary: {
-        ...summary,
+        ...summaryRest,
         scheme: finalConfig.scheme,
         configuration: finalConfig.configuration,
         destination: finalConfig.destination,
@@ -214,12 +248,13 @@ export async function xcodebuildBuildTool(args: any) {
         simulatorUsageRecorded: !!(
           finalConfig.destination && finalConfig.destination.includes('Simulator')
         ),
-        configurationLearned: summary.success, // Successful builds get remembered
-        autoInstallAttempted: autoInstall && summary.success,
+        configurationLearned: buildSuccess, // Successful builds get remembered
+        autoInstallAttempted: autoInstall && buildSuccess,
       },
-      guidance: summary.success
+      guidance: buildSuccess
         ? [
             `Build completed successfully in ${duration}ms`,
+            ...(summary.warningCount > 0 ? [`⚠️ ${summary.warningCount} warning(s) detected`] : []),
             ...(usedSmartDestination ? [`Used smart simulator: ${finalConfig.destination}`] : []),
             ...(hasPreferredConfig ? [`Applied cached project preferences`] : []),
             `Use 'xcodebuild-get-details' with buildId '${cacheId}' for full logs`,
@@ -234,9 +269,11 @@ export async function xcodebuildBuildTool(args: any) {
           ]
         : [
             `Build failed with ${summary.errorCount} errors, ${summary.warningCount} warnings`,
-            `First error: ${summary.firstError || 'Unknown error'}`,
+            `First error: ${adjustedSummary.firstError || 'Unknown error'}`,
             `Use 'xcodebuild-get-details' with buildId '${cacheId}' for full logs and errors`,
             ...(usedSmartDestination ? [`Try simctl-list to see other available simulators`] : []),
+            ...(result.timedOut ? [`Build aborted after ${timeoutMs}ms (timeout)`] : []),
+            ...(result.fatalMatch ? [`Detected fatal log output: ${result.fatalMatch}`] : []),
           ],
       cacheDetails: {
         note: 'Use xcodebuild-get-details with buildId for full logs',

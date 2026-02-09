@@ -47,7 +47,7 @@
     "package.json"
   ],
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.17.1",
+    "@modelcontextprotocol/sdk": "1.17.1",
     "@types/node": "^24.1.0"
   },
   "devDependencies": {

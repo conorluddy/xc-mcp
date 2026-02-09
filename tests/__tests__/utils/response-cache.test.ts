@@ -345,6 +345,8 @@ Total time: 45.2 seconds
       hasErrors: false,
       hasWarnings: false,
       firstError: undefined,
+      errors: [],
+      warnings: [],
       buildSizeBytes: output.length,
     });
   });
@@ -368,6 +370,8 @@ error: Build failed
       hasErrors: true,
       hasWarnings: false,
       firstError: 'error: Build failed',
+      errors: ['error: Build failed', '** BUILD FAILED **'],
+      warnings: [],
       buildSizeBytes: output.length + stderr.length,
     });
   });
@@ -383,6 +387,10 @@ warning: Deprecated API usage
 
     expect(summary.warningCount).toBe(2);
     expect(summary.hasWarnings).toBe(true);
+    expect(summary.warnings).toEqual([
+      "warning: Unused variable 'foo'",
+      'warning: Deprecated API usage',
+    ]);
   });
 
   it('should handle output without timing info', () => {
@@ -404,6 +412,24 @@ error: Some error that happened during success
     expect(summary.success).toBe(true); // Exit code 0 and has success indicator
     expect(summary.hasErrors).toBe(true); // But still has errors
     expect(summary.errorCount).toBe(1);
+    expect(summary.errors).toEqual(['error: Some error that happened during success']);
+  });
+
+  it('should limit errors and warnings to first 10', () => {
+    const warnings = Array.from({ length: 15 }, (_, i) => `warning: Warning number ${i + 1}`).join(
+      '\n'
+    );
+    const errors = Array.from({ length: 12 }, (_, i) => `error: Error number ${i + 1}`).join('\n');
+    const output = `${warnings}\n${errors}\n** BUILD FAILED **`;
+
+    const summary = extractBuildSummary(output, '', 1);
+
+    expect(summary.warningCount).toBe(15);
+    expect(summary.errorCount).toBe(13); // 12 errors + BUILD FAILED
+    expect(summary.warnings).toHaveLength(10); // Limited to 10
+    expect(summary.errors).toHaveLength(10); // Limited to 10
+    expect(summary.warnings[0]).toBe('warning: Warning number 1');
+    expect(summary.warnings[9]).toBe('warning: Warning number 10');
   });
 });
 

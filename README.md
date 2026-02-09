@@ -135,16 +135,18 @@ simctl-get-details({
 
 **Example: Build Operations**
 ```typescript
-// 1. Build returns summary + buildId
+// 1. Build returns summary + buildId, errors/warnings at top level
 xcodebuild-build({ projectPath: "./MyApp.xcworkspace", scheme: "MyApp" })
 // Returns:
 {
   buildId: "build-xyz789",
   success: true,
-  summary: { duration: 7075, errorCount: 0, warningCount: 1 }
+  errors: ["...error: undefined symbol..."],      // top-level (first 10)
+  warnings: ["...warning: unused variable..."],   // top-level (first 10)
+  summary: { duration: 7075, errorCount: 1, warningCount: 1 }
 }
 
-// 2. Access full logs only when debugging
+// 2. Access full logs only when debugging (>10 errors/warnings)
 xcodebuild-get-details({ buildId: "build-xyz789", detailType: "full-log" })
 ```
 
@@ -507,7 +509,7 @@ xcodebuild-build({
 ### Example 3: Progressive Disclosure Build Workflow
 
 ```typescript
-// 1. Build returns summary + buildId
+// 1. Build returns errors/warnings at top level for immediate visibility
 xcodebuild-build({
   projectPath: "./MyApp.xcworkspace",
   scheme: "MyApp"
@@ -516,26 +518,26 @@ xcodebuild-build({
 {
   buildId: "build-abc123",
   success: true,
+  warnings: ["...warning: unused variable 'foo'..."],  // first 10 warnings
   summary: {
     duration: 7075,
     errorCount: 0,
     warningCount: 1,
-    configuration: "Debug",
-    sdk: "iphonesimulator"
+    configuration: "Debug"
   },
-  nextSteps: [
+  guidance: [
     "Build completed successfully",
+    "⚠️ 1 warning(s) detected",
     "Use 'xcodebuild-get-details' with buildId for full logs"
   ]
 }
 
-// 2. Access full logs only when debugging
+// 2. Access full logs only when >10 errors/warnings or debugging
 xcodebuild-get-details({
   buildId: "build-abc123",
-  detailType: "full-log",
-  maxLines: 100
+  detailType: "warnings-only"  // or "errors-only", "full-log"
 })
-// Returns: Full compiler output, warnings, errors
+// Returns: All warnings from build output
 ```
 
 ---
@@ -574,9 +576,10 @@ This project uses XC-MCP for iOS development automation. Follow these patterns f
 
 ## Progressive Disclosure
 
-- Build/test tools return `buildId` or cache IDs
-- Use `xcodebuild-get-details` or `simctl-get-details` to drill down
-- **Never request full logs upfront** — get summaries first
+- Build tools return `errors` and `warnings` arrays at top level (first 10 each)
+- No need to call `xcodebuild-get-details` just to see errors/warnings
+- Use `xcodebuild-get-details` only for full logs or >10 errors/warnings
+- Simulator tools return `cacheId` — use `simctl-get-details` to drill down
 
 ## Best Practices
 
@@ -584,6 +587,21 @@ This project uses XC-MCP for iOS development automation. Follow these patterns f
 - **Use semantic context** — Include `screenContext`, `appName`, `screenName` parameters
 - **Prefer accessibility over screenshots** — Better for efficiency AND app quality
 - **Use operation enums** — `simctl-device({ operation: "boot" })` instead of separate tools
+
+## Example: Build with Immediate Error/Warning Visibility
+
+\`\`\`typescript
+// Build returns errors/warnings at top level - no second call needed
+xcodebuild-build({ projectPath: "MyApp.xcodeproj", scheme: "MyApp" })
+// Returns:
+{
+  buildId: "abc123",
+  success: true,
+  warnings: ["...warning: unused variable..."],  // immediate visibility
+  summary: { errorCount: 0, warningCount: 1, duration: 5000 }
+}
+// Only use xcodebuild-get-details for full logs or >10 errors/warnings
+\`\`\`
 
 ## Example: Optimal Login Flow
 
