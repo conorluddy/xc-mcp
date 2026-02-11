@@ -193,6 +193,9 @@ export function extractBuildSummary(output: string, stderr: string, exitCode: nu
     hasErrors: errors.length > 0,
     hasWarnings: warnings.length > 0,
     firstError: errors[0]?.trim(),
+    // Include first 10 errors and warnings for immediate visibility
+    errors: errors.slice(0, 10).map(e => e.trim()),
+    warnings: warnings.slice(0, 10).map(w => w.trim()),
     buildSizeBytes: output.length + stderr.length,
   };
 }

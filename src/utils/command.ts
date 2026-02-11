@@ -10,6 +10,11 @@ export interface CommandResult {
   code: number;
 }
 
+export interface StreamingCommandResult extends CommandResult {
+  timedOut: boolean;
+  fatalMatch?: string;
+}
+
 export interface CommandOptions {
   timeout?: number;
   maxBuffer?: number;
@@ -53,6 +58,92 @@ export async function executeCommand(
       code: execError.code || 1,
     };
   }
+}
+
+interface StreamingOptions extends CommandOptions {
+  fatalPatterns?: RegExp[];
+  onFatalMatch?: (line: string) => void;
+}
+
+/**
+ * Execute a command with streaming output, optional fatal-pattern detection, and timeout.
+ * Kills the process early if a fatal pattern is seen or the timeout elapses.
+ */
+export async function executeCommandStreaming(
+  command: string,
+  options: StreamingOptions = {}
+): Promise<StreamingCommandResult> {
+  const {
+    timeout = 60000,
+    maxBuffer = 10 * 1024 * 1024,
+    fatalPatterns = [],
+    onFatalMatch,
+  } = options;
+
+  return new Promise<StreamingCommandResult>((resolve, reject) => {
+    const child = spawn(command, { shell: true, timeout });
+
+    let stdout = '';
+    let stderr = '';
+    let timedOut = false;
+    let fatalMatch: string | undefined;
+
+    const checkPatterns = (chunk: string) => {
+      if (fatalMatch) return;
+      for (const pattern of fatalPatterns) {
+        const match = chunk.match(pattern);
+        if (match) {
+          fatalMatch = match[0];
+          onFatalMatch?.(match[0]);
+          child.kill();
+          break;
+        }
+      }
+    };
+
+    const timeoutId = setTimeout(() => {
+      timedOut = true;
+      child.kill();
+    }, timeout);
+
+    child.stdout?.on('data', data => {
+      const text = data.toString();
+      stdout += text;
+      checkPatterns(text);
+      if (stdout.length > maxBuffer) {
+        child.kill();
+        clearTimeout(timeoutId);
+        reject(
+          new McpError(
+            ErrorCode.InternalError,
+            `Command output exceeded max buffer size of ${maxBuffer} bytes`
+          )
+        );
+      }
+    });
+
+    child.stderr?.on('data', data => {
+      const text = data.toString();
+      stderr += text;
+      checkPatterns(text);
+    });
+
+    child.on('close', code => {
+      clearTimeout(timeoutId);
+      resolve({
+        stdout: stdout.trim(),
+        stderr: stderr.trim(),
+        code: code ?? 0,
+        timedOut,
+        fatalMatch,
+      });
+    });
+
+    child.on('error', error => {
+      clearTimeout(timeoutId);
+      reject(new McpError(ErrorCode.InternalError, `Failed to execute command: ${error.message}`));
+    });
+  });
 }
 
 /**

@@ -14,7 +14,7 @@ class XcodeCLIMCPServer {
     this.server = new McpServer(
       {
         name: 'xc-mcp',
-        version: '3.2.0',
+        version: '3.2.1',
         description:
           'Wraps xcodebuild, simctl, and IDB with intelligent caching, for efficient iOS development. The RTFM tool can be called with any of the tool names to return further documentation if required. Tool descriptions are intentionally minimal to reduce MCP context usage.',
       },
