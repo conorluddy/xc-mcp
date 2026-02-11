@@ -348,7 +348,7 @@ function parseTestResults(
 
   // Strategy 1: Count individual test results from per-test lines
   for (const line of lines) {
-    // Match: Test Case '-[ClassName testName]' passed/failed/skipped
+    // Match XCTest format: Test Case '-[ClassName testName]' passed/failed/skipped
     if (line.includes("Test Case '-[")) {
       if (line.includes(' passed ')) {
         results.passedTests++;
@@ -362,6 +362,26 @@ function parseTestResults(
       } else if (line.includes(' skipped ')) {
         results.skippedTests++;
       }
+      continue;
+    }
+
+    // Match Swift Testing format: Test case 'SuiteName/testName()' passed/failed on 'Device Name'
+    const swiftTestMatch = line.match(/Test case '([^']+)' (passed|failed) on '([^']+)'/i);
+    if (swiftTestMatch) {
+      const [, testName, status] = swiftTestMatch;
+      if (status.toLowerCase() === 'passed') {
+        results.passedTests++;
+      } else if (status.toLowerCase() === 'failed') {
+        results.failedTests++;
+        results.failedTestsList.push(testName);
+      }
+      continue;
+    }
+
+    // Match Swift Testing skipped tests
+    const swiftSkipMatch = line.match(/Test case '([^']+)' skipped/i);
+    if (swiftSkipMatch) {
+      results.skippedTests++;
     }
   }
 
@@ -390,11 +410,36 @@ function parseTestResults(
   // Fallback: calculate total from counted tests if summary line not found
   if (results.totalTests === 0) {
     results.totalTests = results.passedTests + results.failedTests + results.skippedTests;
-    if (results.totalTests === 0) {
+  }
+
+  // Strategy 3: Use ** TEST FAILED/SUCCEEDED ** markers as authoritative fallback
+  // These markers are always present in xcodebuild output regardless of test framework
+  const hasTestFailedMarker = output.includes('** TEST FAILED **');
+  const hasTestSucceededMarker = output.includes('** TEST SUCCEEDED **');
+
+  if (results.passedTests + results.failedTests + results.skippedTests === 0) {
+    // No individual test results parsed - use markers as fallback
+    if (hasTestFailedMarker) {
+      results.parseWarnings.push(
+        'No individual test results parsed but ** TEST FAILED ** marker present'
+      );
+      results.failedTests = 1; // Signal failure even though we could not parse individual tests
+      results.totalTests = 1;
+    } else if (hasTestSucceededMarker) {
+      results.parseWarnings.push(
+        'No individual test results parsed but ** TEST SUCCEEDED ** marker present'
+      );
+    } else {
       results.parseWarnings.push(
         'No test cases found in output - may indicate test compilation or setup failure'
       );
     }
+  } else if (results.failedTests === 0 && hasTestFailedMarker) {
+    // Mismatch: counted no failures but marker says failed
+    results.parseWarnings.push(
+      'Counted 0 failed tests but ** TEST FAILED ** marker present - adjusting failure count'
+    );
+    results.failedTests = Math.max(results.failedTests, 1);
   }
 
   return results;

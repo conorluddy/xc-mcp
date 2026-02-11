@@ -118,14 +118,15 @@ export async function xcodebuildGetDetailsTool(args: any) {
 
       case 'errors-only': {
         const allOutput = cached.fullOutput + '\n' + cached.stderr;
-        const errorLines = allOutput
-          .split('\n')
-          .filter(
-            line =>
-              line.includes('error:') ||
-              line.includes('** BUILD FAILED **') ||
-              line.toLowerCase().includes('fatal error')
-          );
+        const errorLines = allOutput.split('\n').filter(
+          line =>
+            line.includes('error:') ||
+            line.includes('** BUILD FAILED **') ||
+            line.includes('** TEST FAILED **') ||
+            line.toLowerCase().includes('fatal error') ||
+            /Test case '[^']+' failed/i.test(line) || // Swift Testing failures
+            /Test Case '-\[.+\]' failed/.test(line) // XCTest failures
+        );
         responseText = JSON.stringify(
           {
             buildId,
