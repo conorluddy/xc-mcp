@@ -226,7 +226,7 @@ export function registerIdbTools(server: McpServer): void {
         appPath: z.string().optional(),
         streamOutput: z.boolean().optional(),
         arguments: z.array(z.string()).optional(),
-        environment: z.record(z.string()).optional(),
+        environment: z.record(z.string(), z.string()).optional(),
       },
       ...DEFER_LOADING_CONFIG,
     },
