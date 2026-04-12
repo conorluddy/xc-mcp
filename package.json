@@ -17,7 +17,7 @@
     "format:check": "prettier --check src/**/*.ts",
     "clean": "rm -rf dist",
     "precommit": "lint-staged",
-    "prepare": "husky",
+    "prepare": "npm run build && husky",
     "prepublishOnly": "npm run clean && npm run build && npm test && npm run lint",
     "postbuild": "chmod +x dist/index.js"
   },
