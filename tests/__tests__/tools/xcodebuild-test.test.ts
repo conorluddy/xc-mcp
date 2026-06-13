@@ -106,6 +106,14 @@ Test Case '-[MyAppTests testExample]' passed (0.001 seconds)`,
     expect((result.content[1] as any).uri).toBe('xcmcp://response/test-cache-id-123');
     expect(result.isError).toBe(false);
 
+    // Structured output (v4 outputSchema)
+    const structured = (result as any).structuredContent;
+    expect(structured).toBeDefined();
+    expect(structured.testId).toBe('test-cache-id-123');
+    expect(structured.success).toBe(true);
+    expect(typeof structured.totalTests).toBe('number');
+    expect(typeof structured.passed).toBe('number');
+
     const response = JSON.parse((result.content[0] as any).text);
     expect(response.testId).toBe('test-cache-id-123');
     expect(response.success).toBe(true);

@@ -129,6 +129,15 @@ export function registerXcodebuildTools(server: McpServer): void {
         sdk: z.string().optional(),
         derivedDataPath: z.string().optional(),
       },
+      outputSchema: {
+        buildId: z.string().describe('Cache id for full build log (xcodebuild-get-details)'),
+        success: z.boolean(),
+        errorCount: z.number(),
+        warningCount: z.number(),
+        durationMs: z.number(),
+        scheme: z.string(),
+        configuration: z.string(),
+      },
       annotations: {
         readOnlyHint: false,
         destructiveHint: false,
@@ -201,6 +210,16 @@ export function registerXcodebuildTools(server: McpServer): void {
         onlyTesting: z.array(z.string()).optional(),
         skipTesting: z.array(z.string()).optional(),
         testWithoutBuilding: z.boolean().default(false),
+      },
+      outputSchema: {
+        testId: z.string().describe('Cache id for full test log (xcodebuild-get-details)'),
+        success: z.boolean(),
+        totalTests: z.number(),
+        passed: z.number(),
+        failed: z.number(),
+        skipped: z.number(),
+        durationMs: z.number().optional(),
+        scheme: z.string(),
       },
       annotations: {
         readOnlyHint: false,

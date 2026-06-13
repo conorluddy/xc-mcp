@@ -262,6 +262,15 @@ export async function xcodebuildBuildTool(args: any) {
           `Full build log for scheme "${finalConfig.scheme}" (${summary.success ? 'succeeded' : 'failed'})`
         ),
       ],
+      structuredContent: {
+        buildId: cacheId,
+        success: summary.success,
+        errorCount: summary.errorCount,
+        warningCount: summary.warningCount,
+        durationMs: duration,
+        scheme: finalConfig.scheme,
+        configuration: finalConfig.configuration,
+      },
       isError: !summary.success,
     };
   } catch (error) {

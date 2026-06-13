@@ -229,6 +229,14 @@ export async function accessibilityQualityCheckTool(args: AccessibilityQualityCh
           ),
         },
       ],
+      structuredContent: {
+        success: true,
+        quality: assessment.quality,
+        recommendation,
+        totalElements: assessment.totalElements,
+        tappableElements: assessment.tappableCount,
+        textFields: assessment.textFieldCount,
+      },
       isError: false,
     };
   } catch (error) {

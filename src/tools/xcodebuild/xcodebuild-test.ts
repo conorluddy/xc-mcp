@@ -587,6 +587,16 @@ function formatTestResponse(
         `Full test log for scheme "${config.scheme}" (${testsPassed ? 'passed' : 'failed'})`
       ),
     ],
+    structuredContent: {
+      testId: cacheId,
+      success: testsPassed,
+      totalTests: metrics.totalTests,
+      passed: metrics.passedTests,
+      failed: metrics.failedTests,
+      skipped: metrics.skippedTests,
+      durationMs: result.duration,
+      scheme: config.scheme,
+    },
     isError: !testsPassed,
   };
 }

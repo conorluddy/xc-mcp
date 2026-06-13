@@ -240,6 +240,14 @@ export function registerIdbTools(server: McpServer): void {
         udid: z.string().optional(),
         screenContext: z.string().optional(),
       },
+      outputSchema: {
+        success: z.boolean(),
+        quality: z.string().describe('rich | moderate | minimal'),
+        recommendation: z.string().describe('accessibility-ready | consider-screenshot'),
+        totalElements: z.number(),
+        tappableElements: z.number(),
+        textFields: z.number(),
+      },
       annotations: {
         readOnlyHint: true,
         destructiveHint: false,

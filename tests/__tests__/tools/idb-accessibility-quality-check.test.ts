@@ -51,6 +51,13 @@ describe('accessibility-quality-check', () => {
       expect(response.quality).toBe('rich');
       expect(response.recommendation).toBe('accessibility-ready');
       expect(response.elementCounts.tappable).toBe(4);
+
+      // Structured output (v4 outputSchema)
+      const structured = (result as any).structuredContent;
+      expect(structured).toBeDefined();
+      expect(structured.quality).toBe('rich');
+      expect(structured.recommendation).toBe('accessibility-ready');
+      expect(structured.tappableElements).toBe(4);
     });
 
     it('should classify as rich when text fields present', async () => {
