@@ -16,6 +16,7 @@ export default {
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
     '^@modelcontextprotocol/sdk/types.js$': '<rootDir>/tests/mocks/mcp-types.ts',
+    '^pixelmatch$': '<rootDir>/tests/mocks/pixelmatch.ts',
   },
   transformIgnorePatterns: ['node_modules/(?!(@modelcontextprotocol)/)'],
   collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts', '!src/index.ts'],

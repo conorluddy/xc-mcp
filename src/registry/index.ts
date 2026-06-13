@@ -8,6 +8,7 @@ import { registerWorkflowTools } from './workflows.js';
 import { registerSystemTools } from './system.js';
 import { registerResources } from './resources.js';
 import { registerDeviceStateTools } from './devicestate.js';
+import { registerAnalysisTools } from './analysis.js';
 
 /**
  * Register all XC-MCP tools with the MCP server
@@ -35,5 +36,6 @@ export function registerAllTools(server: McpServer): void {
     registerIdbTools(server);
     registerWorkflowTools(server);
     registerDeviceStateTools(server);
+    registerAnalysisTools(server);
   }
 }

@@ -33,6 +33,11 @@ import {
   ACCESSIBILITY_QUALITY_CHECK_DOCS_MINI,
 } from '../tools/idb/accessibility-quality-check.js';
 import {
+  accessibilityAuditTool,
+  ACCESSIBILITY_AUDIT_DOCS,
+  ACCESSIBILITY_AUDIT_DOCS_MINI,
+} from '../tools/idb/accessibility-audit.js';
+import {
   idbListAppsTool,
   IDB_LIST_APPS_DOCS,
   IDB_LIST_APPS_DOCS_MINI,
@@ -257,6 +262,33 @@ export function registerIdbTools(server: McpServer): void {
       ...DEFER_LOADING_CONFIG,
     },
     async args => accessibilityQualityCheckTool(args)
+  );
+
+  // accessibility-audit
+  server.registerTool(
+    'accessibility-audit',
+    {
+      title: 'Accessibility (WCAG) Audit',
+      description: getDescription(ACCESSIBILITY_AUDIT_DOCS, ACCESSIBILITY_AUDIT_DOCS_MINI),
+      inputSchema: {
+        udid: z.string().optional(),
+        verbose: z.boolean().optional(),
+      },
+      outputSchema: {
+        total: z.number(),
+        critical: z.number(),
+        warning: z.number(),
+        info: z.number(),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+      ...DEFER_LOADING_CONFIG,
+    },
+    async args => accessibilityAuditTool(args)
   );
 
   // idb-list-apps

@@ -83,6 +83,10 @@ import { PERSISTENCE_STATUS_DOCS } from './persistence/status.js';
 import { SIMCTL_APPEARANCE_DOCS } from './simctl/appearance.js';
 import { SIMCTL_LOCATION_DOCS } from './simctl/location.js';
 import { SIMCTL_CONTAINER_DOCS } from './simctl/container.js';
+import { ACCESSIBILITY_AUDIT_DOCS } from './idb/accessibility-audit.js';
+import { LOCALIZATION_AUDIT_DOCS } from './analysis/localization-audit.js';
+import { XCODE_MODEL_INSPECT_DOCS } from './analysis/model-inspect.js';
+import { VISUAL_DIFF_DOCS } from './io/visual-diff.js';
 
 // Consolidated router documentation (v2.0+)
 import { SIMCTL_DEVICE_DOCS } from './simctl/device/index.js';
@@ -469,11 +473,13 @@ export const TOOL_CATEGORIES: Record<string, string[]> = {
     'simctl-openurl',
   ],
   devicestate: ['simctl-appearance', 'simctl-location'],
+  analysis: ['localization-audit', 'xcode-model-inspect', 'visual-diff'],
   idb: [
     // ============================================================================
     // DISCOVERY TOOLS (TRY THESE FIRST) - Accessibility-first automation
     // ============================================================================
     'accessibility-quality-check',
+    'accessibility-audit',
     'idb-ui-describe',
     'idb-ui-find-element',
     // ============================================================================
@@ -558,6 +564,11 @@ export const CATEGORY_DESCRIPTIONS: Record<string, { name: string; description: 
     name: 'Device State & Environment',
     description: 'Simulate appearance, Dynamic Type, locale/RTL, and GPS location',
   },
+  analysis: {
+    name: 'Static Analysis & Diffing',
+    description:
+      'Audit localization catalogs, inspect Core Data/SwiftData models, diff screenshots',
+  },
 };
 
 /**
@@ -633,7 +644,11 @@ export const TOOL_DOCS: Record<string, string> = {
   'idb-ui-describe': IDB_UI_DESCRIBE_DOCS,
   'idb-ui-find-element': IDB_UI_FIND_ELEMENT_DOCS,
   'accessibility-quality-check': ACCESSIBILITY_QUALITY_CHECK_DOCS,
+  'accessibility-audit': ACCESSIBILITY_AUDIT_DOCS,
   'idb-list-apps': IDB_LIST_APPS_DOCS,
+  'localization-audit': LOCALIZATION_AUDIT_DOCS,
+  'xcode-model-inspect': XCODE_MODEL_INSPECT_DOCS,
+  'visual-diff': VISUAL_DIFF_DOCS,
 
   // Cache tools (non-consolidated)
   'list-cached-responses': CACHE_LIST_CACHED_RESPONSES_DOCS,
