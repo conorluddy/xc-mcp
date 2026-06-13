@@ -55,10 +55,17 @@ export function registerXcodebuildTools(server: McpServer): void {
   server.registerTool(
     'xcodebuild-version',
     {
+      title: 'Xcode Version Info',
       description: getDescription(XCODEBUILD_VERSION_DOCS, XCODEBUILD_VERSION_DOCS_MINI),
       inputSchema: {
         sdk: z.string().optional(),
         outputFormat: z.enum(['json', 'text']).default('json'),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
       },
       ...DEFER_LOADING_CONFIG,
     },
@@ -80,10 +87,17 @@ export function registerXcodebuildTools(server: McpServer): void {
   server.registerTool(
     'xcodebuild-list',
     {
+      title: 'List Xcode Schemes & Targets',
       description: getDescription(XCODEBUILD_LIST_DOCS, XCODEBUILD_LIST_DOCS_MINI),
       inputSchema: {
         projectPath: z.string(),
         outputFormat: z.enum(['json', 'text']).default('json'),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
       },
       ...DEFER_LOADING_CONFIG,
     },
@@ -105,6 +119,7 @@ export function registerXcodebuildTools(server: McpServer): void {
   server.registerTool(
     'xcodebuild-build',
     {
+      title: 'Build Xcode Scheme',
       description: getDescription(XCODEBUILD_BUILD_DOCS, XCODEBUILD_BUILD_DOCS_MINI),
       inputSchema: {
         projectPath: z.string(),
@@ -113,6 +128,12 @@ export function registerXcodebuildTools(server: McpServer): void {
         destination: z.string().optional(),
         sdk: z.string().optional(),
         derivedDataPath: z.string().optional(),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false,
       },
       ...DEFER_LOADING_CONFIG,
     },
@@ -134,11 +155,18 @@ export function registerXcodebuildTools(server: McpServer): void {
   server.registerTool(
     'xcodebuild-clean',
     {
+      title: 'Clean Xcode Build',
       description: getDescription(XCODEBUILD_CLEAN_DOCS, XCODEBUILD_CLEAN_DOCS_MINI),
       inputSchema: {
         projectPath: z.string(),
         scheme: z.string(),
         configuration: z.string().optional(),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: false,
       },
       ...DEFER_LOADING_CONFIG,
     },
@@ -160,6 +188,7 @@ export function registerXcodebuildTools(server: McpServer): void {
   server.registerTool(
     'xcodebuild-test',
     {
+      title: 'Run Xcode Tests',
       description: getDescription(XCODEBUILD_TEST_DOCS, XCODEBUILD_TEST_DOCS_MINI),
       inputSchema: {
         projectPath: z.string(),
@@ -172,6 +201,12 @@ export function registerXcodebuildTools(server: McpServer): void {
         onlyTesting: z.array(z.string()).optional(),
         skipTesting: z.array(z.string()).optional(),
         testWithoutBuilding: z.boolean().default(false),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false,
       },
       ...DEFER_LOADING_CONFIG,
     },
@@ -193,6 +228,7 @@ export function registerXcodebuildTools(server: McpServer): void {
   server.registerTool(
     'xcodebuild-get-details',
     {
+      title: 'Get Build/Test Details',
       description: getDescription(XCODEBUILD_GET_DETAILS_DOCS, XCODEBUILD_GET_DETAILS_DOCS_MINI),
       inputSchema: {
         buildId: z.string(),
@@ -205,6 +241,12 @@ export function registerXcodebuildTools(server: McpServer): void {
           'metadata',
         ]),
         maxLines: z.number().default(100),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
       },
       ...DEFER_LOADING_CONFIG,
     },
@@ -226,9 +268,16 @@ export function registerXcodebuildTools(server: McpServer): void {
   server.registerTool(
     'xcodebuild-showsdks',
     {
+      title: 'List Available SDKs',
       description: getDescription(XCODEBUILD_SHOWSDKS_DOCS, XCODEBUILD_SHOWSDKS_DOCS),
       inputSchema: {
         outputFormat: z.enum(['json', 'text']).default('json'),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
       },
       ...DEFER_LOADING_CONFIG,
     },
@@ -254,9 +303,16 @@ export function registerXcodebuildTools(server: McpServer): void {
         XCODEBUILD_INSPECT_SCHEME_DOCS,
         XCODEBUILD_INSPECT_SCHEME_DOCS_MINI
       ),
+      title: 'Inspect Xcode Scheme',
       inputSchema: {
         projectPath: z.string(),
         scheme: z.string(),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
       },
       ...DEFER_LOADING_CONFIG,
     },
@@ -282,10 +338,17 @@ export function registerXcodebuildTools(server: McpServer): void {
         XCODEBUILD_VALIDATE_CAPABILITIES_DOCS,
         XCODEBUILD_VALIDATE_CAPABILITIES_DOCS_MINI
       ),
+      title: 'Validate App Capabilities',
       inputSchema: {
         projectPath: z.string(),
         scheme: z.string(),
         udid: z.string().optional(),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
       },
       ...DEFER_LOADING_CONFIG,
     },

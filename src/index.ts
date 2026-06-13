@@ -20,7 +20,7 @@ class XcodeCLIMCPServer {
       },
       {
         capabilities: {
-          tools: {},
+          tools: { listChanged: true },
           prompts: {},
         },
         instructions: `# XC-MCP: Accessibility-First Automation Workflow

@@ -56,6 +56,29 @@ import { WORKFLOW_FRESH_INSTALL_DOCS } from './workflows/fresh-install.js';
 import { BUILD_AND_RUN_DOCS } from './workflows/build-and-run.js';
 import { XCODEBUILD_INSPECT_SCHEME_DOCS } from './xcodebuild/inspect-scheme.js';
 import { XCODEBUILD_VALIDATE_CAPABILITIES_DOCS } from './xcodebuild/validate-capabilities.js';
+// Discrete tool docs (v4 — routers dissolved into discrete tools)
+import { SIMCTL_BOOT_DOCS } from './simctl/boot.js';
+import { SIMCTL_SHUTDOWN_DOCS } from './simctl/shutdown.js';
+import { SIMCTL_CREATE_DOCS } from './simctl/create.js';
+import { SIMCTL_DELETE_DOCS } from './simctl/delete.js';
+import { SIMCTL_ERASE_DOCS } from './simctl/erase.js';
+import { SIMCTL_CLONE_DOCS } from './simctl/clone.js';
+import { SIMCTL_RENAME_DOCS } from './simctl/rename.js';
+import { SIMCTL_INSTALL_DOCS } from './simctl/install.js';
+import { SIMCTL_UNINSTALL_DOCS } from './simctl/uninstall.js';
+import { SIMCTL_LAUNCH_DOCS } from './simctl/launch.js';
+import { SIMCTL_TERMINATE_DOCS } from './simctl/terminate.js';
+import { IDB_INSTALL_DOCS } from './idb/install.js';
+import { IDB_UNINSTALL_DOCS } from './idb/uninstall.js';
+import { IDB_LAUNCH_DOCS } from './idb/launch.js';
+import { IDB_TERMINATE_DOCS } from './idb/terminate.js';
+import { CACHE_GET_STATS_DOCS } from './cache/get-stats.js';
+import { CACHE_GET_CONFIG_DOCS } from './cache/get-config.js';
+import { CACHE_SET_CONFIG_DOCS } from './cache/set-config.js';
+import { CACHE_CLEAR_DOCS } from './cache/clear.js';
+import { PERSISTENCE_ENABLE_DOCS } from './persistence/enable.js';
+import { PERSISTENCE_DISABLE_DOCS } from './persistence/disable.js';
+import { PERSISTENCE_STATUS_DOCS } from './persistence/status.js';
 
 // Consolidated router documentation (v2.0+)
 import { SIMCTL_DEVICE_DOCS } from './simctl/device/index.js';
@@ -617,38 +640,38 @@ export const TOOL_DOCS: Record<string, string> = {
   'workflow-fresh-install': WORKFLOW_FRESH_INSTALL_DOCS,
   'workflow-build-and-run': BUILD_AND_RUN_DOCS,
 
-  // Backwards compatibility aliases (v1.x tools → v2.0 consolidated tools)
-  // Simctl device consolidation
-  'simctl-boot': SIMCTL_DEVICE_DOCS,
-  'simctl-shutdown': SIMCTL_DEVICE_DOCS,
-  'simctl-create': SIMCTL_DEVICE_DOCS,
-  'simctl-delete': SIMCTL_DEVICE_DOCS,
-  'simctl-erase': SIMCTL_DEVICE_DOCS,
-  'simctl-clone': SIMCTL_DEVICE_DOCS,
-  'simctl-rename': SIMCTL_DEVICE_DOCS,
+  // Discrete tools (v4 — dissolved from v2/v3 routers, each documents its own usage)
+  // Simctl device lifecycle
+  'simctl-boot': SIMCTL_BOOT_DOCS,
+  'simctl-shutdown': SIMCTL_SHUTDOWN_DOCS,
+  'simctl-create': SIMCTL_CREATE_DOCS,
+  'simctl-delete': SIMCTL_DELETE_DOCS,
+  'simctl-erase': SIMCTL_ERASE_DOCS,
+  'simctl-clone': SIMCTL_CLONE_DOCS,
+  'simctl-rename': SIMCTL_RENAME_DOCS,
 
-  // Simctl app consolidation
-  'simctl-install': SIMCTL_APP_DOCS,
-  'simctl-uninstall': SIMCTL_APP_DOCS,
-  'simctl-launch': SIMCTL_APP_DOCS,
-  'simctl-terminate': SIMCTL_APP_DOCS,
+  // Simctl app lifecycle
+  'simctl-install': SIMCTL_INSTALL_DOCS,
+  'simctl-uninstall': SIMCTL_UNINSTALL_DOCS,
+  'simctl-launch': SIMCTL_LAUNCH_DOCS,
+  'simctl-terminate': SIMCTL_TERMINATE_DOCS,
 
-  // IDB app consolidation
-  'idb-install': IDB_APP_DOCS,
-  'idb-uninstall': IDB_APP_DOCS,
-  'idb-launch': IDB_APP_DOCS,
-  'idb-terminate': IDB_APP_DOCS,
+  // IDB app lifecycle
+  'idb-install': IDB_INSTALL_DOCS,
+  'idb-uninstall': IDB_UNINSTALL_DOCS,
+  'idb-launch': IDB_LAUNCH_DOCS,
+  'idb-terminate': IDB_TERMINATE_DOCS,
 
-  // Cache consolidation
-  'cache-get-stats': CACHE_DOCS,
-  'cache-get-config': CACHE_DOCS,
-  'cache-set-config': CACHE_DOCS,
-  'cache-clear': CACHE_DOCS,
+  // Cache management
+  'cache-get-stats': CACHE_GET_STATS_DOCS,
+  'cache-get-config': CACHE_GET_CONFIG_DOCS,
+  'cache-set-config': CACHE_SET_CONFIG_DOCS,
+  'cache-clear': CACHE_CLEAR_DOCS,
 
-  // Persistence consolidation
-  'persistence-enable': PERSISTENCE_DOCS,
-  'persistence-disable': PERSISTENCE_DOCS,
-  'persistence-status': PERSISTENCE_DOCS,
+  // Persistence
+  'persistence-enable': PERSISTENCE_ENABLE_DOCS,
+  'persistence-disable': PERSISTENCE_DISABLE_DOCS,
+  'persistence-status': PERSISTENCE_STATUS_DOCS,
 
   // Tool aliases
   'screenshot-save': SCREENSHOT_SAVE_DOCS,

@@ -15,10 +15,17 @@ export function registerSystemTools(server: McpServer): void {
   server.registerTool(
     'rtfm',
     {
+      title: 'Read The Manual (Tool Docs)',
       description: getDescription(RTFM_DOCS, RTFM_DOCS_MINI),
       inputSchema: {
         toolName: z.string().optional(),
         categoryName: z.string().optional(),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
       },
       ...DEFER_LOADING_CONFIG,
     },

@@ -29,6 +29,7 @@ export function registerWorkflowTools(server: McpServer): void {
   server.registerTool(
     'workflow-tap-element',
     {
+      title: 'Tap Element (Workflow)',
       description: getDescription(WORKFLOW_TAP_ELEMENT_DOCS, WORKFLOW_TAP_ELEMENT_DOCS_MINI),
       inputSchema: {
         elementQuery: z.string().describe('Search term for element (e.g., "Login", "Submit")'),
@@ -36,6 +37,12 @@ export function registerWorkflowTools(server: McpServer): void {
         verifyResult: z.boolean().default(false).describe('Take screenshot after action'),
         udid: z.string().optional().describe('Target device'),
         screenContext: z.string().optional().describe('Screen name for tracking'),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false,
       },
       ...DEFER_LOADING_CONFIG,
     },
@@ -57,6 +64,7 @@ export function registerWorkflowTools(server: McpServer): void {
   server.registerTool(
     'workflow-fresh-install',
     {
+      title: 'Fresh Install (Workflow)',
       description: getDescription(WORKFLOW_FRESH_INSTALL_DOCS, WORKFLOW_FRESH_INSTALL_DOCS_MINI),
       inputSchema: {
         projectPath: z.string().describe('Path to .xcodeproj or .xcworkspace'),
@@ -66,6 +74,12 @@ export function registerWorkflowTools(server: McpServer): void {
         configuration: z.enum(['Debug', 'Release']).default('Debug'),
         launchArguments: z.array(z.string()).optional(),
         environmentVariables: z.record(z.string(), z.string()).optional(),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: false,
       },
       ...DEFER_LOADING_CONFIG,
     },
@@ -87,6 +101,7 @@ export function registerWorkflowTools(server: McpServer): void {
   server.registerTool(
     'workflow-build-and-run',
     {
+      title: 'Build & Run (Workflow)',
       description: getDescription(BUILD_AND_RUN_DOCS, BUILD_AND_RUN_DOCS_MINI),
       inputSchema: {
         projectPath: z.string().describe('Path to .xcodeproj or .xcworkspace'),
@@ -102,6 +117,12 @@ export function registerWorkflowTools(server: McpServer): void {
           .optional()
           .describe('App environment variables'),
         takeScreenshot: z.boolean().optional().describe('Capture screenshot after launch'),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false,
       },
       ...DEFER_LOADING_CONFIG,
     },
