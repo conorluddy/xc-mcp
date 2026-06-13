@@ -86,7 +86,11 @@ export async function buildAndRunTool(args: any) {
         autoInstall: false, // We'll handle install manually in workflow
       });
 
-      const buildText = buildResult.content?.[0]?.text || JSON.stringify(buildResult);
+      const buildTextBlock = buildResult.content?.find(c => c.type === 'text');
+      const buildText =
+        buildTextBlock && 'text' in buildTextBlock
+          ? buildTextBlock.text
+          : JSON.stringify(buildResult);
       const buildData = typeof buildText === 'string' ? JSON.parse(buildText) : buildText;
 
       workflow.steps.push({

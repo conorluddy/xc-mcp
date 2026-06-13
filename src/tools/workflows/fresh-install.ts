@@ -225,7 +225,11 @@ export async function workflowFreshInstallTool(args: FreshInstallArgs) {
         autoInstall: false, // We handle install manually
       });
 
-      const buildText = buildResult.content?.[0]?.text || JSON.stringify(buildResult);
+      const buildTextBlock = buildResult.content?.find(c => c.type === 'text');
+      const buildText =
+        buildTextBlock && 'text' in buildTextBlock
+          ? buildTextBlock.text
+          : JSON.stringify(buildResult);
       const buildData = typeof buildText === 'string' ? JSON.parse(buildText) : buildText;
 
       if (!buildData.success) {

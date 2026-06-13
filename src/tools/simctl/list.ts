@@ -9,6 +9,7 @@ import {
   responseCache,
   extractSimulatorSummary,
   createProgressiveSimulatorResponse,
+  responseResourceLink,
 } from '../../utils/response-cache.js';
 
 interface SimctlListArgs {
@@ -83,6 +84,9 @@ export async function simctlListTool(args: any) {
 
     let responseData: Record<string, unknown> | string;
 
+    // Cache id for the full simulator list, set only in concise/progressive mode
+    let resourceCacheId: string | undefined;
+
     // Use progressive disclosure by default (concise=true)
     if (concise && outputFormat === 'json') {
       // Generate concise summary
@@ -108,6 +112,7 @@ export async function simctlListTool(args: any) {
         runtime,
         availability,
       });
+      resourceCacheId = cacheId;
     } else {
       // Legacy mode: return full filtered list with device limiting
       if (outputFormat === 'json') {
@@ -178,6 +183,15 @@ export async function simctlListTool(args: any) {
           type: 'text' as const,
           text: responseText,
         },
+        ...(resourceCacheId
+          ? [
+              responseResourceLink(
+                resourceCacheId,
+                'simctl-list',
+                'Full simulator list (all devices, runtimes, and device types)'
+              ),
+            ]
+          : []),
       ],
     };
   } catch (error) {

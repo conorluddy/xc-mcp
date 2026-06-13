@@ -2,7 +2,7 @@ import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
 import { IDBTargetCache } from '../../state/idb-target-cache.js';
-import { responseCache } from '../../utils/response-cache.js';
+import { responseCache, responseResourceLink } from '../../utils/response-cache.js';
 import { formatToolError } from '../../utils/error-formatter.js';
 import { parseFlexibleJson } from '../../utils/json-parser.js';
 
@@ -163,6 +163,15 @@ export async function idbUiDescribeTool(args: IdbUiDescribeArgs) {
             2
           ),
         },
+        ...(result.uiTreeId
+          ? [
+              responseResourceLink(
+                result.uiTreeId,
+                'idb-ui-describe',
+                `Full accessibility tree${result.targetName ? ` for ${result.targetName}` : ''}`
+              ),
+            ]
+          : []),
       ],
       isError: !result.success,
     };

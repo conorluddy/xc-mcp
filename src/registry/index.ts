@@ -6,6 +6,7 @@ import { registerIdbTools } from './idb.js';
 import { registerCacheTools } from './cache.js';
 import { registerWorkflowTools } from './workflows.js';
 import { registerSystemTools } from './system.js';
+import { registerResources } from './resources.js';
 
 /**
  * Register all XC-MCP tools with the MCP server
@@ -23,6 +24,9 @@ export function registerAllTools(server: McpServer): void {
   registerSimctlListTool(server);
   registerCacheTools(server);
   registerSystemTools(server);
+
+  // Progressive-disclosure cached output, exposed as MCP resources
+  registerResources(server);
 
   // Only register full toolset when NOT in build-only mode
   if (!config.buildOnly) {
