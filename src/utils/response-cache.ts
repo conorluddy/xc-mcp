@@ -94,6 +94,17 @@ class ResponseCache {
     }
   }
 
+  /**
+   * List all non-expired cached responses (most recent first).
+   * Used by the MCP resources layer to enumerate available `xcmcp://response/{id}` resources.
+   */
+  list(): CachedResponse[] {
+    const now = Date.now();
+    return Array.from(this.cache.values())
+      .filter(c => now - c.timestamp.getTime() <= this.maxAge)
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }
+
   getStats(): { totalEntries: number; byTool: Record<string, number> } {
     const byTool: Record<string, number> = {};
     for (const cached of this.cache.values()) {
@@ -158,6 +169,40 @@ class ResponseCache {
 
 // Global cache instance
 export const responseCache = new ResponseCache();
+
+/** URI scheme/prefix for cached responses exposed as MCP resources. */
+export const RESPONSE_RESOURCE_PREFIX = 'xcmcp://response/';
+
+/** Build the resource URI for a cached response id. */
+export function responseResourceUri(cacheId: string): string {
+  return `${RESPONSE_RESOURCE_PREFIX}${cacheId}`;
+}
+
+/**
+ * Build an MCP `resource_link` content block for a cached response.
+ * Lets spec-aware clients fetch the full output via the resources API instead of
+ * round-tripping through a *-get-details tool call. The opaque cache id is preserved
+ * elsewhere in the response for older clients.
+ */
+export function responseResourceLink(
+  cacheId: string,
+  tool: string,
+  description: string
+): {
+  type: 'resource_link';
+  uri: string;
+  name: string;
+  description: string;
+  mimeType: string;
+} {
+  return {
+    type: 'resource_link',
+    uri: responseResourceUri(cacheId),
+    name: `${tool}-output`,
+    description,
+    mimeType: 'text/plain',
+  };
+}
 
 // Helper functions for common response patterns
 export function extractBuildSummary(output: string, stderr: string, exitCode: number) {

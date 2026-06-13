@@ -33,6 +33,17 @@ import {
   XCODEBUILD_GET_DETAILS_DOCS,
   XCODEBUILD_GET_DETAILS_DOCS_MINI,
 } from '../tools/xcodebuild/get-details.js';
+import { xcodebuildShowSDKsTool, XCODEBUILD_SHOWSDKS_DOCS } from '../tools/xcodebuild/showsdks.js';
+import {
+  inspectSchemeTool,
+  XCODEBUILD_INSPECT_SCHEME_DOCS,
+  XCODEBUILD_INSPECT_SCHEME_DOCS_MINI,
+} from '../tools/xcodebuild/inspect-scheme.js';
+import {
+  validateCapabilitiesTool,
+  XCODEBUILD_VALIDATE_CAPABILITIES_DOCS,
+  XCODEBUILD_VALIDATE_CAPABILITIES_DOCS_MINI,
+} from '../tools/xcodebuild/validate-capabilities.js';
 
 const ENABLE_DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
 const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
@@ -44,10 +55,17 @@ export function registerXcodebuildTools(server: McpServer): void {
   server.registerTool(
     'xcodebuild-version',
     {
+      title: 'Xcode Version Info',
       description: getDescription(XCODEBUILD_VERSION_DOCS, XCODEBUILD_VERSION_DOCS_MINI),
       inputSchema: {
         sdk: z.string().optional(),
         outputFormat: z.enum(['json', 'text']).default('json'),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
       },
       ...DEFER_LOADING_CONFIG,
     },
@@ -69,10 +87,17 @@ export function registerXcodebuildTools(server: McpServer): void {
   server.registerTool(
     'xcodebuild-list',
     {
+      title: 'List Xcode Schemes & Targets',
       description: getDescription(XCODEBUILD_LIST_DOCS, XCODEBUILD_LIST_DOCS_MINI),
       inputSchema: {
         projectPath: z.string(),
         outputFormat: z.enum(['json', 'text']).default('json'),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
       },
       ...DEFER_LOADING_CONFIG,
     },
@@ -94,6 +119,7 @@ export function registerXcodebuildTools(server: McpServer): void {
   server.registerTool(
     'xcodebuild-build',
     {
+      title: 'Build Xcode Scheme',
       description: getDescription(XCODEBUILD_BUILD_DOCS, XCODEBUILD_BUILD_DOCS_MINI),
       inputSchema: {
         projectPath: z.string(),
@@ -102,6 +128,21 @@ export function registerXcodebuildTools(server: McpServer): void {
         destination: z.string().optional(),
         sdk: z.string().optional(),
         derivedDataPath: z.string().optional(),
+      },
+      outputSchema: {
+        buildId: z.string().describe('Cache id for full build log (xcodebuild-get-details)'),
+        success: z.boolean(),
+        errorCount: z.number(),
+        warningCount: z.number(),
+        durationMs: z.number(),
+        scheme: z.string(),
+        configuration: z.string(),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false,
       },
       ...DEFER_LOADING_CONFIG,
     },
@@ -123,11 +164,18 @@ export function registerXcodebuildTools(server: McpServer): void {
   server.registerTool(
     'xcodebuild-clean',
     {
+      title: 'Clean Xcode Build',
       description: getDescription(XCODEBUILD_CLEAN_DOCS, XCODEBUILD_CLEAN_DOCS_MINI),
       inputSchema: {
         projectPath: z.string(),
         scheme: z.string(),
         configuration: z.string().optional(),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: false,
       },
       ...DEFER_LOADING_CONFIG,
     },
@@ -149,6 +197,7 @@ export function registerXcodebuildTools(server: McpServer): void {
   server.registerTool(
     'xcodebuild-test',
     {
+      title: 'Run Xcode Tests',
       description: getDescription(XCODEBUILD_TEST_DOCS, XCODEBUILD_TEST_DOCS_MINI),
       inputSchema: {
         projectPath: z.string(),
@@ -161,6 +210,22 @@ export function registerXcodebuildTools(server: McpServer): void {
         onlyTesting: z.array(z.string()).optional(),
         skipTesting: z.array(z.string()).optional(),
         testWithoutBuilding: z.boolean().default(false),
+      },
+      outputSchema: {
+        testId: z.string().describe('Cache id for full test log (xcodebuild-get-details)'),
+        success: z.boolean(),
+        totalTests: z.number(),
+        passed: z.number(),
+        failed: z.number(),
+        skipped: z.number(),
+        durationMs: z.number().optional(),
+        scheme: z.string(),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false,
       },
       ...DEFER_LOADING_CONFIG,
     },
@@ -182,6 +247,7 @@ export function registerXcodebuildTools(server: McpServer): void {
   server.registerTool(
     'xcodebuild-get-details',
     {
+      title: 'Get Build/Test Details',
       description: getDescription(XCODEBUILD_GET_DETAILS_DOCS, XCODEBUILD_GET_DETAILS_DOCS_MINI),
       inputSchema: {
         buildId: z.string(),
@@ -195,12 +261,120 @@ export function registerXcodebuildTools(server: McpServer): void {
         ]),
         maxLines: z.number().default(100),
       },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
       ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
         await validateXcodeInstallation();
         return await xcodebuildGetDetailsTool(args);
+      } catch (error) {
+        if (error instanceof McpError) throw error;
+        throw new McpError(
+          ErrorCode.InternalError,
+          `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+  );
+
+  // xcodebuild-showsdks
+  server.registerTool(
+    'xcodebuild-showsdks',
+    {
+      title: 'List Available SDKs',
+      description: getDescription(XCODEBUILD_SHOWSDKS_DOCS, XCODEBUILD_SHOWSDKS_DOCS),
+      inputSchema: {
+        outputFormat: z.enum(['json', 'text']).default('json'),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+      ...DEFER_LOADING_CONFIG,
+    },
+    async args => {
+      try {
+        await validateXcodeInstallation();
+        return await xcodebuildShowSDKsTool(args);
+      } catch (error) {
+        if (error instanceof McpError) throw error;
+        throw new McpError(
+          ErrorCode.InternalError,
+          `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+  );
+
+  // xcodebuild-inspect-scheme
+  server.registerTool(
+    'xcodebuild-inspect-scheme',
+    {
+      description: getDescription(
+        XCODEBUILD_INSPECT_SCHEME_DOCS,
+        XCODEBUILD_INSPECT_SCHEME_DOCS_MINI
+      ),
+      title: 'Inspect Xcode Scheme',
+      inputSchema: {
+        projectPath: z.string(),
+        scheme: z.string(),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+      ...DEFER_LOADING_CONFIG,
+    },
+    async args => {
+      try {
+        await validateXcodeInstallation();
+        return await inspectSchemeTool(args);
+      } catch (error) {
+        if (error instanceof McpError) throw error;
+        throw new McpError(
+          ErrorCode.InternalError,
+          `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+  );
+
+  // xcodebuild-validate-capabilities
+  server.registerTool(
+    'xcodebuild-validate-capabilities',
+    {
+      description: getDescription(
+        XCODEBUILD_VALIDATE_CAPABILITIES_DOCS,
+        XCODEBUILD_VALIDATE_CAPABILITIES_DOCS_MINI
+      ),
+      title: 'Validate App Capabilities',
+      inputSchema: {
+        projectPath: z.string(),
+        scheme: z.string(),
+        udid: z.string().optional(),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+      ...DEFER_LOADING_CONFIG,
+    },
+    async args => {
+      try {
+        await validateXcodeInstallation();
+        return await validateCapabilitiesTool(args);
       } catch (error) {
         if (error instanceof McpError) throw error;
         throw new McpError(

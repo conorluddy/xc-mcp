@@ -29,6 +29,13 @@ jest.mock('../../../src/utils/response-cache.js', () => ({
     passed: true,
     resultSummary: ['Test Suite passed'],
   })),
+  responseResourceLink: jest.fn((cacheId: string, tool: string, description: string) => ({
+    type: 'resource_link',
+    uri: `xcmcp://response/${cacheId}`,
+    name: `${tool}-output`,
+    description,
+    mimeType: 'text/plain',
+  })),
 }));
 
 jest.mock('../../../src/state/project-cache.js', () => ({
@@ -93,11 +100,21 @@ Test Case '-[MyAppTests testExample]' passed (0.001 seconds)`,
     expect(mockValidateScheme).toHaveBeenCalledWith('MyApp');
     expect(mockExecuteCommand).toHaveBeenCalled();
 
-    expect(result.content).toHaveLength(1);
-    expect(result.content[0].type).toBe('text');
+    expect(result.content).toHaveLength(2);
+    expect((result.content[0] as any).type).toBe('text');
+    expect((result.content[1] as any).type).toBe('resource_link');
+    expect((result.content[1] as any).uri).toBe('xcmcp://response/test-cache-id-123');
     expect(result.isError).toBe(false);
 
-    const response = JSON.parse(result.content[0].text);
+    // Structured output (v4 outputSchema)
+    const structured = (result as any).structuredContent;
+    expect(structured).toBeDefined();
+    expect(structured.testId).toBe('test-cache-id-123');
+    expect(structured.success).toBe(true);
+    expect(typeof structured.totalTests).toBe('number');
+    expect(typeof structured.passed).toBe('number');
+
+    const response = JSON.parse((result.content[0] as any).text);
     expect(response.testId).toBe('test-cache-id-123');
     expect(response.success).toBe(true);
     expect(response.summary.totalTests).toBeGreaterThan(0);
@@ -138,7 +155,7 @@ Test Case '-[MyAppTests testAnotherFailure]' failed (0.003 seconds)`,
 
     expect(result.isError).toBe(true);
 
-    const response = JSON.parse(result.content[0].text);
+    const response = JSON.parse((result.content[0] as any).text);
     expect(response.success).toBe(false); // Test failed
     expect(response.summary.failed).toBeGreaterThan(0);
   });
@@ -269,7 +286,7 @@ Test Case '-[MyAppTests testAnotherFailure]' failed (0.003 seconds)`,
 
     const result = await xcodebuildTestTool(args);
 
-    const response = JSON.parse(result.content[0].text);
+    const response = JSON.parse((result.content[0] as any).text);
     expect(response.cacheMetadata.hadCachedPreferences).toBe(true);
   });
 

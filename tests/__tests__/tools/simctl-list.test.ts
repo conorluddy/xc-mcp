@@ -16,6 +16,13 @@ jest.mock('../../../src/utils/response-cache.js', () => ({
   },
   extractSimulatorSummary: jest.fn(),
   createProgressiveSimulatorResponse: jest.fn(),
+  responseResourceLink: jest.fn((cacheId: string, tool: string, description: string) => ({
+    type: 'resource_link',
+    uri: `xcmcp://response/${cacheId}`,
+    name: `${tool}-output`,
+    description,
+    mimeType: 'text/plain',
+  })),
 }));
 
 const mockSimulatorCache = simulatorCache as jest.Mocked<typeof simulatorCache>;
@@ -112,8 +119,10 @@ describe('simctlListTool', () => {
       const result = await simctlListTool({});
 
       expect(result).toHaveProperty('content');
-      expect(result.content).toHaveLength(1);
-      expect(result.content[0].type).toBe('text');
+      expect(result.content).toHaveLength(2);
+      expect((result.content[0] as any).type).toBe('text');
+      expect((result.content[1] as any).type).toBe('resource_link');
+      expect((result.content[1] as any).uri).toBe('xcmcp://response/test-cache-id');
       expect(mockSimulatorCache.getSimulatorList).toHaveBeenCalledTimes(1);
       expect(extractSimulatorSummary).toHaveBeenCalledWith(mockSimulatorList);
     });
@@ -135,18 +144,18 @@ describe('simctlListTool', () => {
     it('should return full output when concise=false', async () => {
       const result = await simctlListTool({ concise: false, outputFormat: 'json' });
 
-      expect(result.content[0].text).toContain('"devices"');
-      expect(result.content[0].text).toContain('"runtimes"');
+      expect((result.content[0] as any).text).toContain('"devices"');
+      expect((result.content[0] as any).text).toContain('"runtimes"');
     });
 
     it('should handle different output formats', async () => {
       // JSON format
       const jsonResult = await simctlListTool({ outputFormat: 'json', concise: false });
-      expect(jsonResult.content[0].text).toMatch(/^\{/); // Starts with JSON
+      expect((jsonResult.content[0] as any).text).toMatch(/^\{/); // Starts with JSON
 
       // Text format
       const textResult = await simctlListTool({ outputFormat: 'text', concise: false });
-      expect(textResult.content[0].text).toContain('Simulator List (cached at');
+      expect((textResult.content[0] as any).text).toContain('Simulator List (cached at');
     });
   });
 
@@ -212,7 +221,7 @@ describe('simctlListTool', () => {
 
     it('should return cacheId in progressive response', async () => {
       const result = await simctlListTool({ concise: true });
-      const responseData = JSON.parse(result.content[0].text);
+      const responseData = JSON.parse((result.content[0] as any).text);
 
       expect(responseData).toHaveProperty('cacheId', 'test-cache-id');
       expect(responseData).toHaveProperty('summary');
@@ -237,7 +246,7 @@ describe('simctlListTool', () => {
       });
 
       expect(result).toBeDefined();
-      expect(result.content).toHaveLength(1);
+      expect(result.content).toHaveLength(2);
     });
   });
 
@@ -279,15 +288,15 @@ describe('simctlListTool', () => {
       expect(Array.isArray(result.content)).toBe(true);
       expect(result.content[0]).toHaveProperty('type', 'text');
       expect(result.content[0]).toHaveProperty('text');
-      expect(typeof result.content[0].text).toBe('string');
+      expect(typeof (result.content[0] as any).text).toBe('string');
     });
 
     it('should ensure text is always string type', async () => {
       const result = await simctlListTool({ concise: false, outputFormat: 'json' });
-      expect(typeof result.content[0].text).toBe('string');
+      expect(typeof (result.content[0] as any).text).toBe('string');
 
       const textResult = await simctlListTool({ concise: false, outputFormat: 'text' });
-      expect(typeof textResult.content[0].text).toBe('string');
+      expect(typeof (textResult.content[0] as any).text).toBe('string');
     });
   });
 
@@ -300,7 +309,7 @@ describe('simctlListTool', () => {
     it('should use cached simulator list data', async () => {
       const result = await simctlListTool({ concise: false });
 
-      const responseData = JSON.parse(result.content[0].text);
+      const responseData = JSON.parse((result.content[0] as any).text);
       expect(responseData).toHaveProperty('devices');
       expect(responseData).toHaveProperty('runtimes');
     });
@@ -431,7 +440,7 @@ describe('simctlListTool', () => {
       mockSimulatorCache.getSimulatorList.mockResolvedValue(largeSimulatorList as any);
 
       const result = await simctlListTool({ concise: false, outputFormat: 'json' });
-      const responseData = JSON.parse(result.content[0].text);
+      const responseData = JSON.parse((result.content[0] as any).text);
 
       // Should have metadata
       expect(responseData).toHaveProperty('metadata');
@@ -489,7 +498,7 @@ describe('simctlListTool', () => {
 
       // Test max=2
       const result = await simctlListTool({ concise: false, outputFormat: 'json', max: 2 });
-      const responseData = JSON.parse(result.content[0].text);
+      const responseData = JSON.parse((result.content[0] as any).text);
 
       expect(responseData.metadata.limitApplied).toBe(2);
       expect(responseData.metadata.devicesReturned).toBe(2);
@@ -536,7 +545,7 @@ describe('simctlListTool', () => {
       mockSimulatorCache.getSimulatorList.mockResolvedValue(sortableList as any);
 
       const result = await simctlListTool({ concise: false, outputFormat: 'json', max: 3 });
-      const responseData = JSON.parse(result.content[0].text);
+      const responseData = JSON.parse((result.content[0] as any).text);
 
       const devices = Object.values(responseData.devices).flat() as any[];
       expect(devices[0].name).toBe('New Device');
@@ -576,7 +585,7 @@ describe('simctlListTool', () => {
       mockSimulatorCache.getSimulatorList.mockResolvedValue(mixedList as any);
 
       const result = await simctlListTool({ concise: false, outputFormat: 'json', max: 2 });
-      const responseData = JSON.parse(result.content[0].text);
+      const responseData = JSON.parse((result.content[0] as any).text);
 
       const devices = Object.values(responseData.devices).flat() as any[];
       // Device with lastUsed should come first
@@ -586,7 +595,7 @@ describe('simctlListTool', () => {
 
     it('should include metadata about limiting', async () => {
       const result = await simctlListTool({ concise: false, outputFormat: 'json', max: 10 });
-      const responseData = JSON.parse(result.content[0].text);
+      const responseData = JSON.parse((result.content[0] as any).text);
 
       expect(responseData.metadata).toEqual({
         totalDevicesInCache: 3,
@@ -606,7 +615,7 @@ describe('simctlListTool', () => {
     it('should return all devices when max >= total devices', async () => {
       // mockSimulatorList has 3 devices total
       const result = await simctlListTool({ concise: false, outputFormat: 'json', max: 100 });
-      const responseData = JSON.parse(result.content[0].text);
+      const responseData = JSON.parse((result.content[0] as any).text);
 
       expect(responseData.metadata.devicesReturned).toBe(3);
       expect(responseData.metadata.limitApplied).toBe(100);

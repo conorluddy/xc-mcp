@@ -75,7 +75,7 @@ describe('idb-ui-describe', () => {
         y: 0,
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
       expect(response.success).toBe(true);
     });
   });
@@ -94,7 +94,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.success).toBe(true);
       expect(response.summary.totalElements).toBe(3);
@@ -115,7 +115,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.summary.dataQuality).toBe('rich');
       expect(response.summary.tappableElements).toBe(4);
@@ -134,7 +134,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.summary.dataQuality).toBe('rich');
       expect(response.summary.textFields).toBe(1);
@@ -153,7 +153,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.summary.dataQuality).toBe('minimal');
     });
@@ -171,7 +171,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.summary.dataQuality).toBe('minimal');
       expect(response.summary.tappableElements).toBe(0);
@@ -190,7 +190,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.summary.dataQuality).toBe('moderate');
       expect(response.summary.tappableElements).toBe(2);
@@ -209,7 +209,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.interactiveElementsPreview[0].centerX).toBe(150); // 50 + 200/2
       expect(response.interactiveElementsPreview[0].centerY).toBe(140); // 100 + 80/2
@@ -244,7 +244,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.success).toBe(true);
       expect(response.summary.totalElements).toBe(2);
@@ -270,7 +270,7 @@ describe('idb-ui-describe', () => {
         purposeDescription: 'Find buttons',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(mockResponseCache.store).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -309,7 +309,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.summary.tappableElements).toBe(30);
       expect(response.interactiveElementsPreview).toHaveLength(20);
@@ -328,7 +328,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.summary.totalElements).toBe(2);
     });
@@ -346,7 +346,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       // Should parse 2 valid lines and skip malformed
       expect(response.summary.totalElements).toBe(2);
@@ -365,7 +365,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.summary.elementTypes).toEqual({
         Button: 2,
@@ -386,7 +386,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.summary.tappableElements).toBe(1);
     });
@@ -402,7 +402,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.success).toBe(false);
       expect(response.error).toContain('IDB connection failed');
@@ -421,7 +421,7 @@ describe('idb-ui-describe', () => {
         purposeDescription: 'Find login button',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.screenContext).toBe('LoginScreen');
       expect(response.purposeDescription).toBe('Find login button');
@@ -457,7 +457,7 @@ describe('idb-ui-describe', () => {
         y: 225,
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.success).toBe(true);
       expect(response.coordinates).toEqual({ x: 175, y: 225 });
@@ -487,7 +487,7 @@ describe('idb-ui-describe', () => {
         y: 120,
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.element.type).toBe('TextField');
       expect(response.element.label).toBe('Email');
@@ -519,7 +519,7 @@ describe('idb-ui-describe', () => {
         y: 400,
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.element.type).toBe('Button');
       expect(response.element.label).toBe('Submit');
@@ -539,7 +539,7 @@ describe('idb-ui-describe', () => {
         y: 200,
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.element.enabled).toBe(false);
       expect(response.guidance.join('\n')).toContain('Element not enabled');
@@ -558,7 +558,7 @@ describe('idb-ui-describe', () => {
         y: 100,
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.guidance.join('\n')).toContain('Type text');
       expect(response.guidance.join('\n')).toContain('idb-ui-input');
@@ -577,7 +577,7 @@ describe('idb-ui-describe', () => {
         y: 500,
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.success).toBe(false);
       expect(response.error).toContain('No element found');
@@ -652,7 +652,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.summary.tappableElements).toBe(1);
     });
@@ -670,7 +670,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.summary.tappableElements).toBe(1);
     });
@@ -688,7 +688,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.summary.textFields).toBe(1);
     });
@@ -706,7 +706,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response).toHaveProperty('duration');
       expect(typeof response.duration).toBe('number');
@@ -723,7 +723,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
       });
 
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.udid).toBe('test-udid-123');
       expect(response.targetName).toBe('iPhone 16 Pro');
@@ -745,7 +745,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
         filterLevel: 'strict',
       });
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.summary.totalElements).toBe(3);
       expect(response.summary.tappableElements).toBe(0); // Strict misses iOS role_description
@@ -762,7 +762,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
         // filterLevel: 'moderate' (default)
       });
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.summary.totalElements).toBe(3);
       expect(response.summary.tappableElements).toBe(1); // Finds button via role_description
@@ -780,7 +780,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
         filterLevel: 'permissive',
       });
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.summary.totalElements).toBe(3);
       expect(response.summary.tappableElements).toBe(3); // Finds all 3 elements with AXLabel
@@ -797,7 +797,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
         filterLevel: 'none',
       });
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.summary.totalElements).toBe(3);
       expect(response.summary.tappableElements).toBe(3); // Returns everything
@@ -817,7 +817,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
         filterLevel: 'moderate',
       });
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.guidance.some((g: string) => g.includes('Filter level: moderate'))).toBe(
         true
@@ -835,7 +835,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
         filterLevel: 'strict',
       });
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(
         response.guidance.some(
@@ -856,7 +856,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
         filterLevel: 'moderate',
       });
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(
         response.guidance.some((g: string) => (g && g.includes('permissive')) || g.includes('none'))
@@ -878,7 +878,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
         filterLevel: 'moderate',
       });
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.summary.tappableElements).toBe(1);
       expect(response.interactiveElementsPreview[0].role).toBe('AXButton');
@@ -897,7 +897,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
         filterLevel: 'moderate',
       });
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.summary.tappableElements).toBe(1);
       expect(response.interactiveElementsPreview[0].role_description).toBe('button');
@@ -915,7 +915,7 @@ describe('idb-ui-describe', () => {
       const result = await idbUiDescribeTool({
         operation: 'all',
       });
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.interactiveElementsPreview[0].label).toBe('Click Me');
     });
@@ -932,7 +932,7 @@ describe('idb-ui-describe', () => {
       const result = await idbUiDescribeTool({
         operation: 'all',
       });
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.interactiveElementsPreview[0].x).toBe(25);
       expect(response.interactiveElementsPreview[0].y).toBe(50);
@@ -953,7 +953,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
         filterLevel: 'moderate',
       });
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.summary.totalElements).toBe(2);
       expect(response.summary.tappableElements).toBe(2);
@@ -974,7 +974,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
         filterLevel: 'moderate',
       });
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.summary.tappableElements).toBe(1);
       expect(response.interactiveElementsPreview[0].role_description).toBe('link');
@@ -993,7 +993,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
         filterLevel: 'moderate',
       });
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.summary.tappableElements).toBe(1);
       expect(response.interactiveElementsPreview[0].role).toBe('AXTab');
@@ -1012,7 +1012,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
         filterLevel: 'moderate',
       });
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.summary.tappableElements).toBe(0); // Disabled elements not tappable
     });
@@ -1034,7 +1034,7 @@ describe('idb-ui-describe', () => {
         filterLevel: 'strict',
         screenContext: 'Grapla Explore View',
       });
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       // This demonstrates the bug: strict filter misses all iOS buttons
       expect(response.summary.totalElements).toBe(5);
@@ -1054,7 +1054,7 @@ describe('idb-ui-describe', () => {
         // filterLevel: 'moderate' (default)
         screenContext: 'Grapla Explore View',
       });
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       // This proves the fix: moderate filter detects all iOS buttons
       expect(response.summary.totalElements).toBe(5);
@@ -1077,7 +1077,7 @@ describe('idb-ui-describe', () => {
         filterLevel: 'moderate',
         screenContext: 'Grapla Explore View',
       });
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       expect(response.summary.tappableElements).toBe(5);
       expect(response.summary.dataQuality).toBe('rich');
@@ -1097,7 +1097,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
         screenContext: 'Grapla Explore View',
       });
-      const response = JSON.parse(result.content[0].text);
+      const response = JSON.parse((result.content[0] as any).text);
 
       // Verify Positions button has correct coordinates
       const positionsButton = response.interactiveElementsPreview[0];
@@ -1124,7 +1124,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
         filterLevel: 'strict',
       });
-      const strictResponse = JSON.parse(strictResult.content[0].text);
+      const strictResponse = JSON.parse((strictResult.content[0] as any).text);
 
       expect(strictResponse.summary.tappableElements).toBe(0);
 
@@ -1139,7 +1139,7 @@ describe('idb-ui-describe', () => {
         operation: 'all',
         filterLevel: 'moderate',
       });
-      const moderateResponse = JSON.parse(moderateResult.content[0].text);
+      const moderateResponse = JSON.parse((moderateResult.content[0] as any).text);
 
       expect(moderateResponse.summary.tappableElements).toBe(1);
       expect(moderateResponse.summary.dataQuality).toBe('minimal'); // 1 element is still minimal (need 2-3 for moderate, >3 for rich)
@@ -1161,7 +1161,7 @@ describe('idb-ui-describe', () => {
           operation: 'all',
           filterLevel: level as any,
         });
-        const response = JSON.parse(result.content[0].text);
+        const response = JSON.parse((result.content[0] as any).text);
         results[level] = response.summary.tappableElements;
       }
 

@@ -1,7 +1,7 @@
 import { validateProjectPath, validateScheme } from '../../utils/validation.js';
 import { executeCommand, buildXcodebuildCommand } from '../../utils/command.js';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
-import { responseCache } from '../../utils/response-cache.js';
+import { responseCache, responseResourceLink } from '../../utils/response-cache.js';
 import { projectCache, type BuildConfig } from '../../state/project-cache.js';
 import { simulatorCache } from '../../state/simulator-cache.js';
 import { createConfigManager } from '../../utils/config.js';
@@ -581,7 +581,22 @@ function formatTestResponse(
         type: 'text' as const,
         text: responseText,
       },
+      responseResourceLink(
+        cacheId,
+        'xcodebuild-test',
+        `Full test log for scheme "${config.scheme}" (${testsPassed ? 'passed' : 'failed'})`
+      ),
     ],
+    structuredContent: {
+      testId: cacheId,
+      success: testsPassed,
+      totalTests: metrics.totalTests,
+      passed: metrics.passedTests,
+      failed: metrics.failedTests,
+      skipped: metrics.skippedTests,
+      durationMs: result.duration,
+      scheme: config.scheme,
+    },
     isError: !testsPassed,
   };
 }

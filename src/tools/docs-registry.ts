@@ -53,13 +53,48 @@ import { CACHE_LIST_CACHED_RESPONSES_DOCS } from './cache/list-cached.js';
 // Workflow documentation (v3.0.0)
 import { WORKFLOW_TAP_ELEMENT_DOCS } from './workflows/tap-element.js';
 import { WORKFLOW_FRESH_INSTALL_DOCS } from './workflows/fresh-install.js';
-
-// Consolidated router documentation (v2.0+)
-import { SIMCTL_DEVICE_DOCS } from './simctl/device/index.js';
-import { SIMCTL_APP_DOCS } from './simctl/app/index.js';
-import { IDB_APP_DOCS } from './idb/app/index.js';
-import { CACHE_DOCS } from './cache/index.js';
-import { PERSISTENCE_DOCS } from './persistence/index.js';
+import { BUILD_AND_RUN_DOCS } from './workflows/build-and-run.js';
+import { XCODEBUILD_INSPECT_SCHEME_DOCS } from './xcodebuild/inspect-scheme.js';
+import { XCODEBUILD_VALIDATE_CAPABILITIES_DOCS } from './xcodebuild/validate-capabilities.js';
+// Discrete tool docs (v4 — routers dissolved into discrete tools)
+import { SIMCTL_BOOT_DOCS } from './simctl/boot.js';
+import { SIMCTL_SHUTDOWN_DOCS } from './simctl/shutdown.js';
+import { SIMCTL_CREATE_DOCS } from './simctl/create.js';
+import { SIMCTL_DELETE_DOCS } from './simctl/delete.js';
+import { SIMCTL_ERASE_DOCS } from './simctl/erase.js';
+import { SIMCTL_CLONE_DOCS } from './simctl/clone.js';
+import { SIMCTL_RENAME_DOCS } from './simctl/rename.js';
+import { SIMCTL_INSTALL_DOCS } from './simctl/install.js';
+import { SIMCTL_UNINSTALL_DOCS } from './simctl/uninstall.js';
+import { SIMCTL_LAUNCH_DOCS } from './simctl/launch.js';
+import { SIMCTL_TERMINATE_DOCS } from './simctl/terminate.js';
+import { IDB_INSTALL_DOCS } from './idb/install.js';
+import { IDB_UNINSTALL_DOCS } from './idb/uninstall.js';
+import { IDB_LAUNCH_DOCS } from './idb/launch.js';
+import { IDB_TERMINATE_DOCS } from './idb/terminate.js';
+import { CACHE_GET_STATS_DOCS } from './cache/get-stats.js';
+import { CACHE_GET_CONFIG_DOCS } from './cache/get-config.js';
+import { CACHE_SET_CONFIG_DOCS } from './cache/set-config.js';
+import { CACHE_CLEAR_DOCS } from './cache/clear.js';
+import { PERSISTENCE_ENABLE_DOCS } from './persistence/enable.js';
+import { PERSISTENCE_DISABLE_DOCS } from './persistence/disable.js';
+import { PERSISTENCE_STATUS_DOCS } from './persistence/status.js';
+// Phase 2 — feature parity tools
+import { SIMCTL_APPEARANCE_DOCS } from './simctl/appearance.js';
+import { SIMCTL_LOCATION_DOCS } from './simctl/location.js';
+import { SIMCTL_CONTAINER_DOCS } from './simctl/container.js';
+import { ACCESSIBILITY_AUDIT_DOCS } from './idb/accessibility-audit.js';
+import { LOCALIZATION_AUDIT_DOCS } from './analysis/localization-audit.js';
+import { XCODE_MODEL_INSPECT_DOCS } from './analysis/model-inspect.js';
+import { VISUAL_DIFF_DOCS } from './io/visual-diff.js';
+import {
+  HANG_START_DOCS,
+  HANG_STOP_DOCS,
+  HANG_GET_DETAILS_DOCS,
+  HANG_LIST_DOCS,
+} from './diagnostics/hang/tools.js';
+import { TEST_RECORD_STEP_DOCS } from './workflows/test-record-step.js';
+import { TEST_RECORD_REPORT_DOCS } from './workflows/test-record-report.js';
 
 // ============================================================================
 // RTFM AND SCREENSHOT-SAVE TOOL DOCS
@@ -413,6 +448,8 @@ export const TOOL_CATEGORIES: Record<string, string[]> = {
     'xcodebuild-clean',
     'xcodebuild-test',
     'xcodebuild-get-details',
+    'xcodebuild-inspect-scheme',
+    'xcodebuild-validate-capabilities',
   ],
   simulator: [
     'simctl-list',
@@ -431,15 +468,19 @@ export const TOOL_CATEGORIES: Record<string, string[]> = {
     'simctl-install',
     'simctl-uninstall',
     'simctl-get-app-container',
+    'simctl-container',
     'simctl-launch',
     'simctl-terminate',
     'simctl-openurl',
   ],
+  devicestate: ['simctl-appearance', 'simctl-location'],
+  analysis: ['localization-audit', 'xcode-model-inspect', 'visual-diff'],
   idb: [
     // ============================================================================
     // DISCOVERY TOOLS (TRY THESE FIRST) - Accessibility-first automation
     // ============================================================================
     'accessibility-quality-check',
+    'accessibility-audit',
     'idb-ui-describe',
     'idb-ui-find-element',
     // ============================================================================
@@ -452,7 +493,6 @@ export const TOOL_CATEGORIES: Record<string, string[]> = {
     // MANAGEMENT TOOLS - App and target management
     // ============================================================================
     'idb-targets',
-    'idb-connect',
     'idb-list-apps',
     'idb-install',
     'idb-launch',
@@ -460,7 +500,13 @@ export const TOOL_CATEGORIES: Record<string, string[]> = {
     'idb-uninstall',
   ],
   io: ['simctl-io', 'simctl-addmedia', 'screenshot'],
-  testing: ['simctl-privacy', 'simctl-push', 'simctl-pbcopy', 'simctl-status-bar'],
+  testing: [
+    'simctl-privacy',
+    'simctl-push',
+    'simctl-pbcopy',
+    'simctl-status-bar',
+    'simctl-stream-logs',
+  ],
   cache: [
     'list-cached-responses',
     'cache-get-stats',
@@ -475,7 +521,14 @@ export const TOOL_CATEGORIES: Record<string, string[]> = {
     'rtfm',
     'screenshot-save',
   ],
-  workflow: ['workflow-tap-element', 'workflow-fresh-install'],
+  workflow: [
+    'workflow-tap-element',
+    'workflow-fresh-install',
+    'workflow-build-and-run',
+    'test-record-step',
+    'test-record-report',
+  ],
+  diagnostics: ['hang-start', 'hang-stop', 'hang-get-details', 'hang-list'],
 };
 
 export const CATEGORY_DESCRIPTIONS: Record<string, { name: string; description: string }> = {
@@ -514,6 +567,19 @@ export const CATEGORY_DESCRIPTIONS: Record<string, { name: string; description: 
   workflow: {
     name: 'Workflow Orchestration',
     description: 'Multi-step automated workflows for common tasks (v3.0.0)',
+  },
+  devicestate: {
+    name: 'Device State & Environment',
+    description: 'Simulate appearance, Dynamic Type, locale/RTL, and GPS location',
+  },
+  analysis: {
+    name: 'Static Analysis & Diffing',
+    description:
+      'Audit localization catalogs, inspect Core Data/SwiftData models, diff screenshots',
+  },
+  diagnostics: {
+    name: 'Runtime Diagnostics',
+    description: 'Capture and cluster main-thread hangs (HangBuster)',
   },
 };
 
@@ -556,6 +622,8 @@ export const TOOL_DOCS: Record<string, string> = {
   'xcodebuild-version': XCODEBUILD_VERSION_DOCS,
   'xcodebuild-get-details': XCODEBUILD_GET_DETAILS_DOCS,
   'xcodebuild-test': XCODEBUILD_TEST_DOCS,
+  'xcodebuild-inspect-scheme': XCODEBUILD_INSPECT_SCHEME_DOCS,
+  'xcodebuild-validate-capabilities': XCODEBUILD_VALIDATE_CAPABILITIES_DOCS,
 
   // Simctl lifecycle tools (non-consolidated)
   'simctl-list': SIMCTL_LIST_DOCS,
@@ -576,6 +644,9 @@ export const TOOL_DOCS: Record<string, string> = {
   'simctl-status-bar': SIMCTL_STATUS_BAR_DOCS,
   screenshot: SIMCTL_SCREENSHOT_INLINE_DOCS,
   'simctl-stream-logs': SIMCTL_STREAM_LOGS_DOCS,
+  'simctl-appearance': SIMCTL_APPEARANCE_DOCS,
+  'simctl-location': SIMCTL_LOCATION_DOCS,
+  'simctl-container': SIMCTL_CONTAINER_DOCS,
 
   // IDB tools (non-consolidated)
   'idb-targets': IDB_TARGETS_DOCS,
@@ -585,17 +656,14 @@ export const TOOL_DOCS: Record<string, string> = {
   'idb-ui-describe': IDB_UI_DESCRIBE_DOCS,
   'idb-ui-find-element': IDB_UI_FIND_ELEMENT_DOCS,
   'accessibility-quality-check': ACCESSIBILITY_QUALITY_CHECK_DOCS,
+  'accessibility-audit': ACCESSIBILITY_AUDIT_DOCS,
   'idb-list-apps': IDB_LIST_APPS_DOCS,
+  'localization-audit': LOCALIZATION_AUDIT_DOCS,
+  'xcode-model-inspect': XCODE_MODEL_INSPECT_DOCS,
+  'visual-diff': VISUAL_DIFF_DOCS,
 
   // Cache tools (non-consolidated)
   'list-cached-responses': CACHE_LIST_CACHED_RESPONSES_DOCS,
-
-  // Consolidated router documentation (v2.0+)
-  'simctl-device': SIMCTL_DEVICE_DOCS,
-  'simctl-app': SIMCTL_APP_DOCS,
-  'idb-app': IDB_APP_DOCS,
-  cache: CACHE_DOCS,
-  persistence: PERSISTENCE_DOCS,
 
   // Documentation tool
   rtfm: RTFM_DOCS,
@@ -603,39 +671,46 @@ export const TOOL_DOCS: Record<string, string> = {
   // Workflow tools (v3.0.0)
   'workflow-tap-element': WORKFLOW_TAP_ELEMENT_DOCS,
   'workflow-fresh-install': WORKFLOW_FRESH_INSTALL_DOCS,
+  'workflow-build-and-run': BUILD_AND_RUN_DOCS,
+  'test-record-step': TEST_RECORD_STEP_DOCS,
+  'test-record-report': TEST_RECORD_REPORT_DOCS,
+  'hang-start': HANG_START_DOCS,
+  'hang-stop': HANG_STOP_DOCS,
+  'hang-get-details': HANG_GET_DETAILS_DOCS,
+  'hang-list': HANG_LIST_DOCS,
 
-  // Backwards compatibility aliases (v1.x tools → v2.0 consolidated tools)
-  // Simctl device consolidation
-  'simctl-boot': SIMCTL_DEVICE_DOCS,
-  'simctl-shutdown': SIMCTL_DEVICE_DOCS,
-  'simctl-create': SIMCTL_DEVICE_DOCS,
-  'simctl-delete': SIMCTL_DEVICE_DOCS,
-  'simctl-erase': SIMCTL_DEVICE_DOCS,
-  'simctl-clone': SIMCTL_DEVICE_DOCS,
-  'simctl-rename': SIMCTL_DEVICE_DOCS,
+  // Discrete tools (v4 — dissolved from v2/v3 routers, each documents its own usage)
+  // Simctl device lifecycle
+  'simctl-boot': SIMCTL_BOOT_DOCS,
+  'simctl-shutdown': SIMCTL_SHUTDOWN_DOCS,
+  'simctl-create': SIMCTL_CREATE_DOCS,
+  'simctl-delete': SIMCTL_DELETE_DOCS,
+  'simctl-erase': SIMCTL_ERASE_DOCS,
+  'simctl-clone': SIMCTL_CLONE_DOCS,
+  'simctl-rename': SIMCTL_RENAME_DOCS,
 
-  // Simctl app consolidation
-  'simctl-install': SIMCTL_APP_DOCS,
-  'simctl-uninstall': SIMCTL_APP_DOCS,
-  'simctl-launch': SIMCTL_APP_DOCS,
-  'simctl-terminate': SIMCTL_APP_DOCS,
+  // Simctl app lifecycle
+  'simctl-install': SIMCTL_INSTALL_DOCS,
+  'simctl-uninstall': SIMCTL_UNINSTALL_DOCS,
+  'simctl-launch': SIMCTL_LAUNCH_DOCS,
+  'simctl-terminate': SIMCTL_TERMINATE_DOCS,
 
-  // IDB app consolidation
-  'idb-install': IDB_APP_DOCS,
-  'idb-uninstall': IDB_APP_DOCS,
-  'idb-launch': IDB_APP_DOCS,
-  'idb-terminate': IDB_APP_DOCS,
+  // IDB app lifecycle
+  'idb-install': IDB_INSTALL_DOCS,
+  'idb-uninstall': IDB_UNINSTALL_DOCS,
+  'idb-launch': IDB_LAUNCH_DOCS,
+  'idb-terminate': IDB_TERMINATE_DOCS,
 
-  // Cache consolidation
-  'cache-get-stats': CACHE_DOCS,
-  'cache-get-config': CACHE_DOCS,
-  'cache-set-config': CACHE_DOCS,
-  'cache-clear': CACHE_DOCS,
+  // Cache management
+  'cache-get-stats': CACHE_GET_STATS_DOCS,
+  'cache-get-config': CACHE_GET_CONFIG_DOCS,
+  'cache-set-config': CACHE_SET_CONFIG_DOCS,
+  'cache-clear': CACHE_CLEAR_DOCS,
 
-  // Persistence consolidation
-  'persistence-enable': PERSISTENCE_DOCS,
-  'persistence-disable': PERSISTENCE_DOCS,
-  'persistence-status': PERSISTENCE_DOCS,
+  // Persistence
+  'persistence-enable': PERSISTENCE_ENABLE_DOCS,
+  'persistence-disable': PERSISTENCE_DISABLE_DOCS,
+  'persistence-status': PERSISTENCE_STATUS_DOCS,
 
   // Tool aliases
   'screenshot-save': SCREENSHOT_SAVE_DOCS,

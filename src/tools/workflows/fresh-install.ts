@@ -72,7 +72,9 @@ export async function workflowFreshInstallTool(args: FreshInstallArgs) {
 
   try {
     // Dynamic imports to avoid circular dependencies
-    const { simctlDeviceTool } = await import('../simctl/device/index.js');
+    const { simctlShutdownTool } = await import('../simctl/shutdown.js');
+    const { simctlEraseTool } = await import('../simctl/erase.js');
+    const { simctlBootTool } = await import('../simctl/boot.js');
     const { simctlSuggestTool } = await import('../simctl/suggest.js');
     const { xcodebuildBuildTool } = await import('../xcodebuild/build.js');
     const { simctlInstallTool } = await import('../simctl/install.js');
@@ -123,8 +125,7 @@ export async function workflowFreshInstallTool(args: FreshInstallArgs) {
     console.error(`[workflow-fresh-install] Step 2/6: Shutting down ${targetName}...`);
 
     try {
-      const shutdownResult = await simctlDeviceTool({
-        operation: 'shutdown',
+      const shutdownResult = await simctlShutdownTool({
         deviceId: targetUdid,
       });
 
@@ -154,8 +155,7 @@ export async function workflowFreshInstallTool(args: FreshInstallArgs) {
       console.error(`[workflow-fresh-install] Step 3/6: Erasing simulator data...`);
 
       try {
-        const eraseResult = await simctlDeviceTool({
-          operation: 'erase',
+        const eraseResult = await simctlEraseTool({
           deviceId: targetUdid,
         });
 
@@ -186,8 +186,7 @@ export async function workflowFreshInstallTool(args: FreshInstallArgs) {
     console.error(`[workflow-fresh-install] Step 4/6: Booting ${targetName}...`);
 
     try {
-      const bootResult = await simctlDeviceTool({
-        operation: 'boot',
+      const bootResult = await simctlBootTool({
         deviceId: targetUdid,
         waitForBoot: true,
         openGui: true,
@@ -225,7 +224,11 @@ export async function workflowFreshInstallTool(args: FreshInstallArgs) {
         autoInstall: false, // We handle install manually
       });
 
-      const buildText = buildResult.content?.[0]?.text || JSON.stringify(buildResult);
+      const buildTextBlock = buildResult.content?.find(c => c.type === 'text');
+      const buildText =
+        buildTextBlock && 'text' in buildTextBlock
+          ? buildTextBlock.text
+          : JSON.stringify(buildResult);
       const buildData = typeof buildText === 'string' ? JSON.parse(buildText) : buildText;
 
       if (!buildData.success) {

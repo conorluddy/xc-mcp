@@ -6,45 +6,81 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 XC-MCP is a Model Context Protocol (MCP) server that provides intelligent access to Xcode command-line tools with advanced caching and progressive disclosure features. It wraps `xcodebuild`, `simctl`, and `idb` commands to solve token overflow issues while maintaining full functionality.
 
-### Token Efficiency Architecture (V3.0.0)
+### Architecture (V4.0.0)
 
-**30 tools with deferred loading consuming ~1k tokens at startup** (0.5% of 200k context window).
+**70 discrete tools, MCP-spec-modernized, with deferred loading (~1k tokens at startup).**
 
-**Token Evolution:**
-| Version | Tools | Tokens | Architecture |
-|---------|-------|--------|--------------|
-| Pre-RTFM (v1.2.1) | 51 | ~7,850 | Individual tools |
-| V1.3.2 (RTFM) | 51 | ~3,000 | Individual + RTFM |
-| V2.0.0 | 28 | ~18.7k | Routers + RTFM + Accessibility |
-| **V3.0.0 (Current)** | **30** | **~1k** | **Deferred loading + tool-search** |
+**Evolution:**
+| Version | Tools | Architecture |
+|---------|-------|--------------|
+| Pre-RTFM (v1.2.1) | 51 | Individual tools (~7,850 tokens) |
+| V1.3.2 (RTFM) | 51 | Individual + RTFM (~3,000 tokens) |
+| V2.0.0 | 28 | Operation-enum routers + accessibility-first |
+| V3.0.0 | 30 | Deferred loading + workflows (~1k startup) |
+| **V4.0.0 (Current)** | **70** | **Discrete tools + MCP spec (annotations / outputSchema / resources) + skill feature parity** |
 
-XC-MCP V3.0 implements **deferred tool loading with dynamic discovery** to minimize startup context overhead:
-- **Startup footprint**: Only `tool-search` and `rtfm` visible at initialization (~1k tokens)
-- **Dynamic tool discovery**: Agents use `tool-search` to discover relevant tools on-demand
-- **Auto-enabled tools**: Discovered tools automatically enabled and visible to agent
-- **Operation enum routers**: 6 consolidated routers with semantic operations (21 tools → 6 routers)
-- **Accessibility-first workflow**: 3 tools for semantic UI automation (50 tokens vs 170 for screenshots)
-- **Workflow tools**: 2 high-level orchestration tools for common patterns
-- **Token usage**: ~1k tokens at startup (0.5% of 200k context window)
+V4.0 modernizes the MCP layer and reaches feature parity with the `ios-simulator-skill`:
+- **SDK**: `@modelcontextprotocol/sdk@^1.29`, protocol `2025-06-18`. Zod v4.
+- **Routers dissolved → discrete tools**: the v2 operation-enum routers are gone. Annotations and `outputSchema` are per-tool, so each operation is now its own tool (deferred loading already covers the token cost). See the Migration Guide below.
+- **Tool annotations**: every tool declares `title` + `readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint` so clients can gate destructive ops (delete/erase/uninstall/clear).
+- **Structured output**: high-value tools (xcodebuild-build/-test, accessibility-audit, localization-audit, xcode-model-inspect, visual-diff) declare `outputSchema` and return validated `structuredContent`.
+- **Resources**: large cached output is exposed via the `resources` capability at `xcmcp://response/{cacheId}`; build/test/list/ui-describe emit `resource_link` blocks (cache IDs retained for back-compat).
+- **listChanged** capability declared for deferred/dynamic tool loading.
+- **Deferred loading** retained (`XC_MCP_DEFER_LOADING`); `rtfm` provides progressive docs; old router names still fuzzy-match in `rtfm`.
 
-**Tool Search Discovery Pattern:**
-1. Agent starts with only `tool-search` and `rtfm` visible (~1k tokens)
-2. Uses `tool-search` to discover relevant tools: `tool-search({ query: "build", category: "build" })`
-3. Discovered tools automatically enabled and visible in agent context
-4. Uses `rtfm({ categoryName: "build" })` for detailed documentation of category
-5. Gets additional docs for specific tools: `rtfm({ toolName: "xcodebuild-build" })`
-6. Executes tools with operation enums or direct parameters
-7. **Context budget fully preserved for actual work (199k+ tokens remaining)**
+**Tool Categories (V4.0):**
+- `build`: xcodebuild-version/-list/-build/-clean/-test/-get-details/-showsdks/-inspect-scheme/-validate-capabilities
+- `simulator`: simctl-list/-get-details/-health-check/-suggest + lifecycle: simctl-boot/-shutdown/-create/-delete/-erase/-clone/-rename
+- `app`: simctl-install/-uninstall/-launch/-terminate/-get-app-container/-container/-openurl
+- `idb`: idb-ui-describe/-find-element/-tap/-input/-gesture, accessibility-quality-check, accessibility-audit, idb-targets, idb-list-apps, idb-install/-uninstall/-launch/-terminate
+- `io`: simctl-io, screenshot
+- `devicestate`: simctl-appearance, simctl-location
+- `analysis`: localization-audit, xcode-model-inspect, visual-diff
+- `diagnostics`: hang-start/-stop/-get-details/-list (HangBuster)
+- `cache`: cache-get-stats/-get-config/-set-config/-clear
+- `workflow`: workflow-tap-element/-fresh-install/-build-and-run, test-record-step, test-record-report
+- `system`: rtfm, persistence-enable/-disable/-status, simctl-push/-addmedia/-pbcopy/-privacy/-status-bar/-stream-logs
 
-**Tool Categories (V3.0):**
-- `build`: Build & Test Operations (6 tools: xcodebuild-build, xcodebuild-test, xcodebuild-clean, xcodebuild-list, xcodebuild-version, xcodebuild-get-details)
-- `simulator`: Simulator Lifecycle & Discovery (3 tools: simctl-device router [7 ops], simctl-list, simctl-get-details, simctl-health-check)
-- `app`: App Management (2 routers: simctl-app [4 ops], idb-app [4 ops])
-- `idb`: UI Automation (8 tools: idb-ui-describe, idb-ui-tap, idb-ui-input, idb-ui-gesture, idb-ui-find-element, accessibility-quality-check, idb-targets [4 ops])
-- `io`: I/O & Media (2 tools: simctl-io, screenshot)
-- `cache`: Cache Management (2 routers: cache [4 ops], persistence [3 ops])
-- `workflow`: Workflow Orchestration (2 tools: workflow-tap-element, workflow-fresh-install)
-- `system`: System & Discovery (3 tools: tool-search, rtfm, simctl-openurl, simctl-get-app-container)
+### V4.0 Migration Guide (breaking)
+
+The v2/v3 operation-enum routers were removed. Call the discrete tool directly:
+
+```
+OLD (router)                                   NEW (discrete tool)
+─────────────────────────────────────────────────────────────────
+simctl-device({operation:"boot", ...})       → simctl-boot({...})
+simctl-device({operation:"shutdown", ...})   → simctl-shutdown({...})
+simctl-device({operation:"create", ...})     → simctl-create({...})
+simctl-device({operation:"delete", ...})     → simctl-delete({...})
+simctl-device({operation:"erase", ...})      → simctl-erase({...})
+simctl-device({operation:"clone", ...})      → simctl-clone({...})
+simctl-device({operation:"rename", ...})     → simctl-rename({...})
+simctl-app({operation:"install", ...})       → simctl-install({...})
+simctl-app({operation:"uninstall", ...})     → simctl-uninstall({...})
+simctl-app({operation:"launch", ...})        → simctl-launch({...})
+simctl-app({operation:"terminate", ...})     → simctl-terminate({...})
+idb-app({operation:"install", ...})          → idb-install({...})
+idb-app({operation:"uninstall", ...})        → idb-uninstall({...})
+idb-app({operation:"launch", ...})           → idb-launch({...})
+idb-app({operation:"terminate", ...})        → idb-terminate({...})
+cache({operation:"get-stats"})               → cache-get-stats({...})
+cache({operation:"get-config"})              → cache-get-config({...})
+cache({operation:"set-config", ...})         → cache-set-config({...})
+cache({operation:"clear", ...})              → cache-clear({...})
+persistence({operation:"enable", ...})       → persistence-enable({...})
+persistence({operation:"disable", ...})      → persistence-disable({...})
+persistence({operation:"status"})            → persistence-status({...})
+```
+
+Operation-specific parameters are unchanged; just drop the `operation` field and use the matching tool name. `rtfm({ toolName: "simctl-device" })` still fuzzy-suggests the discrete tools.
+
+**New in V4 (feature parity with ios-simulator-skill):**
+- `simctl-appearance` (theme/Dynamic Type/locale+RTL), `simctl-location` (GPS/city/GPX/waypoints)
+- `simctl-container` (app sandbox ls/cat/userdefaults/coredata-path)
+- enhanced `simctl-stream-logs` (severity filter + dedup + statistics)
+- `accessibility-audit` (WCAG-tier audit), `localization-audit` (.xcstrings), `xcode-model-inspect` (Core Data/SwiftData), `visual-diff` (PNG pixel diff)
+- HangBuster: `hang-start`/`hang-stop`/`hang-get-details`/`hang-list` (main-thread hang capture + clustering)
+- `test-record-step`/`test-record-report` (test recording + markdown report)
 
 ## Development Commands
 
