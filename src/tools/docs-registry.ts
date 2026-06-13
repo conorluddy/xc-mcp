@@ -96,13 +96,6 @@ import {
 import { TEST_RECORD_STEP_DOCS } from './workflows/test-record-step.js';
 import { TEST_RECORD_REPORT_DOCS } from './workflows/test-record-report.js';
 
-// Consolidated router documentation (v2.0+)
-import { SIMCTL_DEVICE_DOCS } from './simctl/device/index.js';
-import { SIMCTL_APP_DOCS } from './simctl/app/index.js';
-import { IDB_APP_DOCS } from './idb/app/index.js';
-import { CACHE_DOCS } from './cache/index.js';
-import { PERSISTENCE_DOCS } from './persistence/index.js';
-
 // ============================================================================
 // RTFM AND SCREENSHOT-SAVE TOOL DOCS
 // ============================================================================
@@ -671,13 +664,6 @@ export const TOOL_DOCS: Record<string, string> = {
 
   // Cache tools (non-consolidated)
   'list-cached-responses': CACHE_LIST_CACHED_RESPONSES_DOCS,
-
-  // Consolidated router documentation (v2.0+)
-  'simctl-device': SIMCTL_DEVICE_DOCS,
-  'simctl-app': SIMCTL_APP_DOCS,
-  'idb-app': IDB_APP_DOCS,
-  cache: CACHE_DOCS,
-  persistence: PERSISTENCE_DOCS,
 
   // Documentation tool
   rtfm: RTFM_DOCS,
