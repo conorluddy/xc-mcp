@@ -60,7 +60,7 @@ export function registerWorkflowTools(server: McpServer): void {
         eraseSimulator: z.boolean().default(false).describe('Wipe simulator data'),
         configuration: z.enum(['Debug', 'Release']).default('Debug'),
         launchArguments: z.array(z.string()).optional(),
-        environmentVariables: z.record(z.string()).optional(),
+        environmentVariables: z.record(z.string(), z.string()).optional(),
       },
       ...DEFER_LOADING_CONFIG,
     },

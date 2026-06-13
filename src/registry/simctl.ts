@@ -173,7 +173,7 @@ export function registerSimctlTools(server: McpServer): void {
         bundleId: z.string().optional(),
         appPath: z.string().optional(),
         arguments: z.array(z.string()).optional(),
-        environment: z.record(z.string()).optional(),
+        environment: z.record(z.string(), z.string()).optional(),
       },
       ...DEFER_LOADING_CONFIG,
     },

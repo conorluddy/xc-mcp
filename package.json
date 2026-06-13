@@ -47,8 +47,9 @@
     "package.json"
   ],
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.17.1",
-    "@types/node": "^24.1.0"
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@types/node": "^24.1.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
