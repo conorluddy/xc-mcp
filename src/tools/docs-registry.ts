@@ -79,6 +79,10 @@ import { CACHE_CLEAR_DOCS } from './cache/clear.js';
 import { PERSISTENCE_ENABLE_DOCS } from './persistence/enable.js';
 import { PERSISTENCE_DISABLE_DOCS } from './persistence/disable.js';
 import { PERSISTENCE_STATUS_DOCS } from './persistence/status.js';
+// Phase 2 — feature parity tools
+import { SIMCTL_APPEARANCE_DOCS } from './simctl/appearance.js';
+import { SIMCTL_LOCATION_DOCS } from './simctl/location.js';
+import { SIMCTL_CONTAINER_DOCS } from './simctl/container.js';
 
 // Consolidated router documentation (v2.0+)
 import { SIMCTL_DEVICE_DOCS } from './simctl/device/index.js';
@@ -459,10 +463,12 @@ export const TOOL_CATEGORIES: Record<string, string[]> = {
     'simctl-install',
     'simctl-uninstall',
     'simctl-get-app-container',
+    'simctl-container',
     'simctl-launch',
     'simctl-terminate',
     'simctl-openurl',
   ],
+  devicestate: ['simctl-appearance', 'simctl-location'],
   idb: [
     // ============================================================================
     // DISCOVERY TOOLS (TRY THESE FIRST) - Accessibility-first automation
@@ -548,6 +554,10 @@ export const CATEGORY_DESCRIPTIONS: Record<string, { name: string; description: 
     name: 'Workflow Orchestration',
     description: 'Multi-step automated workflows for common tasks (v3.0.0)',
   },
+  devicestate: {
+    name: 'Device State & Environment',
+    description: 'Simulate appearance, Dynamic Type, locale/RTL, and GPS location',
+  },
 };
 
 /**
@@ -611,6 +621,9 @@ export const TOOL_DOCS: Record<string, string> = {
   'simctl-status-bar': SIMCTL_STATUS_BAR_DOCS,
   screenshot: SIMCTL_SCREENSHOT_INLINE_DOCS,
   'simctl-stream-logs': SIMCTL_STREAM_LOGS_DOCS,
+  'simctl-appearance': SIMCTL_APPEARANCE_DOCS,
+  'simctl-location': SIMCTL_LOCATION_DOCS,
+  'simctl-container': SIMCTL_CONTAINER_DOCS,
 
   // IDB tools (non-consolidated)
   'idb-targets': IDB_TARGETS_DOCS,

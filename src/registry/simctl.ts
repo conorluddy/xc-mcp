@@ -48,6 +48,11 @@ import { simctlPrivacyTool, SIMCTL_PRIVACY_DOCS } from '../tools/simctl/privacy.
 import { simctlStatusBarTool, SIMCTL_STATUS_BAR_DOCS } from '../tools/simctl/status-bar.js';
 import { streamLogsTool, SIMCTL_STREAM_LOGS_DOCS } from '../tools/simctl/stream-logs.js';
 import { simctlSuggestTool, SIMCTL_SUGGEST_DOCS } from '../tools/simctl/suggest.js';
+import {
+  simctlContainerTool,
+  SIMCTL_CONTAINER_DOCS,
+  SIMCTL_CONTAINER_DOCS_MINI,
+} from '../tools/simctl/container.js';
 
 const ENABLE_DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
 const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
@@ -892,6 +897,41 @@ export function registerSimctlTools(server: McpServer): void {
       try {
         await validateXcodeInstallation();
         return await simctlSuggestTool(args);
+      } catch (error) {
+        if (error instanceof McpError) throw error;
+        throw new McpError(
+          ErrorCode.InternalError,
+          `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+  );
+
+  // simctl-container
+  server.registerTool(
+    'simctl-container',
+    {
+      title: 'Inspect App Sandbox Container',
+      description: getDescription(SIMCTL_CONTAINER_DOCS, SIMCTL_CONTAINER_DOCS_MINI),
+      inputSchema: {
+        udid: z.string().optional(),
+        bundleId: z.string(),
+        mode: z.enum(['ls', 'cat', 'userdefaults', 'coredata-path']),
+        path: z.string().optional(),
+        depth: z.number().optional(),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+      ...DEFER_LOADING_CONFIG,
+    },
+    async args => {
+      try {
+        await validateXcodeInstallation();
+        return await simctlContainerTool(args);
       } catch (error) {
         if (error instanceof McpError) throw error;
         throw new McpError(
