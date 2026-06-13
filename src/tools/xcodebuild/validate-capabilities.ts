@@ -1,11 +1,25 @@
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 
+export const XCODEBUILD_VALIDATE_CAPABILITIES_DOCS = `# xcodebuild-validate-capabilities
+
+Compare an app's Info.plist required permissions/capabilities against the
+permissions actually granted on a simulator, surfacing mismatches.
+
+## Parameters
+- \`projectPath\` (required): Path to the .xcodeproj or .xcworkspace
+- \`scheme\` (required): Scheme name
+- \`udid\` (optional): Simulator UDID to validate granted permissions against
+
+## Returns
+A capabilities validation report listing required vs granted permissions and any gaps.`;
+
+export const XCODEBUILD_VALIDATE_CAPABILITIES_DOCS_MINI =
+  'Validate app capabilities against project Info.plist requirements.';
+
 /**
  * Validate App Capabilities Against Project
  *
  * Compare Info.plist required permissions with simulator granted permissions
- *
- * Full documentation: See src/tools/xcodebuild/validate-capabilities.md
  *
  * @param args Tool arguments
  * @returns Capabilities validation report

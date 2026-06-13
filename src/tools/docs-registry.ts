@@ -53,6 +53,9 @@ import { CACHE_LIST_CACHED_RESPONSES_DOCS } from './cache/list-cached.js';
 // Workflow documentation (v3.0.0)
 import { WORKFLOW_TAP_ELEMENT_DOCS } from './workflows/tap-element.js';
 import { WORKFLOW_FRESH_INSTALL_DOCS } from './workflows/fresh-install.js';
+import { BUILD_AND_RUN_DOCS } from './workflows/build-and-run.js';
+import { XCODEBUILD_INSPECT_SCHEME_DOCS } from './xcodebuild/inspect-scheme.js';
+import { XCODEBUILD_VALIDATE_CAPABILITIES_DOCS } from './xcodebuild/validate-capabilities.js';
 
 // Consolidated router documentation (v2.0+)
 import { SIMCTL_DEVICE_DOCS } from './simctl/device/index.js';
@@ -413,6 +416,8 @@ export const TOOL_CATEGORIES: Record<string, string[]> = {
     'xcodebuild-clean',
     'xcodebuild-test',
     'xcodebuild-get-details',
+    'xcodebuild-inspect-scheme',
+    'xcodebuild-validate-capabilities',
   ],
   simulator: [
     'simctl-list',
@@ -452,7 +457,6 @@ export const TOOL_CATEGORIES: Record<string, string[]> = {
     // MANAGEMENT TOOLS - App and target management
     // ============================================================================
     'idb-targets',
-    'idb-connect',
     'idb-list-apps',
     'idb-install',
     'idb-launch',
@@ -460,7 +464,13 @@ export const TOOL_CATEGORIES: Record<string, string[]> = {
     'idb-uninstall',
   ],
   io: ['simctl-io', 'simctl-addmedia', 'screenshot'],
-  testing: ['simctl-privacy', 'simctl-push', 'simctl-pbcopy', 'simctl-status-bar'],
+  testing: [
+    'simctl-privacy',
+    'simctl-push',
+    'simctl-pbcopy',
+    'simctl-status-bar',
+    'simctl-stream-logs',
+  ],
   cache: [
     'list-cached-responses',
     'cache-get-stats',
@@ -475,7 +485,7 @@ export const TOOL_CATEGORIES: Record<string, string[]> = {
     'rtfm',
     'screenshot-save',
   ],
-  workflow: ['workflow-tap-element', 'workflow-fresh-install'],
+  workflow: ['workflow-tap-element', 'workflow-fresh-install', 'workflow-build-and-run'],
 };
 
 export const CATEGORY_DESCRIPTIONS: Record<string, { name: string; description: string }> = {
@@ -556,6 +566,8 @@ export const TOOL_DOCS: Record<string, string> = {
   'xcodebuild-version': XCODEBUILD_VERSION_DOCS,
   'xcodebuild-get-details': XCODEBUILD_GET_DETAILS_DOCS,
   'xcodebuild-test': XCODEBUILD_TEST_DOCS,
+  'xcodebuild-inspect-scheme': XCODEBUILD_INSPECT_SCHEME_DOCS,
+  'xcodebuild-validate-capabilities': XCODEBUILD_VALIDATE_CAPABILITIES_DOCS,
 
   // Simctl lifecycle tools (non-consolidated)
   'simctl-list': SIMCTL_LIST_DOCS,
@@ -603,6 +615,7 @@ export const TOOL_DOCS: Record<string, string> = {
   // Workflow tools (v3.0.0)
   'workflow-tap-element': WORKFLOW_TAP_ELEMENT_DOCS,
   'workflow-fresh-install': WORKFLOW_FRESH_INSTALL_DOCS,
+  'workflow-build-and-run': BUILD_AND_RUN_DOCS,
 
   // Backwards compatibility aliases (v1.x tools → v2.0 consolidated tools)
   // Simctl device consolidation

@@ -37,6 +37,12 @@ import {
   SIMCTL_SCREENSHOT_INLINE_DOCS,
   SIMCTL_SCREENSHOT_INLINE_DOCS_MINI,
 } from '../tools/simctl/screenshot-inline.js';
+import { simctlAddmediaTool, SIMCTL_ADDMEDIA_DOCS } from '../tools/simctl/addmedia.js';
+import { simctlPbcopyTool, SIMCTL_PBCOPY_DOCS } from '../tools/simctl/pbcopy.js';
+import { simctlPrivacyTool, SIMCTL_PRIVACY_DOCS } from '../tools/simctl/privacy.js';
+import { simctlStatusBarTool, SIMCTL_STATUS_BAR_DOCS } from '../tools/simctl/status-bar.js';
+import { streamLogsTool, SIMCTL_STREAM_LOGS_DOCS } from '../tools/simctl/stream-logs.js';
+import { simctlSuggestTool, SIMCTL_SUGGEST_DOCS } from '../tools/simctl/suggest.js';
 
 const ENABLE_DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
 const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
@@ -326,6 +332,170 @@ export function registerSimctlTools(server: McpServer): void {
       try {
         await validateXcodeInstallation();
         return await simctlScreenshotInlineTool(args);
+      } catch (error) {
+        if (error instanceof McpError) throw error;
+        throw new McpError(
+          ErrorCode.InternalError,
+          `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+  );
+
+  // simctl-addmedia
+  server.registerTool(
+    'simctl-addmedia',
+    {
+      description: getDescription(SIMCTL_ADDMEDIA_DOCS, SIMCTL_ADDMEDIA_DOCS),
+      inputSchema: {
+        udid: z.string(),
+        mediaPath: z.string(),
+      },
+      ...DEFER_LOADING_CONFIG,
+    },
+    async args => {
+      try {
+        await validateXcodeInstallation();
+        return await simctlAddmediaTool(args);
+      } catch (error) {
+        if (error instanceof McpError) throw error;
+        throw new McpError(
+          ErrorCode.InternalError,
+          `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+  );
+
+  // simctl-pbcopy
+  server.registerTool(
+    'simctl-pbcopy',
+    {
+      description: getDescription(SIMCTL_PBCOPY_DOCS, SIMCTL_PBCOPY_DOCS),
+      inputSchema: {
+        udid: z.string(),
+        text: z.string(),
+      },
+      ...DEFER_LOADING_CONFIG,
+    },
+    async args => {
+      try {
+        await validateXcodeInstallation();
+        return await simctlPbcopyTool(args);
+      } catch (error) {
+        if (error instanceof McpError) throw error;
+        throw new McpError(
+          ErrorCode.InternalError,
+          `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+  );
+
+  // simctl-privacy
+  server.registerTool(
+    'simctl-privacy',
+    {
+      description: getDescription(SIMCTL_PRIVACY_DOCS, SIMCTL_PRIVACY_DOCS),
+      inputSchema: {
+        udid: z.string(),
+        bundleId: z.string(),
+        action: z.enum(['grant', 'revoke', 'reset']),
+        service: z.string(),
+        scenario: z.string().optional(),
+        step: z.number().optional(),
+      },
+      ...DEFER_LOADING_CONFIG,
+    },
+    async args => {
+      try {
+        await validateXcodeInstallation();
+        return await simctlPrivacyTool(args);
+      } catch (error) {
+        if (error instanceof McpError) throw error;
+        throw new McpError(
+          ErrorCode.InternalError,
+          `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+  );
+
+  // simctl-status-bar
+  server.registerTool(
+    'simctl-status-bar',
+    {
+      description: getDescription(SIMCTL_STATUS_BAR_DOCS, SIMCTL_STATUS_BAR_DOCS),
+      inputSchema: {
+        udid: z.string(),
+        operation: z.enum(['override', 'clear']),
+        time: z.string().optional(),
+        dataNetwork: z.string().optional(),
+        wifiMode: z.string().optional(),
+        batteryState: z.string().optional(),
+        batteryLevel: z.number().optional(),
+      },
+      ...DEFER_LOADING_CONFIG,
+    },
+    async args => {
+      try {
+        await validateXcodeInstallation();
+        return await simctlStatusBarTool(args);
+      } catch (error) {
+        if (error instanceof McpError) throw error;
+        throw new McpError(
+          ErrorCode.InternalError,
+          `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+  );
+
+  // simctl-stream-logs
+  server.registerTool(
+    'simctl-stream-logs',
+    {
+      description: getDescription(SIMCTL_STREAM_LOGS_DOCS, SIMCTL_STREAM_LOGS_DOCS),
+      inputSchema: {
+        udid: z.string(),
+        bundleId: z.string().optional(),
+        predicate: z.string().optional(),
+        duration: z.number().optional(),
+        capture: z.boolean().optional(),
+      },
+      ...DEFER_LOADING_CONFIG,
+    },
+    async args => {
+      try {
+        await validateXcodeInstallation();
+        return await streamLogsTool(args);
+      } catch (error) {
+        if (error instanceof McpError) throw error;
+        throw new McpError(
+          ErrorCode.InternalError,
+          `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+  );
+
+  // simctl-suggest
+  server.registerTool(
+    'simctl-suggest',
+    {
+      description: getDescription(SIMCTL_SUGGEST_DOCS, SIMCTL_SUGGEST_DOCS),
+      inputSchema: {
+        projectPath: z.string().optional(),
+        deviceType: z.string().optional(),
+        maxSuggestions: z.number().optional(),
+        autoBootTopSuggestion: z.boolean().optional(),
+      },
+      ...DEFER_LOADING_CONFIG,
+    },
+    async args => {
+      try {
+        await validateXcodeInstallation();
+        return await simctlSuggestTool(args);
       } catch (error) {
         if (error instanceof McpError) throw error;
         throw new McpError(

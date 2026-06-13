@@ -33,6 +33,17 @@ import {
   XCODEBUILD_GET_DETAILS_DOCS,
   XCODEBUILD_GET_DETAILS_DOCS_MINI,
 } from '../tools/xcodebuild/get-details.js';
+import { xcodebuildShowSDKsTool, XCODEBUILD_SHOWSDKS_DOCS } from '../tools/xcodebuild/showsdks.js';
+import {
+  inspectSchemeTool,
+  XCODEBUILD_INSPECT_SCHEME_DOCS,
+  XCODEBUILD_INSPECT_SCHEME_DOCS_MINI,
+} from '../tools/xcodebuild/inspect-scheme.js';
+import {
+  validateCapabilitiesTool,
+  XCODEBUILD_VALIDATE_CAPABILITIES_DOCS,
+  XCODEBUILD_VALIDATE_CAPABILITIES_DOCS_MINI,
+} from '../tools/xcodebuild/validate-capabilities.js';
 
 const ENABLE_DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
 const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
@@ -201,6 +212,87 @@ export function registerXcodebuildTools(server: McpServer): void {
       try {
         await validateXcodeInstallation();
         return await xcodebuildGetDetailsTool(args);
+      } catch (error) {
+        if (error instanceof McpError) throw error;
+        throw new McpError(
+          ErrorCode.InternalError,
+          `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+  );
+
+  // xcodebuild-showsdks
+  server.registerTool(
+    'xcodebuild-showsdks',
+    {
+      description: getDescription(XCODEBUILD_SHOWSDKS_DOCS, XCODEBUILD_SHOWSDKS_DOCS),
+      inputSchema: {
+        outputFormat: z.enum(['json', 'text']).default('json'),
+      },
+      ...DEFER_LOADING_CONFIG,
+    },
+    async args => {
+      try {
+        await validateXcodeInstallation();
+        return await xcodebuildShowSDKsTool(args);
+      } catch (error) {
+        if (error instanceof McpError) throw error;
+        throw new McpError(
+          ErrorCode.InternalError,
+          `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+  );
+
+  // xcodebuild-inspect-scheme
+  server.registerTool(
+    'xcodebuild-inspect-scheme',
+    {
+      description: getDescription(
+        XCODEBUILD_INSPECT_SCHEME_DOCS,
+        XCODEBUILD_INSPECT_SCHEME_DOCS_MINI
+      ),
+      inputSchema: {
+        projectPath: z.string(),
+        scheme: z.string(),
+      },
+      ...DEFER_LOADING_CONFIG,
+    },
+    async args => {
+      try {
+        await validateXcodeInstallation();
+        return await inspectSchemeTool(args);
+      } catch (error) {
+        if (error instanceof McpError) throw error;
+        throw new McpError(
+          ErrorCode.InternalError,
+          `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+  );
+
+  // xcodebuild-validate-capabilities
+  server.registerTool(
+    'xcodebuild-validate-capabilities',
+    {
+      description: getDescription(
+        XCODEBUILD_VALIDATE_CAPABILITIES_DOCS,
+        XCODEBUILD_VALIDATE_CAPABILITIES_DOCS_MINI
+      ),
+      inputSchema: {
+        projectPath: z.string(),
+        scheme: z.string(),
+        udid: z.string().optional(),
+      },
+      ...DEFER_LOADING_CONFIG,
+    },
+    async args => {
+      try {
+        await validateXcodeInstallation();
+        return await validateCapabilitiesTool(args);
       } catch (error) {
         if (error instanceof McpError) throw error;
         throw new McpError(

@@ -1,5 +1,37 @@
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 
+export const BUILD_AND_RUN_DOCS = `
+# workflow-build-and-run
+
+Build and run an Xcode project on a simulator in a single orchestrated workflow.
+
+## Overview
+
+Combines build, simulator selection, installation, and launch into one call:
+1. **Build** - Compile the Xcode project with xcodebuild
+2. **Select Simulator** - Auto-detect or use specified device
+3. **Boot** - Start the simulator
+4. **Install** - Install the built .app bundle
+5. **Launch** - Launch the app
+6. **Screenshot** (optional) - Capture initial app state
+
+## Parameters
+
+### Required
+- **projectPath** (string): Path to .xcodeproj or .xcworkspace
+- **scheme** (string): Build scheme name
+
+### Optional
+- **configuration** (string): Build configuration (default: "Debug")
+- **simulatorUdid** (string): Target simulator UDID - auto-detected if omitted
+- **launchArguments** (string[]): App launch arguments
+- **environmentVariables** (Record<string, string>): App environment variables
+- **takeScreenshot** (boolean): Capture screenshot after launch (default: false)
+`;
+
+export const BUILD_AND_RUN_DOCS_MINI =
+  'Build, install and launch app on simulator. Use rtfm({ toolName: "workflow-build-and-run" }) for docs.';
+
 /**
  * Build and Run Workflow Orchestration
  *

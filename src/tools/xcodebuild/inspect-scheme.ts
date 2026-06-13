@@ -2,12 +2,26 @@ import { readFileSync } from 'fs';
 import { basename, dirname } from 'path';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 
+export const XCODEBUILD_INSPECT_SCHEME_DOCS = `# xcodebuild-inspect-scheme
+
+Parse and display an Xcode scheme's build, run, and test configurations from its
+\`.xcscheme\` file.
+
+## Parameters
+- \`projectPath\` (required): Path to the .xcodeproj or .xcworkspace
+- \`scheme\` (required): Scheme name to inspect
+
+## Returns
+Parsed scheme information: build targets, run configuration, test configuration,
+and environment/launch arguments where present.`;
+
+export const XCODEBUILD_INSPECT_SCHEME_DOCS_MINI =
+  'Inspect Xcode scheme build/run/test configurations.';
+
 /**
  * Inspect Xcode Scheme Configuration
  *
  * Parse and display scheme build, run, and test configurations
- *
- * Full documentation: See src/tools/xcodebuild/inspect-scheme.md
  *
  * @param args Tool arguments
  * @returns Parsed scheme information

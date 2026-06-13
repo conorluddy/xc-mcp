@@ -13,6 +13,11 @@ import {
   WORKFLOW_FRESH_INSTALL_DOCS,
   WORKFLOW_FRESH_INSTALL_DOCS_MINI,
 } from '../tools/workflows/fresh-install.js';
+import {
+  buildAndRunTool,
+  BUILD_AND_RUN_DOCS,
+  BUILD_AND_RUN_DOCS_MINI,
+} from '../tools/workflows/build-and-run.js';
 
 const ENABLE_DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
 const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
@@ -68,6 +73,42 @@ export function registerWorkflowTools(server: McpServer): void {
       try {
         await validateXcodeInstallation();
         return await workflowFreshInstallTool(args);
+      } catch (error) {
+        if (error instanceof McpError) throw error;
+        throw new McpError(
+          ErrorCode.InternalError,
+          `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+  );
+
+  // workflow-build-and-run
+  server.registerTool(
+    'workflow-build-and-run',
+    {
+      description: getDescription(BUILD_AND_RUN_DOCS, BUILD_AND_RUN_DOCS_MINI),
+      inputSchema: {
+        projectPath: z.string().describe('Path to .xcodeproj or .xcworkspace'),
+        scheme: z.string().describe('Build scheme name'),
+        configuration: z.string().optional().describe('Build configuration (default: "Debug")'),
+        simulatorUdid: z
+          .string()
+          .optional()
+          .describe('Target simulator UDID - auto-detected if omitted'),
+        launchArguments: z.array(z.string()).optional().describe('App launch arguments'),
+        environmentVariables: z
+          .record(z.string(), z.string())
+          .optional()
+          .describe('App environment variables'),
+        takeScreenshot: z.boolean().optional().describe('Capture screenshot after launch'),
+      },
+      ...DEFER_LOADING_CONFIG,
+    },
+    async args => {
+      try {
+        await validateXcodeInstallation();
+        return await buildAndRunTool(args);
       } catch (error) {
         if (error instanceof McpError) throw error;
         throw new McpError(
