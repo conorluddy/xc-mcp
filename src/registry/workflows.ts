@@ -18,6 +18,16 @@ import {
   BUILD_AND_RUN_DOCS,
   BUILD_AND_RUN_DOCS_MINI,
 } from '../tools/workflows/build-and-run.js';
+import {
+  testRecordStepTool,
+  TEST_RECORD_STEP_DOCS,
+  TEST_RECORD_STEP_DOCS_MINI,
+} from '../tools/workflows/test-record-step.js';
+import {
+  testRecordReportTool,
+  TEST_RECORD_REPORT_DOCS,
+  TEST_RECORD_REPORT_DOCS_MINI,
+} from '../tools/workflows/test-record-report.js';
 
 const ENABLE_DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
 const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
@@ -130,6 +140,72 @@ export function registerWorkflowTools(server: McpServer): void {
       try {
         await validateXcodeInstallation();
         return await buildAndRunTool(args);
+      } catch (error) {
+        if (error instanceof McpError) throw error;
+        throw new McpError(
+          ErrorCode.InternalError,
+          `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+  );
+
+  // test-record-step
+  server.registerTool(
+    'test-record-step',
+    {
+      title: 'Record Test Step',
+      description: getDescription(TEST_RECORD_STEP_DOCS, TEST_RECORD_STEP_DOCS_MINI),
+      inputSchema: {
+        sessionName: z.string().describe('Recording session name'),
+        label: z.string().describe('Human description of this step'),
+        udid: z.string().optional(),
+        metadata: z.record(z.string(), z.unknown()).optional(),
+        assertion: z.string().optional(),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
+      ...DEFER_LOADING_CONFIG,
+    },
+    async args => {
+      try {
+        await validateXcodeInstallation();
+        return await testRecordStepTool(args);
+      } catch (error) {
+        if (error instanceof McpError) throw error;
+        throw new McpError(
+          ErrorCode.InternalError,
+          `Tool execution failed: ${error instanceof Error ? error.message : String(error)}`
+        );
+      }
+    }
+  );
+
+  // test-record-report
+  server.registerTool(
+    'test-record-report',
+    {
+      title: 'Generate Test Recording Report',
+      description: getDescription(TEST_RECORD_REPORT_DOCS, TEST_RECORD_REPORT_DOCS_MINI),
+      inputSchema: {
+        sessionName: z.string().describe('Recording session name'),
+        testName: z.string().optional().describe('Report title (defaults to sessionName)'),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+      ...DEFER_LOADING_CONFIG,
+    },
+    async args => {
+      try {
+        return await testRecordReportTool(args);
       } catch (error) {
         if (error instanceof McpError) throw error;
         throw new McpError(

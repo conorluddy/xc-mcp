@@ -87,6 +87,14 @@ import { ACCESSIBILITY_AUDIT_DOCS } from './idb/accessibility-audit.js';
 import { LOCALIZATION_AUDIT_DOCS } from './analysis/localization-audit.js';
 import { XCODE_MODEL_INSPECT_DOCS } from './analysis/model-inspect.js';
 import { VISUAL_DIFF_DOCS } from './io/visual-diff.js';
+import {
+  HANG_START_DOCS,
+  HANG_STOP_DOCS,
+  HANG_GET_DETAILS_DOCS,
+  HANG_LIST_DOCS,
+} from './diagnostics/hang/tools.js';
+import { TEST_RECORD_STEP_DOCS } from './workflows/test-record-step.js';
+import { TEST_RECORD_REPORT_DOCS } from './workflows/test-record-report.js';
 
 // Consolidated router documentation (v2.0+)
 import { SIMCTL_DEVICE_DOCS } from './simctl/device/index.js';
@@ -520,7 +528,14 @@ export const TOOL_CATEGORIES: Record<string, string[]> = {
     'rtfm',
     'screenshot-save',
   ],
-  workflow: ['workflow-tap-element', 'workflow-fresh-install', 'workflow-build-and-run'],
+  workflow: [
+    'workflow-tap-element',
+    'workflow-fresh-install',
+    'workflow-build-and-run',
+    'test-record-step',
+    'test-record-report',
+  ],
+  diagnostics: ['hang-start', 'hang-stop', 'hang-get-details', 'hang-list'],
 };
 
 export const CATEGORY_DESCRIPTIONS: Record<string, { name: string; description: string }> = {
@@ -568,6 +583,10 @@ export const CATEGORY_DESCRIPTIONS: Record<string, { name: string; description: 
     name: 'Static Analysis & Diffing',
     description:
       'Audit localization catalogs, inspect Core Data/SwiftData models, diff screenshots',
+  },
+  diagnostics: {
+    name: 'Runtime Diagnostics',
+    description: 'Capture and cluster main-thread hangs (HangBuster)',
   },
 };
 
@@ -667,6 +686,12 @@ export const TOOL_DOCS: Record<string, string> = {
   'workflow-tap-element': WORKFLOW_TAP_ELEMENT_DOCS,
   'workflow-fresh-install': WORKFLOW_FRESH_INSTALL_DOCS,
   'workflow-build-and-run': BUILD_AND_RUN_DOCS,
+  'test-record-step': TEST_RECORD_STEP_DOCS,
+  'test-record-report': TEST_RECORD_REPORT_DOCS,
+  'hang-start': HANG_START_DOCS,
+  'hang-stop': HANG_STOP_DOCS,
+  'hang-get-details': HANG_GET_DETAILS_DOCS,
+  'hang-list': HANG_LIST_DOCS,
 
   // Discrete tools (v4 — dissolved from v2/v3 routers, each documents its own usage)
   // Simctl device lifecycle

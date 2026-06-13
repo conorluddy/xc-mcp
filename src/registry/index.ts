@@ -9,6 +9,7 @@ import { registerSystemTools } from './system.js';
 import { registerResources } from './resources.js';
 import { registerDeviceStateTools } from './devicestate.js';
 import { registerAnalysisTools } from './analysis.js';
+import { registerDiagnosticsTools } from './diagnostics.js';
 
 /**
  * Register all XC-MCP tools with the MCP server
@@ -37,5 +38,6 @@ export function registerAllTools(server: McpServer): void {
     registerWorkflowTools(server);
     registerDeviceStateTools(server);
     registerAnalysisTools(server);
+    registerDiagnosticsTools(server);
   }
 }
