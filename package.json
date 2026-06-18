@@ -1,6 +1,6 @@
 {
   "name": "xc-mcp",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "MCP server that wraps Xcode command-line tools for iOS/macOS development workflows",
   "author": "Conor Luddy",
   "license": "MIT",
@@ -48,25 +48,25 @@
   ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "@types/node": "^24.1.0",
     "pixelmatch": "^7.2.0",
     "pngjs": "^7.0.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "@types/node": "^25.9.3",
     "@types/pngjs": "^6.0.5",
-    "@typescript-eslint/eslint-plugin": "^8.15.0",
-    "@typescript-eslint/parser": "^8.15.0",
-    "eslint": "^9.32.0",
+    "@typescript-eslint/eslint-plugin": "^8.61.1",
+    "@typescript-eslint/parser": "^8.61.1",
+    "eslint": "^9.39.4",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.3",
+    "eslint-plugin-prettier": "^5.5.6",
     "husky": "^9.1.7",
-    "jest": "^30.0.5",
-    "lint-staged": "^16.1.2",
-    "prettier": "^3.6.2",
-    "ts-jest": "^29.2.0",
-    "typescript": "^5.7.2"
+    "jest": "^30.4.2",
+    "lint-staged": "^17.0.7",
+    "prettier": "^3.8.4",
+    "ts-jest": "^29.4.11",
+    "typescript": "^5.9.3"
   },
   "lint-staged": {
     "*.ts": [

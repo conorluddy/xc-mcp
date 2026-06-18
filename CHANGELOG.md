@@ -3,6 +3,21 @@
 All notable changes to XC-MCP are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [4.0.1]
+
+Maintenance release — development-dependency bumps only. No runtime changes; the shipped
+artifact (`dist/`) is identical to 4.0.0.
+
+### Changed
+
+- Bumped dev/type dependencies to latest (consolidates Dependabot #129–#133): `@types/node`
+  24 → 25 (moved to `devDependencies`), `@typescript-eslint/*` 8.48 → 8.61, `jest` 30.2 →
+  30.4, `ts-jest` 29.4.5 → 29.4.11, `prettier` 3.6 → 3.8, `eslint-plugin-prettier` 5.5.4 →
+  5.5.6, `lint-staged` 16 → 17.
+- Held back `typescript` 6 and `eslint` 10 — both require config migrations
+  (`moduleResolution=node10` deprecation; unbundled `@eslint/js` peer dep), tracked as
+  separate follow-ups.
+
 ## [4.0.0]
 
 A major release that modernizes the MCP layer to the current spec and reaches feature
