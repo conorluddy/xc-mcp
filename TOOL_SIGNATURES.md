@@ -13,7 +13,13 @@ for full, always-current documentation rather than trusting a hand-maintained co
   clients may gate these behind confirmation.
 - **Structured** — declares an `outputSchema` and returns validated `structuredContent` alongside text.
 
-All tools are registered with `defer_loading: true` unless `XC_MCP_DEFER_LOADING=false` is set.
+> [!WARNING]
+> **`defer_loading` is currently a no-op.** Every tool is registered with `defer_loading: true`
+> (unless `XC_MCP_DEFER_LOADING=false`), but `@modelcontextprotocol/sdk@1.29`'s `registerTool()`
+> destructures only `{ title, description, inputSchema, outputSchema, annotations, _meta }` from the
+> tool config and silently drops everything else — verified against a live `tools/list`, where 0 of 71
+> tools carry the flag. Until that is resolved, assume all 71 descriptions load upfront and use
+> `--mini` and/or `--build-only` to control baseline cost.
 
 ## Build & Test (9)
 

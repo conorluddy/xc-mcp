@@ -32,6 +32,14 @@ V4.0 modernizes the MCP layer and reaches feature parity with the `ios-simulator
 - **listChanged** capability declared for deferred/dynamic tool loading.
 - **Deferred loading** retained (`XC_MCP_DEFER_LOADING`); `rtfm` provides progressive docs; old router names still fuzzy-match in `rtfm`.
 
+> **KNOWN BUG — `defer_loading` is a no-op.** `registerTool()` in `@modelcontextprotocol/sdk@1.29`
+> destructures only `{ title, description, inputSchema, outputSchema, annotations, _meta }` from the
+> tool config (`server/mcp.js:703`) and silently drops unknown keys, so `...DEFER_LOADING_CONFIG` never
+> reaches `tools/list` — confirmed against a live server: 0 of 71 tools carry the flag. Only
+> `annotations` and `_meta` survive. Every token claim that depends on deferral is therefore currently
+> unmet; `--mini` and `--build-only` are the working levers. Fixing this needs the actual client-side
+> wire contract — do not guess a field name.
+
 **Tool Categories (V4.1):**
 - `build`: xcodebuild-version/-list/-build/-clean/-test/-get-details/-showsdks/-inspect-scheme/-validate-capabilities
 - `simulator`: simctl-list/-get-details/-health-check/-suggest + lifecycle: simctl-boot/-shutdown/-create/-delete/-erase/-clone/-rename
@@ -213,7 +221,7 @@ none of them exist. Tools once described as removed (`xcodebuild-showsdks`, `sim
 - Run `idb-doctor` first when any `idb-*` interaction appears to succeed but nothing moves on screen.
 
 **Environment Variables:**
-- `XC_MCP_DEFER_LOADING=false` — register all tools at startup instead of deferring (default: `true`)
+- `XC_MCP_DEFER_LOADING=false` — stop setting the (currently inert) `defer_loading` flag (default: `true`)
 - `XC_MCP_CACHE_DIR` — disk-persistence cache directory (default `~/.xc-mcp`, honours `XDG_CACHE_HOME`)
 - `XC_MCP_HANG_DIR` — HangBuster sessions (default `~/.xc-mcp/hang-sessions`)
 - `XC_MCP_RECORDINGS_DIR` — test recordings (default `~/.xc-mcp/test-recordings`)

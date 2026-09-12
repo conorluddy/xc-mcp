@@ -54,7 +54,7 @@ loads a tool's schema only when it needs it, so routers (which existed to shrink
 cost more than they saved — a router can't carry per-operation annotations or an output schema.
 
 **Key capabilities:**
-- ✅ **Deferred loading** — tools discovered on demand, minimal baseline overhead
+- ⚠️ **Deferred loading** — declared on every tool, but [currently dropped by the SDK](#deferred-tool-loading); use `--mini` / `--build-only` meanwhile
 - ✅ **Tool annotations** — destructive operations (delete/erase/uninstall/clear) are declared as such
 - ✅ **Structured output** — validated `structuredContent` on build, test, and audit tools
 - ✅ **Resources** — cached output addressable as `xcmcp://response/{cacheId}`
@@ -281,14 +281,16 @@ if (quality === "rich" || quality === "moderate") {
 
 ### How It Works
 
-Every tool is registered with `defer_loading: true`, so an MCP client that supports tool search:
+Every tool is registered with `defer_loading: true` so that an MCP client supporting tool search can
+discover tools on demand and load a schema only when it's relevant, keeping baseline overhead near zero.
+(The V3 `tool-search` tool is gone — client-side search replaces it.)
 
-1. **Discovers tools on demand** — no custom search tool needed (the V3 `tool-search` tool is gone)
-2. **Loads a schema only when relevant** — based on conversation context
-3. **Keeps baseline overhead minimal** — near-zero tokens at startup
-
-For clients that don't support deferred loading, `--mini` shrinks every description to a one-liner and
-`rtfm` supplies the detail on demand.
+> [!WARNING]
+> **This does not currently reach the wire.** `@modelcontextprotocol/sdk@1.29`'s `registerTool()`
+> destructures only `{ title, description, inputSchema, outputSchema, annotations, _meta }` from the tool
+> config and drops unknown keys, so `defer_loading` never appears in `tools/list` — verified: 0 of 71
+> tools carry it. **Use `--mini` and/or `--build-only` to control baseline context cost** until this is
+> fixed. `rtfm` supplies full detail on demand either way.
 
 ### RTFM: On-Demand Documentation
 
