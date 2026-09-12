@@ -6,9 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 XC-MCP is a Model Context Protocol (MCP) server that provides intelligent access to Xcode command-line tools with advanced caching and progressive disclosure features. It wraps `xcodebuild`, `simctl`, and `idb` commands to solve token overflow issues while maintaining full functionality.
 
-### Architecture (V4.0.0)
+### Architecture (V4.1.0)
 
-**70 discrete tools, MCP-spec-modernized, with deferred loading (~1k tokens at startup).**
+**71 discrete tools, MCP-spec-modernized, with deferred loading (near-zero startup cost).**
+
+Current release: **4.1.0**. The authoritative tool list is `src/registry/*.ts`; the generated index is
+[TOOL_SIGNATURES.md](./TOOL_SIGNATURES.md); per-tool parameter docs come from `rtfm`.
 
 **Evolution:**
 | Version | Tools | Architecture |
@@ -17,7 +20,8 @@ XC-MCP is a Model Context Protocol (MCP) server that provides intelligent access
 | V1.3.2 (RTFM) | 51 | Individual + RTFM (~3,000 tokens) |
 | V2.0.0 | 28 | Operation-enum routers + accessibility-first |
 | V3.0.0 | 30 | Deferred loading + workflows (~1k startup) |
-| **V4.0.0 (Current)** | **70** | **Discrete tools + MCP spec (annotations / outputSchema / resources) + skill feature parity** |
+| V4.0.0 | 70 | Discrete tools + MCP spec (annotations / outputSchema / resources) + skill feature parity |
+| **V4.1.0 (Current)** | **71** | **Adds `idb-doctor`; idb-companion 1.5.1 floor for Xcode 27 HID writes** |
 
 V4.0 modernizes the MCP layer and reaches feature parity with the `ios-simulator-skill`:
 - **SDK**: `@modelcontextprotocol/sdk@^1.29`, protocol `2025-06-18`. Zod v4.
@@ -28,18 +32,19 @@ V4.0 modernizes the MCP layer and reaches feature parity with the `ios-simulator
 - **listChanged** capability declared for deferred/dynamic tool loading.
 - **Deferred loading** retained (`XC_MCP_DEFER_LOADING`); `rtfm` provides progressive docs; old router names still fuzzy-match in `rtfm`.
 
-**Tool Categories (V4.0):**
+**Tool Categories (V4.1):**
 - `build`: xcodebuild-version/-list/-build/-clean/-test/-get-details/-showsdks/-inspect-scheme/-validate-capabilities
 - `simulator`: simctl-list/-get-details/-health-check/-suggest + lifecycle: simctl-boot/-shutdown/-create/-delete/-erase/-clone/-rename
 - `app`: simctl-install/-uninstall/-launch/-terminate/-get-app-container/-container/-openurl
-- `idb`: idb-ui-describe/-find-element/-tap/-input/-gesture, accessibility-quality-check, accessibility-audit, idb-targets, idb-list-apps, idb-install/-uninstall/-launch/-terminate
+- `idb` (13): idb-ui-describe/-find-element/-tap/-input/-gesture, accessibility-quality-check, accessibility-audit, idb-targets, idb-list-apps, idb-install/-uninstall/-launch/-terminate
 - `io`: simctl-io, screenshot
 - `devicestate`: simctl-appearance, simctl-location
 - `analysis`: localization-audit, xcode-model-inspect, visual-diff
-- `diagnostics`: hang-start/-stop/-get-details/-list (HangBuster)
+- `diagnostics` (5): idb-doctor (idb environment check), hang-start/-stop/-get-details/-list (HangBuster)
 - `cache`: cache-get-stats/-get-config/-set-config/-clear
-- `workflow`: workflow-tap-element/-fresh-install/-build-and-run, test-record-step, test-record-report
-- `system`: rtfm, persistence-enable/-disable/-status, simctl-push/-addmedia/-pbcopy/-privacy/-status-bar/-stream-logs
+- `workflow` (5): workflow-tap-element/-fresh-install/-build-and-run, test-record-step, test-record-report
+- `system`: rtfm. Persistence (persistence-enable/-disable/-status) registers with the cache tools;
+  simctl-push/-addmedia/-pbcopy/-privacy/-status-bar/-stream-logs register with simctl.
 
 ### V4.0 Migration Guide (breaking)
 
@@ -97,7 +102,7 @@ Operation-specific parameters are unchanged; just drop the `operation` field and
 - **npm run format:check** - Check code formatting without making changes
 - **npm test** - Run Jest test suite with ESM support
 - **npm run test -- --watch** - Run tests in watch mode during development
-- **npm run test -- --coverage** - Run tests with coverage report (80% threshold required)
+- **npm test -- --coverage** - Run tests with coverage report (floors in `jest.config.js`)
 - **npm run test -- tests/__tests__/utils/** - Run specific test directory
 - **npm run test -- --testNamePattern="cache"** - Run tests matching pattern
 
@@ -150,12 +155,11 @@ Tools return structured responses with:
 - **xcodebuild-build**: Returns `buildId` for progressive access to full logs via `xcodebuild-get-details`
 - **xcodebuild-test**: Returns `testId` for progressive access to full test logs via `xcodebuild-get-details`
 - **simctl-list**: Returns `cacheId` for progressive access to full device data via `simctl-get-details`
-- **simctl-device**: Consolidated router with 7 operations (boot, shutdown, create, delete, erase, clone, rename)
-- **simctl-app**: Consolidated router with 4 operations (install, uninstall, launch, terminate)
-- **cache**: Consolidated router with 4 operations (get-stats, get-config, set-config, clear)
+- **simctl-\***: discrete lifecycle/app tools (`simctl-boot`, `-erase`, `-install`, `-launch`, …)
+- **cache-\***: discrete cache tools (`cache-get-stats`, `-get-config`, `-set-config`, `-clear`)
 - **Progressive Disclosure**: Large outputs (10k+ tokens) automatically cached to prevent MCP token overflow
 
-### Accessibility-First Workflow (V2.0)
+### Accessibility-First Workflow
 
 **Core Philosophy**: XC-MCP promotes accessibility-first automation to encourage inclusive app development while enabling faster, cheaper AI interaction.
 
@@ -186,103 +190,36 @@ Tools return structured responses with:
 - Reduces token cost and execution time significantly
 - Promotes inclusive app development practices
 
-### V2.0 Migration Notes
+### Version History (context only — do not treat as current API)
 
-**Major Changes from V1.3.2:**
-- **Tool consolidation**: 51 → 28 tools (21 tools → 6 routers with operation enums)
-- **Token reduction**: 3,000 → 1,980 tokens (40% additional savings beyond RTFM)
-- **Accessibility-first**: 3 new tools for semantic UI automation workflow
-- **Operation enums**: `simctl-device({ operation: "boot" })` instead of `simctl-boot`
+- **V1.x**: 51 individual tools; v1.3.2 added `rtfm` for on-demand docs.
+- **V2.0**: collapsed 21 tools into 6 operation-enum routers; added the accessibility-first tools
+  (`idb-ui-find-element`, `accessibility-quality-check`).
+- **V3.0**: added platform `defer_loading` plus a custom `tool-search` tool and the first workflow tools.
+- **V4.0**: routers dissolved back into discrete tools (see the Migration Guide above); `tool-search`
+  **removed** — client-side tool search handles discovery. Added annotations, `outputSchema`, resources,
+  and the ios-simulator-skill parity tools.
+- **V4.1**: `idb-doctor` + HID write preflight; Xcode 27 `DeviceHub.app` support in `simctl-boot`.
 
-**Tool Consolidation Mapping:**
-```
-Old (V1.3.2)              → New (V2.0.0)
-─────────────────────────────────────────────────────────
-simctl-boot              → simctl-device({ operation: "boot" })
-simctl-shutdown          → simctl-device({ operation: "shutdown" })
-simctl-create            → simctl-device({ operation: "create" })
-simctl-delete            → simctl-device({ operation: "delete" })
-simctl-erase             → simctl-device({ operation: "erase" })
-simctl-clone             → simctl-device({ operation: "clone" })
-simctl-rename            → simctl-device({ operation: "rename" })
+**Do not reintroduce** router-style calls, `tool-search`, or `list-cached-responses` in docs or code —
+none of them exist. Tools once described as removed (`xcodebuild-showsdks`, `simctl-suggest`,
+`simctl-addmedia`, `simctl-privacy`, `simctl-pbcopy`, `simctl-status-bar`) are all registered again.
 
-simctl-install           → simctl-app({ operation: "install" })
-simctl-uninstall         → simctl-app({ operation: "uninstall" })
-simctl-launch            → simctl-app({ operation: "launch" })
-simctl-terminate         → simctl-app({ operation: "terminate" })
-
-idb-install              → idb-app({ operation: "install" })
-idb-uninstall            → idb-app({ operation: "uninstall" })
-idb-launch               → idb-app({ operation: "launch" })
-idb-terminate            → idb-app({ operation: "terminate" })
-
-cache-get-stats          → cache({ operation: "get-stats" })
-cache-get-config         → cache({ operation: "get-config" })
-cache-set-config         → cache({ operation: "set-config" })
-cache-clear              → cache({ operation: "clear" })
-
-persistence-enable       → persistence({ operation: "enable" })
-persistence-disable      → persistence({ operation: "disable" })
-persistence-status       → persistence({ operation: "status" })
-```
-
-**New Tools in V2.0:**
-- `idb-ui-find-element`: Semantic element search by label/identifier
-- `accessibility-quality-check`: Rapid UI richness assessment
-- Enhanced `idb-ui-describe`: Optimized accessibility tree queries with progressive disclosure
-
-**Removed Tools (Niche Use Cases):**
-- `xcodebuild-showsdks`: Use `xcodebuild-version` instead
-- `simctl-suggest`: Use `simctl-list` quick-access recommendations
-- `simctl-addmedia`, `simctl-privacy`, `simctl-pbcopy`, `simctl-status-bar`: Commented out to reduce schema bloat
-- `list-cached-responses`: Integrated into main cache tools
-
-**For Claude Code (V2.0):**
-- Use `rtfm()` to discover tools progressively
-- Prefer `accessibility-quality-check` before screenshots
-- Use `idb-ui-find-element` for semantic element search
-- Progressive disclosure via cache IDs (buildId, testId, cacheId, uiTreeId)
-
-### V3.0 Architecture Changes
-
-**Major Changes from V2.0:**
-- **Deferred loading**: Only `tool-search` and `rtfm` visible at startup (~1k tokens vs ~18.7k)
-- **Tool count**: 28 → 30 tools (added 2 workflow tools)
-- **Dynamic discovery**: Agents discover tools on-demand via `tool-search`
-- **Auto-enabling**: Discovered tools automatically added to agent context
-- **Startup optimization**: 94% reduction in initial context overhead
-- **Full feature parity**: All V2.0 features preserved with dynamic loading
-
-**New Tools in V3.0:**
-- `tool-search`: Dynamic tool discovery by name, description, category, or capability
-- `workflow-tap-element`: High-level semantic tap workflow combining accessibility assessment and element interaction
-- `workflow-fresh-install`: Clean slate installation workflow for testing
-
-**Tool Search Usage:**
-```javascript
-// Discover build tools
-tool-search({ query: "build", category: "build" })
-
-// Find simulator tools
-tool-search({ query: "boot" })
-
-// List all tools in a category
-tool-search({ category: "idb" })
-```
-
-**Workflow Tools:**
-- `workflow-tap-element`: Combines `accessibility-quality-check` + `idb-ui-find-element` + `idb-ui-tap` into single high-level operation
-- `workflow-fresh-install`: Combines device cleanup, fresh install, and app launch into single operation
-
-**For Claude Code (V3.0):**
-- Start with `tool-search` to discover relevant tools
-- Use `rtfm()` for detailed documentation once tools are discovered
-- `workflow-tap-element` for accessibility-first UI interaction
-- `workflow-fresh-install` for test environment setup
-- Progressive disclosure via cache IDs (buildId, testId, cacheId, uiTreeId)
+**For Claude Code:**
+- Use `rtfm({ categoryName })` / `rtfm({ toolName })` to discover tools and their parameters.
+- Prefer `accessibility-quality-check` + `idb-ui-find-element` over screenshots.
+- Progressive disclosure via cache IDs (buildId, testId, cacheId, uiTreeId) or the
+  `xcmcp://response/{cacheId}` resource.
+- Run `idb-doctor` first when any `idb-*` interaction appears to succeed but nothing moves on screen.
 
 **Environment Variables:**
-- `XC_MCP_DEFER_LOADING=false` - Disables deferred loading and loads all tools like V2.x (default: true)
+- `XC_MCP_DEFER_LOADING=false` — register all tools at startup instead of deferring (default: `true`)
+- `XC_MCP_CACHE_DIR` — disk-persistence cache directory (default `~/.xc-mcp`, honours `XDG_CACHE_HOME`)
+- `XC_MCP_HANG_DIR` — HangBuster sessions (default `~/.xc-mcp/hang-sessions`)
+- `XC_MCP_RECORDINGS_DIR` — test recordings (default `~/.xc-mcp/test-recordings`)
+
+**CLI flags:** `--mini` / `-m` (one-line tool descriptions), `--build-only` / `-b` (18 tools: the nine
+`xcodebuild-*`, `simctl-list`, cache + persistence, `rtfm`). They combine.
 
 ## Development Guidelines
 
@@ -290,7 +227,7 @@ tool-search({ category: "idb" })
 - **ESLint Configuration**: TypeScript-specific rules with Prettier integration
 - **Formatting**: 100-character line width, 2-space indentation, single quotes
 - **Language Target**: ES2020+ with Node.js ESM modules (`"type": "module"`)
-- **Coverage Requirements**: 60% minimum across branches, functions, lines, statements (current: 60.28%)
+- **Coverage Floors** (`jest.config.js`): 50% statements / lines / functions, 35% branches
 - **Pre-commit Validation**: Husky + lint-staged ensures code quality before commits
 - **Unused Variables**: Prefix with underscore (`_unused`) to satisfy linting
 
@@ -315,14 +252,14 @@ tool-search({ category: "idb" })
 ### Test Architecture
 - **Jest with ESM Support**: Uses `ts-jest` preset with ES module transformation
 - **Test Structure**: Tests in `tests/__tests__/` mirror `src/` structure
-- **Coverage Thresholds**: 80% minimum across all metrics (enforced in CI)
+- **Coverage Thresholds**: see `jest.config.js` — 50% statements / lines / functions, 35% branches
 - **Mock Integration**: Custom MCP SDK mocks for testing tool responses
 - **Test Categories**: State management, utility functions, command execution, and validation
 
 ### Running Tests
 - **All Tests**: `npm test` (includes TypeScript compilation validation)
 - **Specific Tests**: `npm test tests/__tests__/state/` (test specific modules)
-- **Coverage Report**: `npm test -- --coverage` (generates HTML + LCOV reports)
+- **Coverage Report**: `npm test -- --coverage` (generates HTML + LCOV reports; no `test:coverage` script exists)
 - **Watch Mode**: `npm test -- --watch` (re-run tests on file changes)
 - **Pattern Matching**: `npm test -- --testNamePattern="cache"` (test specific functionality)
 
@@ -366,18 +303,9 @@ tool-search({ category: "idb" })
 - **Command Execution**: `src/utils/command.ts` handles secure subprocess execution with proper error handling
 
 ### Tool Categories
-- **Project Discovery**: `xcodebuild-list`, `xcodebuild-showsdks`, `xcodebuild-version`
-- **Build Operations**: `xcodebuild-build`, `xcodebuild-clean`, `xcodebuild-get-details`
-- **Test Operations**: `xcodebuild-test` (with support for test plans, filtering, and test-without-building)
-- **Simulator Discovery**: `simctl-list`, `simctl-get-details`, `simctl-suggest`
-- **Simulator Lifecycle**: `simctl-create`, `simctl-delete`, `simctl-erase`, `simctl-clone`, `simctl-rename`, `simctl-health-check`
-- **Simulator Control**: `simctl-boot`, `simctl-shutdown`
-- **App Management**: `simctl-install`, `simctl-uninstall`, `simctl-get-app-container`
-- **App Control**: `simctl-launch`, `simctl-terminate`, `simctl-openurl`
-- **I/O & Media**: `simctl-io` (screenshots/videos), `simctl-addmedia` (photo library)
-- **Advanced Testing**: `simctl-privacy` (permissions), `simctl-push` (notifications), `simctl-pbcopy` (clipboard), `simctl-status-bar` (status bar override)
-- **Cache Management**: `cache-get-stats`, `cache-set-config`, `cache-get-config`, `cache-clear`, `list-cached-responses`
-- **Documentation**: `rtfm` (Read The Manual - progressive disclosure documentation for all 51 tools)
+
+See **Tool Categories (V4.1)** above, or [TOOL_SIGNATURES.md](./TOOL_SIGNATURES.md) for the generated
+index of all 71 tools with their MCP annotations. `rtfm` is the source of truth for parameters.
 
 ## LLM Optimization Patterns
 
