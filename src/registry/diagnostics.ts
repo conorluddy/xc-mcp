@@ -17,6 +17,11 @@ import {
   HANG_LIST_DOCS,
   HANG_LIST_DOCS_MINI,
 } from '../tools/diagnostics/hang/tools.js';
+import {
+  idbDoctorTool,
+  IDB_DOCTOR_DOCS,
+  IDB_DOCTOR_DOCS_MINI,
+} from '../tools/diagnostics/idb-doctor.js';
 
 const ENABLE_DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
 const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
@@ -28,6 +33,23 @@ const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
  * via os_log streaming + a clustering pipeline.
  */
 export function registerDiagnosticsTools(server: McpServer): void {
+  // idb-doctor: the silent-tap failure needs an explicit way to ask "is idb actually working?"
+  server.registerTool(
+    'idb-doctor',
+    {
+      title: 'Diagnose idb Environment',
+      description: getDescription(IDB_DOCTOR_DOCS, IDB_DOCTOR_DOCS_MINI),
+      inputSchema: {},
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        ...DEFER_LOADING_CONFIG,
+      },
+    },
+    async () => idbDoctorTool()
+  );
+
   // hang-start
   server.registerTool(
     'hang-start',

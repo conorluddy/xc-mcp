@@ -1,6 +1,7 @@
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { formatToolError } from '../../utils/error-formatter.js';
 import { executeCommandWithArgs } from '../../utils/command.js';
+import { assertHidWritesSupported } from '../../utils/idb-environment.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
 import { IDBTargetCache } from '../../state/idb-target-cache.js';
 import { isValidUdid } from '../../utils/shell-escape.js';
@@ -86,6 +87,9 @@ interface IdbUiInputArgs {
  * @returns Tool result with input status and semantic context
  */
 export async function idbUiInputTool(args: IdbUiInputArgs) {
+  // Fail loudly rather than let a stale idb-companion drop the event silently.
+  await assertHidWritesSupported();
+
   const {
     udid,
     operation,
