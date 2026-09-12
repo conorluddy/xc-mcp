@@ -5,6 +5,7 @@ import { IDBTargetCache } from '../../state/idb-target-cache.js';
 import { responseCache, responseResourceLink } from '../../utils/response-cache.js';
 import { formatToolError } from '../../utils/error-formatter.js';
 import { parseFlexibleJson } from '../../utils/json-parser.js';
+import { parseAXFrame } from '../../utils/ax-frame.js';
 
 interface IdbUiDescribeArgs {
   udid?: string;
@@ -418,71 +419,6 @@ async function executeDescribePointOperation(udid: string, x: number, y: number)
 // ============================================================================
 // PARSING HELPERS
 // ============================================================================
-
-/**
- * Parse AXFrame string format to coordinates
- *
- * Why: IDB returns frame as "{{x, y}, {width, height}}"
- * Need to extract individual values and calculate center coordinates.
- *
- * Example: "{{100, 200}, {50, 100}}" -> { x: 100, y: 200, width: 50, height: 100, centerX: 125, centerY: 250 }
- */
-function parseAXFrame(frameInput: string | object | undefined): {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  centerX: number;
-  centerY: number;
-} | null {
-  if (!frameInput) {
-    return null;
-  }
-
-  // If already parsed as object (from JSON array format)
-  if (typeof frameInput === 'object' && 'x' in frameInput && 'y' in frameInput) {
-    const frame = frameInput as { x: number; y: number; width: number; height: number };
-    return {
-      x: frame.x,
-      y: frame.y,
-      width: frame.width,
-      height: frame.height,
-      centerX: frame.x + frame.width / 2,
-      centerY: frame.y + frame.height / 2,
-    };
-  }
-
-  // Parse string format "{{x, y}, {width, height}}"
-  if (typeof frameInput !== 'string') {
-    return null;
-  }
-
-  const match = frameInput.match(/\{\{([^}]+)\},\s*\{([^}]+)\}\}/);
-  if (!match) {
-    return null;
-  }
-
-  const coords = match[1].split(',').map((v: string) => parseInt(v.trim(), 10));
-  const size = match[2].split(',').map((v: string) => parseInt(v.trim(), 10));
-
-  if (coords.length !== 2 || size.length !== 2 || coords.some(isNaN) || size.some(isNaN)) {
-    return null;
-  }
-
-  const x = coords[0];
-  const y = coords[1];
-  const width = size[0];
-  const height = size[1];
-
-  return {
-    x,
-    y,
-    width,
-    height,
-    centerX: x + width / 2,
-    centerY: y + height / 2,
-  };
-}
 
 /**
  * Check if element is tappable based on filter level

@@ -2,6 +2,8 @@ import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
 import { IDBTargetCache } from '../../state/idb-target-cache.js';
+import { parseFlexibleJson } from '../../utils/json-parser.js';
+import { parseAXFrame } from '../../utils/ax-frame.js';
 
 interface IdbUiFindElementArgs {
   udid?: string;
@@ -169,7 +171,7 @@ export async function idbUiFindElementTool(args: IdbUiFindElementArgs) {
     // STAGE 3: Parse and Filter Elements
     // ============================================================================
 
-    const elements = parseNdJson(result.stdout);
+    const elements = parseFlexibleJson(result.stdout);
     const matches = filterElementsByQuery(elements, normalizedQuery);
 
     // Record successful operation
@@ -280,72 +282,8 @@ export async function idbUiFindElementTool(args: IdbUiFindElementArgs) {
 // ============================================================================
 
 /**
- * Parse AXFrame string format to coordinates
- */
-function parseAXFrame(frameStr: string | undefined): {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  centerX: number;
-  centerY: number;
-} | null {
-  if (!frameStr) {
-    return null;
-  }
-
-  // Parse "{{x, y}, {width, height}}"
-  const match = frameStr.match(/\{\{([^}]+)\},\s*\{([^}]+)\}\}/);
-  if (!match) {
-    return null;
-  }
-
-  const coords = match[1].split(',').map((v: string) => parseInt(v.trim(), 10));
-  const size = match[2].split(',').map((v: string) => parseInt(v.trim(), 10));
-
-  if (coords.length !== 2 || size.length !== 2 || coords.some(isNaN) || size.some(isNaN)) {
-    return null;
-  }
-
-  const x = coords[0];
-  const y = coords[1];
-  const width = size[0];
-  const height = size[1];
-
-  return {
-    x,
-    y,
-    width,
-    height,
-    centerX: x + width / 2,
-    centerY: y + height / 2,
-  };
-}
-
-/**
  * Parse NDJSON output from idb ui describe-all
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function parseNdJson(ndjsonText: string): any[] {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const elements: any[] = [];
-  const lines = ndjsonText.split('\n');
-
-  for (const line of lines) {
-    if (!line.trim()) {
-      continue;
-    }
-
-    try {
-      const element = JSON.parse(line);
-      elements.push(element);
-    } catch {
-      console.error(`[idb-ui-find-element] Failed to parse NDJSON line: ${line}`);
-    }
-  }
-
-  return elements;
-}
 
 /**
  * Filter elements matching search query
@@ -380,12 +318,16 @@ function filterElementsByQuery(
   }> = [];
 
   for (const element of elements) {
-    const label = (element.label || '').toLowerCase();
-    const identifier = (element.identifier || '').toLowerCase();
+    // iOS `idb ui describe-all` emits AXLabel/AXUniqueId; other versions emit label/identifier.
+    const elementLabel = element.label || element.AXLabel;
+    const elementIdentifier = element.identifier || element.AXUniqueId;
+
+    const label = (elementLabel || '').toLowerCase();
+    const identifier = (elementIdentifier || '').toLowerCase();
 
     // Match if query appears in label or identifier
     if (label.includes(query) || identifier.includes(query)) {
-      const frame = parseAXFrame(element.frame);
+      const frame = parseAXFrame(element.frame ?? element.AXFrame);
 
       // Skip elements without frame coordinates
       if (!frame) {
@@ -394,8 +336,8 @@ function filterElementsByQuery(
 
       matches.push({
         type: element.type || 'Unknown',
-        label: element.label,
-        identifier: element.identifier,
+        label: elementLabel,
+        identifier: elementIdentifier,
         enabled: element.enabled !== false, // Default to true if not specified
         x: frame.x,
         y: frame.y,
