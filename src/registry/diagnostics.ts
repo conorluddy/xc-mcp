@@ -44,8 +44,9 @@ export function registerDiagnosticsTools(server: McpServer): void {
         readOnlyHint: true,
         destructiveHint: false,
         idempotentHint: true,
-        ...DEFER_LOADING_CONFIG,
+        openWorldHint: false,
       },
+      ...DEFER_LOADING_CONFIG,
     },
     async () => idbDoctorTool()
   );

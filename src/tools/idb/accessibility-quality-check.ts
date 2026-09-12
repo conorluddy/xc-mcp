@@ -2,6 +2,7 @@ import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
 import { IDBTargetCache } from '../../state/idb-target-cache.js';
+import { parseFlexibleJson } from '../../utils/json-parser.js';
 
 interface AccessibilityQualityCheckArgs {
   udid?: string;
@@ -181,7 +182,7 @@ export async function accessibilityQualityCheckTool(args: AccessibilityQualityCh
     // STAGE 3: Assess Quality
     // ============================================================================
 
-    const elements = parseNdJson(result.stdout);
+    const elements = parseFlexibleJson(result.stdout);
     const assessment = assessAccessibilityQuality(elements);
 
     // Record successful operation
@@ -406,24 +407,3 @@ function getGuidance(
 /**
  * Parse NDJSON output from idb ui describe-all
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function parseNdJson(ndjsonText: string): any[] {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const elements: any[] = [];
-  const lines = ndjsonText.split('\n');
-
-  for (const line of lines) {
-    if (!line.trim()) {
-      continue;
-    }
-
-    try {
-      const element = JSON.parse(line);
-      elements.push(element);
-    } catch {
-      console.error(`[accessibility-quality-check] Failed to parse NDJSON line: ${line}`);
-    }
-  }
-
-  return elements;
-}

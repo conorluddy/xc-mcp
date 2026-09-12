@@ -2,6 +2,7 @@ import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
 import { IDBTargetCache } from '../../state/idb-target-cache.js';
+import { parseFlexibleJson } from '../../utils/json-parser.js';
 
 // === TYPES ===
 
@@ -205,21 +206,6 @@ function parseFrame(frame: AuditElement['frame']): { width: number; height: numb
 /**
  * Parse NDJSON (one JSON object per line) from idb output.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function parseNdJson(text: string): any[] {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const results: any[] = [];
-  for (const line of text.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-    try {
-      results.push(JSON.parse(trimmed));
-    } catch {
-      console.error(`[accessibility-audit] Failed to parse NDJSON line: ${trimmed}`);
-    }
-  }
-  return results;
-}
 
 /**
  * Flatten a nested accessibility tree, attaching depth to each node.
@@ -378,7 +364,7 @@ export async function accessibilityAuditTool(args: any) {
     // STAGE 3: Parse + flatten
     // ============================================================================
 
-    const rawElements = parseNdJson(result.stdout);
+    const rawElements = parseFlexibleJson(result.stdout);
     // idb describe-all returns flat NDJSON; flattenTree handles both flat and nested
     const elements: AuditElement[] = rawElements.flatMap(el => flattenTree(el));
 

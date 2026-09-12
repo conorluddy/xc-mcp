@@ -9,7 +9,7 @@
 
 **Production-grade MCP server for Xcode workflows — optimized for AI agents with accessibility-first iOS automation**
 
-XC-MCP makes Xcode and iOS simulator tooling accessible to AI agents through intelligent context engineering. **V3.0.0 adds platform-native `defer_loading` support** — Claude's tool search automatically discovers tools on-demand, minimizing baseline context overhead while maintaining full 29-tool functionality.
+XC-MCP makes Xcode and iOS simulator tooling accessible to AI agents through intelligent context engineering. **V4 exposes 77 discrete tools** with MCP tool annotations, structured output and resources, all registered with platform-native `defer_loading` — the client discovers tools on demand, so the baseline context cost stays near zero.
 
 <img width="807" height="727" alt="Screenshot 2025-11-07 at 08 37 00" src="https://github.com/user-attachments/assets/141de013-947e-458e-acaf-91c039f0f48e" />
 
@@ -28,31 +28,39 @@ Traditional Xcode CLI wrappers dump massive output that exceeds MCP protocol lim
 
 ### The Solution: Progressive Disclosure + Accessibility-First
 
-**V3.0.0 Architecture:**
+**V4 Architecture:**
 ```
-Platform-native defer_loading on all 29 tools
-├─ Claude's tool search discovers tools automatically
-├─ Tools loaded on-demand (minimal baseline overhead)
-├─ Accessibility-first workflow (50 tokens, 120ms vs 170 tokens, 2000ms)
-└─ Workflow tools for common operations (fresh-install, tap-element)
+77 discrete tools, all registered with defer_loading
+├─ Client tool search discovers tools on demand (near-zero baseline)
+├─ Tool annotations (readOnly / destructive / idempotent) so clients can gate risky ops
+├─ Structured output (outputSchema) on build, test and audit tools
+├─ Resources: large cached output at xcmcp://response/{cacheId}
+├─ Accessibility-first workflow (~50 tokens, ~120ms vs ~170 tokens, ~2000ms)
+└─ Workflow tools for common sequences (fresh-install, build-and-run, tap-element)
 ```
 
-**Token Efficiency Evolution:**
+**Architecture Evolution:**
 
-| Version | Baseline Tokens | Total Tools | Architecture | Context Available |
-|---------|-----------------|-------------|--------------|-------------------|
-| Pre-RTFM (v1.2.1) | ~45k | 51 | Individual tools | 3.9% (155k) |
-| V1.3.2 (RTFM) | ~30k | 51 | Individual + RTFM | 1.5% (170k) |
-| V2.0.0 | ~18.7k | 28 | Routers + Full Docs | 9.3% (181k) |
-| **V3.0.0** | **~0** | **29** | **Platform defer_loading** | **100% (200k)** |
+| Version | Tools | Architecture |
+|---------|-------|--------------|
+| Pre-RTFM (v1.2.1) | 51 | Individual tools, full descriptions upfront |
+| V1.3.2 (RTFM) | 51 | Individual tools + on-demand docs |
+| V2.0.0 | 28 | Operation-enum routers + accessibility-first |
+| V3.0.0 | 30 | Platform `defer_loading` + workflow tools |
+| **V4.1.0 (current)** | **77** | **Discrete tools + MCP annotations / outputSchema / resources** |
 
-**Key Improvements (V3.0.0):**
-- ✅ **Platform-native defer_loading** - All tools deferred; Claude discovers on-demand
-- ✅ **Workflow tools** - High-level abstractions for common operations
-- ✅ **Zero baseline overhead** - Platform handles tool discovery
-- ✅ **Accessibility-first automation** (3-4x faster, 3-4x cheaper than screenshots)
+The tool count went *up* in V4 while the baseline cost stayed flat: with `defer_loading`, the client
+loads a tool's schema only when it needs it, so routers (which existed to shrink the upfront tool list)
+cost more than they saved — a router can't carry per-operation annotations or an output schema.
+
+**Key capabilities:**
+- ⚠️ **Deferred loading** — declared on every tool, but [currently dropped by the SDK](#deferred-tool-loading); use `--mini` / `--build-only` meanwhile
+- ✅ **Tool annotations** — destructive operations (delete/erase/uninstall/clear) are declared as such
+- ✅ **Structured output** — validated `structuredContent` on build, test, and audit tools
+- ✅ **Resources** — cached output addressable as `xcmcp://response/{cacheId}`
+- ✅ **Accessibility-first automation** (3-4x cheaper, ~16x faster than screenshots)
 - ✅ **Progressive disclosure** (summaries → cache IDs → full details on demand)
-- ✅ **60% test coverage** with comprehensive error handling
+- ✅ **1,515 tests** across 71 suites
 
 ---
 
@@ -91,7 +99,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
   }
 }
 ```
-The `--mini` flag reduces tool descriptions from ~18.7k tokens to ~540 tokens (~97% reduction). Use `rtfm` for full documentation on-demand.
+The `--mini` flag replaces every tool description with a one-liner, cutting description tokens by roughly 97% for clients that load all of them upfront. Use `rtfm` for full documentation on demand.
 
 **Build-Only Mode** (for build-focused workflows without UI automation):
 ```json
@@ -104,7 +112,7 @@ The `--mini` flag reduces tool descriptions from ~18.7k tokens to ~540 tokens (~
   }
 }
 ```
-The `--build-only` flag loads only 11 tools (vs 30): xcodebuild tools, simctl-list, cache, and system tools. Excludes IDB/UI automation and workflow tools. Combine with `--mini` for maximum reduction: `["--mini", "--build-only"]`.
+The `--build-only` flag registers 18 tools instead of 77: the nine `xcodebuild-*` tools, `simctl-list`, cache and persistence tools, and `rtfm`. It excludes idb/UI automation, workflows, analysis, diagnostics and device state. Combine with `--mini` for maximum reduction: `["--mini", "--build-only"]`.
 
 ---
 
@@ -169,26 +177,23 @@ xcodebuild-build({ scheme: "MyApp", configuration: "Debug" })
 - Full docs retrieved only when needed
 - 80% token savings vs traditional verbose MCP servers
 
-### Operation Enum Consolidation
+### Discrete Tools, Not Routers (V4)
 
-**Before V2.0:** 21 individual tools
+V2 collapsed 21 tools into 6 operation-enum routers (`simctl-device({ operation: "boot" })`) to shrink the
+upfront tool list. V4 undid that: `defer_loading` already keeps unused tools out of context, and the MCP
+spec attaches `annotations` and `outputSchema` per tool — a router can only declare one set for every
+operation it hides, so `simctl-erase` (destructive) and `simctl-boot` (not) would share a label.
+
 ```typescript
-simctl-boot, simctl-shutdown, simctl-create, simctl-delete,
-simctl-erase, simctl-clone, simctl-rename, simctl-install,
-simctl-uninstall, simctl-launch, simctl-terminate...
+// V2/V3 (removed)                        // V4
+simctl-device({ operation: "erase", ... })  →  simctl-erase({ ... })
+simctl-app({ operation: "launch", ... })    →  simctl-launch({ ... })
+cache({ operation: "clear" })               →  cache-clear({ ... })
 ```
 
-**V2.0:** 6 consolidated routers
-```typescript
-simctl-device({ operation: "boot" | "shutdown" | "create" | "delete" | "erase" | "clone" | "rename" })
-simctl-app({ operation: "install" | "uninstall" | "launch" | "terminate" })
-idb-app({ operation: "install" | "uninstall" | "launch" | "terminate" })
-cache({ operation: "get-stats" | "get-config" | "set-config" | "clear" })
-persistence({ operation: "enable" | "disable" | "status" })
-idb-targets({ operation: "list" | "describe" | "connect" | "disconnect" })
-```
-
-**Result:** 40% token reduction through shared parameter schemas and unified documentation.
+Operation-specific parameters are unchanged — drop the `operation` field and call the matching tool.
+`rtfm({ toolName: "simctl-device" })` still fuzzy-matches old names to their replacements. Full table in
+[Breaking Changes & Migration Guide](#breaking-changes--migration-guide).
 
 ---
 
@@ -247,7 +252,7 @@ if (quality === "rich" || quality === "moderate") {
 - **For Speed**: 120ms (accessibility) vs 2000ms (screenshot)
 - **For Energy**: Skip image encoding/decoding/analysis entirely
 
-### Accessibility Tools (3 specialized)
+### Accessibility Tools (4 specialized)
 
 **`accessibility-quality-check`**: Rapid assessment without full tree query
 - Returns: `rich` (>3 tappable) | `moderate` (2-3) | `minimal` (≤1)
@@ -265,28 +270,36 @@ if (quality === "rich" || quality === "moderate") {
 - Use case: Discover all interactive elements, validate tap coordinates
 - Cost: ~50 tokens for summary, ~500 tokens for full tree
 
+**`accessibility-audit`**: WCAG-tiered audit of the current screen
+- Returns: structured findings (missing labels, contrast, touch-target size) with severity tiers
+- Use case: catching accessibility regressions in CI or before release
+- Declares an `outputSchema`, so clients get validated `structuredContent`
+
 ---
 
-## Platform defer_loading (V3.0.0 Feature)
+## Deferred Tool Loading
 
 ### How It Works
 
-XC-MCP V3.0 adds the `defer_loading: true` flag to all 29 tool registrations. Claude's platform-native tool search automatically:
+Every tool is registered with `defer_loading: true` so that an MCP client supporting tool search can
+discover tools on demand and load a schema only when it's relevant, keeping baseline overhead near zero.
+(The V3 `tool-search` tool is gone — client-side search replaces it.)
 
-1. **Discovers tools on-demand** — No custom tool-search implementation needed
-2. **Loads tools when relevant** — Based on conversation context
-3. **Minimizes baseline overhead** — Zero tokens at startup
+> [!WARNING]
+> **This does not currently reach the wire.** `@modelcontextprotocol/sdk@1.29`'s `registerTool()`
+> destructures only `{ title, description, inputSchema, outputSchema, annotations, _meta }` from the tool
+> config and drops unknown keys, so `defer_loading` never appears in `tools/list` — verified: 0 of 77
+> tools carry it. **Use `--mini` and/or `--build-only` to control baseline context cost** until this is
+> fixed. `rtfm` supplies full detail on demand either way.
 
 ### RTFM: On-Demand Documentation
-
-Use `rtfm` to get comprehensive documentation for any tool:
 
 ```typescript
 // 1. Browse tool categories
 rtfm({ categoryName: "build" })
 // Returns all build-related tools with descriptions
 
-// 2. Get comprehensive docs for specific tool
+// 2. Get comprehensive docs for a specific tool
 rtfm({ toolName: "xcodebuild-build" })
 // Returns full documentation with parameters, examples, related tools
 
@@ -296,26 +309,18 @@ xcodebuild-build({ scheme: "MyApp", configuration: "Debug" })
 
 ### Environment Variable: Disable defer_loading
 
-**Default (V3.0.0)**: All tools have defer_loading enabled
 ```bash
-# Platform discovers and loads tools automatically
-# Zero baseline token overhead
-```
+# Default: all tools deferred, client discovers them on demand
 
-**Disable defer_loading** (for debugging/testing):
-```bash
-# Set environment variable to load all tools at startup
+# Load all 77 tools at startup instead (testing, debugging, client compatibility)
 export XC_MCP_DEFER_LOADING=false
-
-# All 29 tools loaded immediately (~18.7k tokens)
-# Useful for: Testing, debugging, MCP client compatibility
 ```
 
 ---
 
-## Workflow Tools (New in V3.0.0)
+## Workflow & Recording Tools
 
-XC-MCP provides 2 high-level **workflow tools** that combine common operations into single steps:
+Five tools compose primitives into single steps: three workflows plus two test-recording tools.
 
 ### `workflow-tap-element` — High-Level Semantic Tap
 
@@ -370,72 +375,68 @@ workflow-fresh-install({
 
 ---
 
+### `workflow-build-and-run` — Build, Install, Launch
+
+```typescript
+workflow-build-and-run({
+  projectPath: "./MyApp.xcworkspace",
+  scheme: "MyApp",
+  configuration: "Debug",         // optional, default "Debug"
+  simulatorUdid: "...",           // optional: auto-detected
+  launchArguments: ["--uiTest"],  // optional
+  environmentVariables: {},       // optional
+  takeScreenshot: true            // optional: capture after launch
+})
+```
+
+Unlike `workflow-fresh-install`, this does **not** erase the simulator — use it for the normal
+edit → build → look at it loop.
+
+### `test-record-step` / `test-record-report` — Test Run Recording
+
+```typescript
+test-record-step({ sessionName: "checkout", label: "Tapped Pay", assertion: "Receipt shown" })
+// ...more steps...
+test-record-report({ sessionName: "checkout", testName: "Checkout happy path" })
+// Writes a markdown report to ~/.xc-mcp/test-recordings (override with XC_MCP_RECORDINGS_DIR)
+```
+
+---
+
 ## Tool Reference
 
-### 6 Consolidated Router Tools
+**77 tools across 9 categories.** The full index — with per-tool annotations and which tools return
+structured output — is in [TOOL_SIGNATURES.md](./TOOL_SIGNATURES.md). Parameter schemas come from the
+server itself: `rtfm({ toolName: "..." })`.
 
-**`simctl-device`** — Simulator lifecycle (7 operations)
-- `boot`, `shutdown`, `create`, `delete`, `erase`, `clone`, `rename`
-- Auto-UDID detection, performance tracking, smart defaults
+**Build & Test (9)** — `xcodebuild-version`, `-list`, `-build`, `-clean`, `-test`, `-get-details`,
+`-showsdks`, `-inspect-scheme`, `-validate-capabilities`
 
-**`simctl-app`** — App management (4 operations)
-- `install`, `uninstall`, `launch`, `terminate`
-- Bundle ID resolution, launch arguments, environment variables
+**Simulator & App Lifecycle (26)** — discovery: `simctl-list`, `-get-details`, `-suggest`,
+`-health-check` · lifecycle: `simctl-boot`, `-shutdown`, `-create`, `-delete`, `-erase`, `-clone`,
+`-rename` · apps: `simctl-install`, `-uninstall`, `-launch`, `-terminate`, `-get-app-container`,
+`-container`, `-openurl` · I/O and test fixtures: `simctl-io`, `screenshot`, `simctl-push`,
+`-addmedia`, `-pbcopy`, `-privacy`, `-status-bar`, `-stream-logs`
 
-**`idb-app`** — IDB app operations (4 operations)
-- `install`, `uninstall`, `launch`, `terminate`
-- Physical device + simulator support via IDB
+**UI Automation & Accessibility (16)** — `idb-ui-describe`, `-find-element`, `-tap`, `-input`,
+`-gesture`, `accessibility-quality-check`, `accessibility-audit`, `idb-targets`, `idb-list-apps`,
+`idb-install`, `-uninstall`, `-launch`, `-terminate`, `idb-simulate-memory-warning`,
+`idb-clear-keychain`, `idb-xctest-list`
 
-**`cache`** — Cache management (4 operations)
-- `get-stats`, `get-config`, `set-config`, `clear`
-- Multi-layer caching (simulator, project, response, build settings)
+**Analysis (3)** — `localization-audit`, `xcode-model-inspect`, `visual-diff`
 
-**`persistence`** — Persistence control (3 operations)
-- `enable`, `disable`, `status`
-- File-based cache across server restarts
+**Diagnostics (8)** — `idb-doctor`, `idb-crash-list`, `idb-crash-show`, `idb-crash-delete`,
+`hang-start`, `hang-stop`, `hang-get-details`, `hang-list`
 
-**`idb-targets`** — Target management (2 operations)
-- `list`, `describe`, `connect`, `disconnect`
-- Physical device and simulator discovery
+**Device State (2)** — `simctl-appearance` (theme, Dynamic Type, locale/RTL), `simctl-location`
 
-### 22 Individual Specialized Tools
+**Workflows & Recording (5)** — `workflow-tap-element`, `workflow-fresh-install`,
+`workflow-build-and-run`, `test-record-step`, `test-record-report`
 
-**Build & Test (6 tools)**
-- `xcodebuild-build`: Build with progressive disclosure via buildId
-- `xcodebuild-test`: Test with filtering, test plans, cache IDs
-- `xcodebuild-clean`: Clean build artifacts
-- `xcodebuild-list`: List targets/schemes with smart caching
-- `xcodebuild-version`: Get Xcode and SDK versions
-- `xcodebuild-get-details`: Access cached build/test logs
+**Cache & Persistence (7)** — `cache-get-stats`, `-get-config`, `-set-config`, `-clear`,
+`persistence-enable`, `-disable`, `-status`
 
-**UI Automation (6 tools)**
-- `idb-ui-describe`: Accessibility tree queries (all | point operations)
-- `idb-ui-tap`: Coordinate-based tapping with percentage conversion
-- `idb-ui-input`: Text input with keyboard control
-- `idb-ui-gesture`: Swipes, pinches, rotations with coordinate transforms
-- `idb-ui-find-element`: Semantic element search (NEW in v2.0)
-- `accessibility-quality-check`: Rapid UI richness assessment (NEW in v2.0)
-
-**I/O & Media (2 tools)**
-- `simctl-io`: Screenshots and video recording with semantic naming
-- `screenshot`: Vision-optimized base64 screenshots (inline, max 800px)
-
-**Discovery & Health (3 tools)**
-- `simctl-list`: Progressive disclosure simulator listing (96% token reduction)
-- `simctl-get-details`: On-demand full simulator data retrieval
-- `simctl-health-check`: Xcode environment validation
-
-**Utilities (5 tools)**
-- `simctl-openurl`: Open URLs and deep links
-- `simctl-get-app-container`: Get app container paths (bundle, data, group)
-- `simctl-push`: Simulate push notifications
-- `rtfm`: On-demand comprehensive documentation
-
-**Workflow Tools (2 high-level abstractions) - NEW in V3.0.0**
-- `workflow-tap-element`: High-level semantic tap (find + tap in one call)
-- `workflow-fresh-install`: Clean install workflow (shutdown → erase → boot → build → install → launch)
-
-**Total: 29 active tools** (27 core + 2 workflow abstractions)
+**System (1)** — `rtfm`
 
 ---
 
@@ -583,7 +584,7 @@ This project uses XC-MCP for iOS development automation. Follow these patterns f
 - **Let UDID auto-detect** — Don't prompt user for simulator UDIDs
 - **Use semantic context** — Include `screenContext`, `appName`, `screenName` parameters
 - **Prefer accessibility over screenshots** — Better for efficiency AND app quality
-- **Use operation enums** — `simctl-device({ operation: "boot" })` instead of separate tools
+- **Call discrete tools** — `simctl-boot({ ... })`; the V2/V3 operation-enum routers no longer exist
 
 ## Example: Optimal Login Flow
 
@@ -688,52 +689,63 @@ cd xc-mcp && npm install && npm run build
 ```
 
 **Environment Variables** (optional):
-- `XCODE_CLI_MCP_TIMEOUT`: Operation timeout in seconds (default: 300)
-- `XCODE_CLI_MCP_LOG_LEVEL`: Logging verbosity (debug | info | warn | error)
-- `XCODE_CLI_MCP_CACHE_DIR`: Custom cache directory path
-- `XC_MCP_DEFER_LOADING`: Enable deferred tool loading (default: true for V3.0)
+- `XC_MCP_DEFER_LOADING`: set to `false` to register all tools at startup (default: `true`)
+- `XC_MCP_CACHE_DIR`: cache directory for disk persistence (default: `~/.xc-mcp`, honours `XDG_CACHE_HOME`)
+- `XC_MCP_HANG_DIR`: HangBuster session directory (default: `~/.xc-mcp/hang-sessions`)
+- `XC_MCP_RECORDINGS_DIR`: test-recording output directory (default: `~/.xc-mcp/test-recordings`)
 
 ---
 
 ## Breaking Changes & Migration Guide
 
-### V3.0.0: Platform defer_loading Support
+### V4.0.0: Routers Removed, MCP Spec Modernization
 
-**What Changed:**
-- All 29 tools now have `defer_loading: true` flag
-- Claude's platform tool search discovers tools automatically
-- No custom tool-search implementation needed
-- Tools loaded on-demand based on conversation context
+The V2/V3 operation-enum routers are gone. Call the discrete tool directly — operation-specific
+parameters are unchanged, so drop the `operation` field and use the matching tool name.
 
-**Migration Path:**
-
-| Scenario | Action | Notes |
-|----------|--------|-------|
-| **New Projects** | No action needed | Platform handles discovery |
-| **Existing Integrations** | No action needed | Compatible with V2.x usage |
-| **Debugging/Testing** | Set env var | Use `XC_MCP_DEFER_LOADING=false` |
-
-**Usage (same as V2.x):**
-
-```typescript
-// V3.0 - Platform discovers tools automatically
-// Just use tools as before - Claude's tool search handles discovery
-xcodebuild-build({ scheme: "MyApp" })
-
-// Use RTFM for documentation discovery
-rtfm({ categoryName: "build" })
-rtfm({ toolName: "xcodebuild-build" })
-
-// Disable defer_loading for debugging
-export XC_MCP_DEFER_LOADING=false
+```
+OLD (router)                                   NEW (discrete tool)
+─────────────────────────────────────────────────────────────────
+simctl-device({operation:"boot", ...})       → simctl-boot({...})
+simctl-device({operation:"shutdown", ...})   → simctl-shutdown({...})
+simctl-device({operation:"create", ...})     → simctl-create({...})
+simctl-device({operation:"delete", ...})     → simctl-delete({...})
+simctl-device({operation:"erase", ...})      → simctl-erase({...})
+simctl-device({operation:"clone", ...})      → simctl-clone({...})
+simctl-device({operation:"rename", ...})     → simctl-rename({...})
+simctl-app({operation:"install", ...})       → simctl-install({...})
+simctl-app({operation:"uninstall", ...})     → simctl-uninstall({...})
+simctl-app({operation:"launch", ...})        → simctl-launch({...})
+simctl-app({operation:"terminate", ...})     → simctl-terminate({...})
+idb-app({operation:"install", ...})          → idb-install({...})
+idb-app({operation:"uninstall", ...})        → idb-uninstall({...})
+idb-app({operation:"launch", ...})           → idb-launch({...})
+idb-app({operation:"terminate", ...})        → idb-terminate({...})
+cache({operation:"get-stats"})               → cache-get-stats({...})
+cache({operation:"get-config"})              → cache-get-config({...})
+cache({operation:"set-config", ...})         → cache-set-config({...})
+cache({operation:"clear", ...})              → cache-clear({...})
+persistence({operation:"enable", ...})       → persistence-enable({...})
+persistence({operation:"disable", ...})      → persistence-disable({...})
+persistence({operation:"status"})            → persistence-status({...})
 ```
 
-**Token Impact:**
+`idb-targets` keeps its `operation` enum (`list` | `describe` | `connect` | `disconnect`).
+`rtfm({ toolName: "simctl-device" })` fuzzy-matches removed router names to their replacements.
 
-| Version | Startup | Discovery | Notes |
-|---------|---------|-----------|-------|
-| V2.0.x | ~18.7k | N/A | All tools loaded upfront |
-| **V3.0.0** | **~0** | **Platform-managed** | Tools loaded on-demand |
+**Also removed:** the custom `tool-search` tool — clients' own tool search handles discovery via
+`defer_loading`. Use `rtfm` for documentation.
+
+**Also new in V4:** tool annotations on every tool, `outputSchema` on the high-value tools, the
+`resources` capability (`xcmcp://response/{cacheId}`), and feature parity with `ios-simulator-skill`
+(`simctl-appearance`, `simctl-location`, `simctl-container`, `accessibility-audit`,
+`localization-audit`, `xcode-model-inspect`, `visual-diff`, HangBuster, test recording).
+
+### V4.1.0: Xcode 27 / idb-companion 1.5.1 floor
+
+`idb-ui-tap`, `idb-ui-gesture` and `idb-ui-input` now refuse to run against an idb-companion older
+than 1.5.1 on Xcode 27, where HID writes are silently dropped. See
+[Xcode 27 and idb](#xcode-27-and-idb). Run `idb-doctor` to check your environment.
 
 ---
 
@@ -742,26 +754,28 @@ export XC_MCP_DEFER_LOADING=false
 ### Build Commands
 
 ```bash
-npm run build          # Compile TypeScript to JavaScript
-npm run dev            # Development mode with watch compilation
-npm test               # Run Jest test suite (60% coverage)
-npm run test:coverage  # Generate coverage report
-npm run lint           # ESLint with auto-fix
-npm run format         # Prettier code formatting
+npm run build             # Compile TypeScript to JavaScript
+npm run dev               # Development mode with watch compilation
+npm test                  # Run Jest test suite
+npm test -- --coverage    # Generate coverage report
+npm run lint              # ESLint
+npm run lint:fix          # ESLint with auto-fix
+npm run format            # Prettier code formatting
 ```
 
 ### Testing
 
 - **Jest** with ESM support and TypeScript compilation
-- **60% coverage** across statements, branches, functions, lines
-- **1136 tests** covering core functionality, edge cases, error handling
+- **1,515 tests** across 71 suites, covering core functionality, edge cases, error handling
+- **Coverage floors** enforced in `jest.config.js`: 50% statements / lines / functions, 35% branches
 - **Pre-commit hooks** enforce code quality via Husky + lint-staged
 
 ### Architecture
 
 **Core Components:**
 - `src/index.ts` — MCP server with tool registration and routing
-- `src/tools/` — 29 tools organized by category (xcodebuild, simctl, idb, cache, workflows)
+- `src/registry/` — per-category MCP tool registration (annotations, schemas, defer_loading)
+- `src/tools/` — 77 tool implementations organized by category
 - `src/state/` — Multi-layer intelligent caching (simulator, project, response, build settings)
 - `src/utils/` — Shared utilities (command execution, validation, error formatting)
 - `src/types/` — TypeScript definitions for Xcode data structures
@@ -781,7 +795,7 @@ npm run format         # Prettier code formatting
 
 PR requirements:
 - Tests pass (`npm test`)
-- Coverage remains ≥60% (`npm run test:coverage`)
+- Coverage stays above the floors in `jest.config.js` (`npm test -- --coverage`)
 - Code passes linting (`npm run lint`)
 - TypeScript compiles (`npm run build`)
 
