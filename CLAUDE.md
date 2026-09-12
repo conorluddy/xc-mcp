@@ -8,7 +8,7 @@ XC-MCP is a Model Context Protocol (MCP) server that provides intelligent access
 
 ### Architecture (V4.1.0)
 
-**71 discrete tools, MCP-spec-modernized, with deferred loading (near-zero startup cost).**
+**77 discrete tools, MCP-spec-modernized, with deferred loading (near-zero startup cost).**
 
 Current release: **4.1.0**. The authoritative tool list is `src/registry/*.ts`; the generated index is
 [TOOL_SIGNATURES.md](./TOOL_SIGNATURES.md); per-tool parameter docs come from `rtfm`.
@@ -21,7 +21,8 @@ Current release: **4.1.0**. The authoritative tool list is `src/registry/*.ts`; 
 | V2.0.0 | 28 | Operation-enum routers + accessibility-first |
 | V3.0.0 | 30 | Deferred loading + workflows (~1k startup) |
 | V4.0.0 | 70 | Discrete tools + MCP spec (annotations / outputSchema / resources) + skill feature parity |
-| **V4.1.0 (Current)** | **71** | **Adds `idb-doctor`; idb-companion 1.5.1 floor for Xcode 27 HID writes** |
+| V4.1.0 | 71 | Adds `idb-doctor`; idb-companion 1.5.1 floor for Xcode 27 HID writes |
+| **V4.1.0+ (Current)** | **77** | **Crash tools, element visibility, test-isolation primitives, xctest listing** |
 
 V4.0 modernizes the MCP layer and reaches feature parity with the `ios-simulator-skill`:
 - **SDK**: `@modelcontextprotocol/sdk@^1.29`, protocol `2025-06-18`. Zod v4.
@@ -35,7 +36,7 @@ V4.0 modernizes the MCP layer and reaches feature parity with the `ios-simulator
 > **KNOWN BUG — `defer_loading` is a no-op.** `registerTool()` in `@modelcontextprotocol/sdk@1.29`
 > destructures only `{ title, description, inputSchema, outputSchema, annotations, _meta }` from the
 > tool config (`server/mcp.js:703`) and silently drops unknown keys, so `...DEFER_LOADING_CONFIG` never
-> reaches `tools/list` — confirmed against a live server: 0 of 71 tools carry the flag. Only
+> reaches `tools/list` — confirmed against a live server: 0 of 77 tools carry the flag. Only
 > `annotations` and `_meta` survive. Every token claim that depends on deferral is therefore currently
 > unmet; `--mini` and `--build-only` are the working levers. Fixing this needs the actual client-side
 > wire contract — do not guess a field name.
@@ -44,11 +45,12 @@ V4.0 modernizes the MCP layer and reaches feature parity with the `ios-simulator
 - `build`: xcodebuild-version/-list/-build/-clean/-test/-get-details/-showsdks/-inspect-scheme/-validate-capabilities
 - `simulator`: simctl-list/-get-details/-health-check/-suggest + lifecycle: simctl-boot/-shutdown/-create/-delete/-erase/-clone/-rename
 - `app`: simctl-install/-uninstall/-launch/-terminate/-get-app-container/-container/-openurl
-- `idb` (13): idb-ui-describe/-find-element/-tap/-input/-gesture, accessibility-quality-check, accessibility-audit, idb-targets, idb-list-apps, idb-install/-uninstall/-launch/-terminate
+- `idb` (16): idb-ui-describe/-find-element/-tap/-input/-gesture, accessibility-quality-check, accessibility-audit, idb-targets, idb-list-apps, idb-install/-uninstall/-launch/-terminate, idb-simulate-memory-warning, idb-clear-keychain, idb-xctest-list
 - `io`: simctl-io, screenshot
 - `devicestate`: simctl-appearance, simctl-location
 - `analysis`: localization-audit, xcode-model-inspect, visual-diff
-- `diagnostics` (5): idb-doctor (idb environment check), hang-start/-stop/-get-details/-list (HangBuster)
+- `diagnostics` (8): idb-doctor (idb environment check), idb-crash-list/-show/-delete (crash reports),
+  hang-start/-stop/-get-details/-list (HangBuster)
 - `cache`: cache-get-stats/-get-config/-set-config/-clear
 - `workflow` (5): workflow-tap-element/-fresh-install/-build-and-run, test-record-step, test-record-report
 - `system`: rtfm. Persistence (persistence-enable/-disable/-status) registers with the cache tools;
@@ -208,6 +210,9 @@ Tools return structured responses with:
   **removed** — client-side tool search handles discovery. Added annotations, `outputSchema`, resources,
   and the ios-simulator-skill parity tools.
 - **V4.1**: `idb-doctor` + HID write preflight; Xcode 27 `DeviceHub.app` support in `simctl-boot`.
+- **V4.1+**: crash reporting (`idb-crash-*`), element `visible` flags on `idb-ui-describe` /
+  `idb-ui-find-element`, test-isolation primitives (`idb-simulate-memory-warning`,
+  `idb-clear-keychain`), `idb-xctest-list`.
 
 **Do not reintroduce** router-style calls, `tool-search`, or `list-cached-responses` in docs or code —
 none of them exist. Tools once described as removed (`xcodebuild-showsdks`, `simctl-suggest`,

@@ -1,10 +1,15 @@
 # XC-MCP Tool Reference
 
-**71 tools**, generated from `src/registry/*.ts` for XC-MCP v4.1.0.
+**77 tools**, generated from `src/registry/*.ts` for XC-MCP v4.1.0.
 
 This file is an index: tool name, what it does, and its MCP annotations. **Parameter schemas live in the
 server itself** — call `rtfm({ toolName: "xcodebuild-build" })` (or `rtfm({ categoryName: "build" })`)
 for full, always-current documentation rather than trusting a hand-maintained copy here.
+
+> **Grouping note:** sections below mirror the registry modules in `src/registry/`, which is where
+> the tools are defined. `rtfm` groups by documentation category instead, so a few tools appear in a
+> different bucket there — the crash tools live in `registry/idb.ts` but `rtfm` lists them under
+> `diagnostics`. Same tools either way.
 
 ## Reading the table
 
@@ -17,8 +22,8 @@ for full, always-current documentation rather than trusting a hand-maintained co
 > **`defer_loading` is currently a no-op.** Every tool is registered with `defer_loading: true`
 > (unless `XC_MCP_DEFER_LOADING=false`), but `@modelcontextprotocol/sdk@1.29`'s `registerTool()`
 > destructures only `{ title, description, inputSchema, outputSchema, annotations, _meta }` from the
-> tool config and silently drops everything else — verified against a live `tools/list`, where 0 of 71
-> tools carry the flag. Until that is resolved, assume all 71 descriptions load upfront and use
+> tool config and silently drops everything else — verified against a live `tools/list`, where 0 of 77
+> tools carry the flag. Until that is resolved, assume all 77 descriptions load upfront and use
 > `--mini` and/or `--build-only` to control baseline cost.
 
 ## Build & Test (9)
@@ -70,7 +75,7 @@ Device lifecycle, app management, I/O and device state via `simctl`.
 | `simctl-suggest` | Suggest Best Simulator | ✓ |  |  |
 | `simctl-container` | Inspect App Sandbox Container | ✓ |  |  |
 
-## UI Automation & Accessibility (13)
+## UI Automation & Accessibility (19)
 
 Accessibility-first UI automation via `idb`. Requires idb-companion 1.5.1+ — run `idb-doctor` if writes appear to do nothing.
 
@@ -85,6 +90,12 @@ Accessibility-first UI automation via `idb`. Requires idb-companion 1.5.1+ — r
 | `accessibility-quality-check` | Accessibility Quality Check | ✓ |  | ✓ |
 | `accessibility-audit` | Accessibility (WCAG) Audit | ✓ |  | ✓ |
 | `idb-list-apps` | List Installed Apps (IDB) | ✓ |  |  |
+| `idb-crash-list` | List Crash Reports | ✓ |  | ✓ |
+| `idb-crash-show` | Show Crash Report | ✓ |  |  |
+| `idb-crash-delete` | Delete Crash Reports |  | ✓ |  |
+| `idb-simulate-memory-warning` | Simulate Memory Warning |  |  |  |
+| `idb-clear-keychain` | Clear Simulator Keychain |  | ✓ |  |
+| `idb-xctest-list` | List XCTest Bundles | ✓ |  |  |
 | `idb-install` | Install App (IDB) |  |  |  |
 | `idb-uninstall` | Uninstall App (IDB) |  | ✓ |  |
 | `idb-launch` | Launch App (IDB) |  |  |  |
@@ -102,7 +113,7 @@ Static and visual analysis of projects and screenshots.
 
 ## Diagnostics (5)
 
-Environment diagnosis and HangBuster main-thread hang capture.
+Environment diagnosis, crash reports, and HangBuster main-thread hang capture.
 
 | Tool | Title | Read-only | Destructive | Structured |
 |---|---|---|---|---|
@@ -159,9 +170,9 @@ Documentation access.
 
 | Flag | Tools registered | Use for |
 |---|---|---|
-| _(none)_ | 71 | Full functionality |
+| _(none)_ | 77 | Full functionality |
 | `--build-only` / `-b` | 18 (xcodebuild, `simctl-list`, cache/persistence, `rtfm`) | Build-focused workflows without UI automation |
-| `--mini` / `-m` | 71, with one-line descriptions | Clients that load all descriptions upfront; use `rtfm` for detail |
+| `--mini` / `-m` | 77, with one-line descriptions | Clients that load all descriptions upfront; use `rtfm` for detail |
 
 `--mini` and `--build-only` combine.
 

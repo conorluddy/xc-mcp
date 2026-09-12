@@ -9,7 +9,7 @@
 
 **Production-grade MCP server for Xcode workflows — optimized for AI agents with accessibility-first iOS automation**
 
-XC-MCP makes Xcode and iOS simulator tooling accessible to AI agents through intelligent context engineering. **V4 exposes 71 discrete tools** with MCP tool annotations, structured output and resources, all registered with platform-native `defer_loading` — the client discovers tools on demand, so the baseline context cost stays near zero.
+XC-MCP makes Xcode and iOS simulator tooling accessible to AI agents through intelligent context engineering. **V4 exposes 77 discrete tools** with MCP tool annotations, structured output and resources, all registered with platform-native `defer_loading` — the client discovers tools on demand, so the baseline context cost stays near zero.
 
 <img width="807" height="727" alt="Screenshot 2025-11-07 at 08 37 00" src="https://github.com/user-attachments/assets/141de013-947e-458e-acaf-91c039f0f48e" />
 
@@ -30,7 +30,7 @@ Traditional Xcode CLI wrappers dump massive output that exceeds MCP protocol lim
 
 **V4 Architecture:**
 ```
-71 discrete tools, all registered with defer_loading
+77 discrete tools, all registered with defer_loading
 ├─ Client tool search discovers tools on demand (near-zero baseline)
 ├─ Tool annotations (readOnly / destructive / idempotent) so clients can gate risky ops
 ├─ Structured output (outputSchema) on build, test and audit tools
@@ -47,7 +47,7 @@ Traditional Xcode CLI wrappers dump massive output that exceeds MCP protocol lim
 | V1.3.2 (RTFM) | 51 | Individual tools + on-demand docs |
 | V2.0.0 | 28 | Operation-enum routers + accessibility-first |
 | V3.0.0 | 30 | Platform `defer_loading` + workflow tools |
-| **V4.1.0 (current)** | **71** | **Discrete tools + MCP annotations / outputSchema / resources** |
+| **V4.1.0 (current)** | **77** | **Discrete tools + MCP annotations / outputSchema / resources** |
 
 The tool count went *up* in V4 while the baseline cost stayed flat: with `defer_loading`, the client
 loads a tool's schema only when it needs it, so routers (which existed to shrink the upfront tool list)
@@ -60,7 +60,7 @@ cost more than they saved — a router can't carry per-operation annotations or 
 - ✅ **Resources** — cached output addressable as `xcmcp://response/{cacheId}`
 - ✅ **Accessibility-first automation** (3-4x cheaper, ~16x faster than screenshots)
 - ✅ **Progressive disclosure** (summaries → cache IDs → full details on demand)
-- ✅ **1,456 tests** across 67 suites
+- ✅ **1,515 tests** across 71 suites
 
 ---
 
@@ -112,7 +112,7 @@ The `--mini` flag replaces every tool description with a one-liner, cutting desc
   }
 }
 ```
-The `--build-only` flag registers 18 tools instead of 71: the nine `xcodebuild-*` tools, `simctl-list`, cache and persistence tools, and `rtfm`. It excludes idb/UI automation, workflows, analysis, diagnostics and device state. Combine with `--mini` for maximum reduction: `["--mini", "--build-only"]`.
+The `--build-only` flag registers 18 tools instead of 77: the nine `xcodebuild-*` tools, `simctl-list`, cache and persistence tools, and `rtfm`. It excludes idb/UI automation, workflows, analysis, diagnostics and device state. Combine with `--mini` for maximum reduction: `["--mini", "--build-only"]`.
 
 ---
 
@@ -288,7 +288,7 @@ discover tools on demand and load a schema only when it's relevant, keeping base
 > [!WARNING]
 > **This does not currently reach the wire.** `@modelcontextprotocol/sdk@1.29`'s `registerTool()`
 > destructures only `{ title, description, inputSchema, outputSchema, annotations, _meta }` from the tool
-> config and drops unknown keys, so `defer_loading` never appears in `tools/list` — verified: 0 of 71
+> config and drops unknown keys, so `defer_loading` never appears in `tools/list` — verified: 0 of 77
 > tools carry it. **Use `--mini` and/or `--build-only` to control baseline context cost** until this is
 > fixed. `rtfm` supplies full detail on demand either way.
 
@@ -312,7 +312,7 @@ xcodebuild-build({ scheme: "MyApp", configuration: "Debug" })
 ```bash
 # Default: all tools deferred, client discovers them on demand
 
-# Load all 71 tools at startup instead (testing, debugging, client compatibility)
+# Load all 77 tools at startup instead (testing, debugging, client compatibility)
 export XC_MCP_DEFER_LOADING=false
 ```
 
@@ -405,7 +405,7 @@ test-record-report({ sessionName: "checkout", testName: "Checkout happy path" })
 
 ## Tool Reference
 
-**71 tools across 9 categories.** The full index — with per-tool annotations and which tools return
+**77 tools across 9 categories.** The full index — with per-tool annotations and which tools return
 structured output — is in [TOOL_SIGNATURES.md](./TOOL_SIGNATURES.md). Parameter schemas come from the
 server itself: `rtfm({ toolName: "..." })`.
 
@@ -418,13 +418,15 @@ server itself: `rtfm({ toolName: "..." })`.
 `-container`, `-openurl` · I/O and test fixtures: `simctl-io`, `screenshot`, `simctl-push`,
 `-addmedia`, `-pbcopy`, `-privacy`, `-status-bar`, `-stream-logs`
 
-**UI Automation & Accessibility (13)** — `idb-ui-describe`, `-find-element`, `-tap`, `-input`,
+**UI Automation & Accessibility (16)** — `idb-ui-describe`, `-find-element`, `-tap`, `-input`,
 `-gesture`, `accessibility-quality-check`, `accessibility-audit`, `idb-targets`, `idb-list-apps`,
-`idb-install`, `-uninstall`, `-launch`, `-terminate`
+`idb-install`, `-uninstall`, `-launch`, `-terminate`, `idb-simulate-memory-warning`,
+`idb-clear-keychain`, `idb-xctest-list`
 
 **Analysis (3)** — `localization-audit`, `xcode-model-inspect`, `visual-diff`
 
-**Diagnostics (5)** — `idb-doctor`, `hang-start`, `hang-stop`, `hang-get-details`, `hang-list`
+**Diagnostics (8)** — `idb-doctor`, `idb-crash-list`, `idb-crash-show`, `idb-crash-delete`,
+`hang-start`, `hang-stop`, `hang-get-details`, `hang-list`
 
 **Device State (2)** — `simctl-appearance` (theme, Dynamic Type, locale/RTL), `simctl-location`
 
@@ -764,7 +766,7 @@ npm run format            # Prettier code formatting
 ### Testing
 
 - **Jest** with ESM support and TypeScript compilation
-- **1,456 tests** across 67 suites, covering core functionality, edge cases, error handling
+- **1,515 tests** across 71 suites, covering core functionality, edge cases, error handling
 - **Coverage floors** enforced in `jest.config.js`: 50% statements / lines / functions, 35% branches
 - **Pre-commit hooks** enforce code quality via Husky + lint-staged
 
@@ -773,7 +775,7 @@ npm run format            # Prettier code formatting
 **Core Components:**
 - `src/index.ts` — MCP server with tool registration and routing
 - `src/registry/` — per-category MCP tool registration (annotations, schemas, defer_loading)
-- `src/tools/` — 71 tool implementations organized by category
+- `src/tools/` — 77 tool implementations organized by category
 - `src/state/` — Multi-layer intelligent caching (simulator, project, response, build settings)
 - `src/utils/` — Shared utilities (command execution, validation, error formatting)
 - `src/types/` — TypeScript definitions for Xcode data structures
