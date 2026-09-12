@@ -164,14 +164,14 @@ async function executeConnectOperation(udid: string, target: any) {
                 `For physical devices:`,
                 `• Verify USB connection or WiFi network`,
                 `• Trust this computer on device`,
-                `• Ensure idb_companion running: brew services start idb-companion`,
+                `• Verify idb-companion is installed: brew list --versions idb-companion`,
                 `• Check connection: idb list-targets`,
               ]
             : [
                 `For simulators:`,
                 `• Verify simulator is booted: simctl-boot --udid ${udid}`,
-                `• Check IDB installation: idb --version`,
-                `• Reinstall if needed: brew reinstall idb-companion`,
+                `• Check idb setup: run the idb-doctor tool`,
+                `• Install/upgrade idb: brew tap facebook/fb && brew install facebook/fb/idb-companion facebook/fb/idb-cli`,
               ],
         ]
           .flat()

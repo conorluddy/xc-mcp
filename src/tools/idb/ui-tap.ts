@@ -1,5 +1,6 @@
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
+import { assertHidWritesSupported } from '../../utils/idb-environment.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
 import { IDBTargetCache } from '../../state/idb-target-cache.js';
 import {
@@ -76,6 +77,9 @@ interface IdbUiTapArgs {
  * @returns Tool result with tap status and coordinate transformation details
  */
 export async function idbUiTapTool(args: IdbUiTapArgs) {
+  // Fail loudly rather than let a stale idb-companion drop the event silently.
+  await assertHidWritesSupported();
+
   const {
     udid,
     x,

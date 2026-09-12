@@ -613,14 +613,50 @@ screenshot({ screenName: "HomeScreen", state: "LoggedIn" })
 
 ### Prerequisites
 
-- macOS with Xcode command-line tools
-- Node.js 18+
-- Xcode 15+ recommended
+| Requirement | Version | Needed for |
+|---|---|---|
+| macOS | 13+ | everything |
+| Node.js | 18+ | running the server |
+| Xcode + Command Line Tools | 15+ (26+ for iOS 26/27 simulators) | `xcodebuild`, `simctl` |
+| `idb` (CLI + companion) | **1.5.1+** | every `idb-*` tool: tapping, swiping, typing, accessibility |
 
-Install Xcode CLI tools:
 ```bash
 xcode-select --install
+
+# idb — required for all UI automation tools
+brew tap facebook/fb
+brew install facebook/fb/idb-companion facebook/fb/idb-cli
 ```
+
+> `brew install idb-companion` no longer works: idb-companion was removed from
+> Homebrew core and now lives in Meta's `facebook/fb` tap.
+
+Run the **`idb-doctor`** tool at any time to check the setup.
+
+### Xcode 27 and idb
+
+**On Xcode 27, `idb-companion` must be 1.5.1 or newer.** Xcode 27 moved
+`SimulatorKit.framework`, and older companions only look in the old location. The
+failure is silent in the worst way: the companion starts, the accessibility tree
+reads correctly, and `idb ui tap`/`swipe`/`text` all report success — while every
+HID event is dropped and nothing happens on screen.
+
+`idb-ui-tap`, `idb-ui-gesture` and `idb-ui-input` detect this and fail with an
+actionable error rather than pretending to succeed. To fix:
+
+```bash
+brew upgrade facebook/fb/idb-companion
+brew list --versions idb-companion   # expect >= 1.5.1
+```
+
+Other Xcode 27 notes:
+
+- **There is no `Simulator.app`** — it was replaced by `DeviceHub.app`. `simctl-boot`
+  with `openGui` opens whichever this Xcode ships. Quitting DeviceHub shuts down the
+  simulator it hosts.
+- If every `idb` call starts failing with `Connection refused`, a dead companion is
+  still registered in `/tmp/idb/state`. Fix with `idb disconnect <udid>`; `idb-doctor`
+  detects it.
 
 ### Installation Options
 
