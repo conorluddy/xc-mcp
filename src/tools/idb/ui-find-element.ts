@@ -3,7 +3,12 @@ import { executeCommand } from '../../utils/command.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
 import { IDBTargetCache } from '../../state/idb-target-cache.js';
 import { parseFlexibleJson } from '../../utils/json-parser.js';
-import { parseAXFrame } from '../../utils/ax-frame.js';
+import {
+  parseAXFrame,
+  isFrameVisible,
+  describeOffscreenReason,
+  extractViewport,
+} from '../../utils/ax-frame.js';
 
 interface IdbUiFindElementArgs {
   udid?: string;
@@ -172,7 +177,17 @@ export async function idbUiFindElementTool(args: IdbUiFindElementArgs) {
     // ============================================================================
 
     const elements = parseFlexibleJson(result.stdout);
-    const matches = filterElementsByQuery(elements, normalizedQuery);
+    const viewport = target.screenDimensions ?? extractViewport(elements);
+    const matches = filterElementsByQuery(elements, normalizedQuery)
+      .map(element => ({
+        ...element,
+        visible: isFrameVisible(element, viewport),
+        offscreenReason: describeOffscreenReason(element, viewport) ?? undefined,
+      }))
+      // Visible matches first: matchedElements[0] should be one the agent can actually tap.
+      .sort((a, b) => Number(b.visible) - Number(a.visible));
+
+    const visibleMatchCount = matches.filter(element => element.visible).length;
 
     // Record successful operation
     IDBTargetCache.recordSuccess(resolvedUdid);
@@ -222,11 +237,14 @@ export async function idbUiFindElementTool(args: IdbUiFindElementArgs) {
               udid: resolvedUdid,
               targetName: target.name,
               matchCount: matches.length,
+              visibleMatchCount,
               matchedElements: matches.map(el => ({
                 type: el.type,
                 label: el.label,
                 identifier: el.identifier,
                 enabled: el.enabled,
+                visible: el.visible,
+                ...(el.offscreenReason ? { offscreenReason: el.offscreenReason } : {}),
                 // Tap-ready coordinates
                 centerX: el.centerX,
                 centerY: el.centerY,
@@ -239,14 +257,20 @@ export async function idbUiFindElementTool(args: IdbUiFindElementArgs) {
                 },
               })),
               guidance: [
-                `✅ Found ${matches.length} element${matches.length === 1 ? '' : 's'} matching "${query}"`,
+                `✅ Found ${matches.length} element${matches.length === 1 ? '' : 's'} matching "${query}"` +
+                  (visibleMatchCount === matches.length
+                    ? ''
+                    : ` (${visibleMatchCount} currently on screen)`),
                 ``,
-                `Quick tap:`,
+                visibleMatchCount === 0
+                  ? `⚠️ No match is on screen right now — tapping these coordinates will be rejected:`
+                  : `Quick tap:`,
                 matches
                   .slice(0, 3)
-                  .map(
-                    (el, idx) =>
-                      `${idx + 1}. "${el.label || el.identifier || el.type}": idb-ui-tap --x ${el.centerX} --y ${el.centerY}`
+                  .map((el, idx) =>
+                    el.visible
+                      ? `${idx + 1}. "${el.label || el.identifier || el.type}": idb-ui-tap --x ${el.centerX} --y ${el.centerY}`
+                      : `${idx + 1}. "${el.label || el.identifier || el.type}": offscreen — ${el.offscreenReason}`
                   )
                   .join('\n'),
                 matches.length > 3
