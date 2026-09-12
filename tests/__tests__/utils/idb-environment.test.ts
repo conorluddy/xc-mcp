@@ -119,6 +119,32 @@ describe('idb environment detection', () => {
   });
 });
 
+describe('describeIdbProblems', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    clearIdbEnvironmentCache();
+  });
+
+  it('reports a missing companion separately from a missing CLI', async () => {
+    mockEnvironment({ idbCli: true, companion: false });
+    const problems = describeIdbProblems(await getIdbEnvironment(true)).join('\n');
+
+    expect(problems).toContain('idb_companion not found on PATH');
+  });
+
+  it('reports an old companion on the legacy layout as below floor, not as broken HID', async () => {
+    // Xcode 26 still works with an old companion, so the wording must not claim
+    // taps are being dropped - only that the version is unsupported.
+    mockEnvironment({ brewVersion: '1.1.8', legacySimulatorKit: true });
+    const environment = await getIdbEnvironment(true);
+    const problems = describeIdbProblems(environment).join('\n');
+
+    expect(environment.hidWritesBroken).toBe(false);
+    expect(problems).toContain('below the supported floor');
+    expect(problems).not.toContain('silently dropped');
+  });
+});
+
 describe('assertHidWritesSupported', () => {
   beforeEach(() => {
     jest.clearAllMocks();
