@@ -33,14 +33,72 @@ describe('accessibility-quality-check', () => {
 
   describe('Quality Assessment - Rich Data', () => {
     it('should classify as rich when >3 tappable elements', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"Button 1","enabled":true,"frame":"{{0, 0}, {100, 50}}"}
-{"type":"Button","label":"Button 2","enabled":true,"frame":"{{0, 50}, {100, 50}}"}
-{"type":"Button","label":"Button 3","enabled":true,"frame":"{{0, 100}, {100, 50}}"}
-{"type":"Button","label":"Button 4","enabled":true,"frame":"{{0, 150}, {100, 50}}"}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: null,
+          AXLabel: 'Button 1',
+          AXFrame: '{{0, 0}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 0,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+        {
+          AXUniqueId: null,
+          AXLabel: 'Button 2',
+          AXFrame: '{{0, 50}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 50,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+        {
+          AXUniqueId: null,
+          AXLabel: 'Button 3',
+          AXFrame: '{{0, 100}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 100,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+        {
+          AXUniqueId: null,
+          AXLabel: 'Button 4',
+          AXFrame: '{{0, 150}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 150,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -61,12 +119,42 @@ describe('accessibility-quality-check', () => {
     });
 
     it('should classify as rich when text fields present', async () => {
-      const ndjsonOutput = `{"type":"TextField","label":"Email","enabled":true,"frame":"{{0, 0}, {300, 40}}"}
-{"type":"Button","label":"Submit","enabled":true,"frame":"{{0, 50}, {100, 50}}"}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: null,
+          AXLabel: 'Email',
+          AXFrame: '{{0, 0}, {300, 40}}',
+          frame: {
+            x: 0,
+            y: 0,
+            width: 300,
+            height: 40,
+          },
+          type: 'TextField',
+          role: 'AXTextField',
+          role_description: 'textfield',
+          enabled: true,
+        },
+        {
+          AXUniqueId: null,
+          AXLabel: 'Submit',
+          AXFrame: '{{0, 50}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 50,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -82,11 +170,27 @@ describe('accessibility-quality-check', () => {
 
   describe('Quality Assessment - Minimal Data', () => {
     it('should classify as minimal when ≤1 element', async () => {
-      const ndjsonOutput = `{"type":"Label","label":"Title","enabled":false,"frame":"{{0, 0}, {200, 30}}"}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: null,
+          AXLabel: 'Title',
+          AXFrame: '{{0, 0}, {200, 30}}',
+          frame: {
+            x: 0,
+            y: 0,
+            width: 200,
+            height: 30,
+          },
+          type: 'Label',
+          role: 'AXLabel',
+          role_description: 'label',
+          enabled: false,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -100,13 +204,57 @@ describe('accessibility-quality-check', () => {
     });
 
     it('should classify as minimal when no tappable elements', async () => {
-      const ndjsonOutput = `{"type":"Label","label":"Label 1","enabled":false,"frame":"{{0, 0}, {200, 30}}"}
-{"type":"Label","label":"Label 2","enabled":false,"frame":"{{0, 30}, {200, 30}}"}
-{"type":"Label","label":"Label 3","enabled":false,"frame":"{{0, 60}, {200, 30}}"}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: null,
+          AXLabel: 'Label 1',
+          AXFrame: '{{0, 0}, {200, 30}}',
+          frame: {
+            x: 0,
+            y: 0,
+            width: 200,
+            height: 30,
+          },
+          type: 'Label',
+          role: 'AXLabel',
+          role_description: 'label',
+          enabled: false,
+        },
+        {
+          AXUniqueId: null,
+          AXLabel: 'Label 2',
+          AXFrame: '{{0, 30}, {200, 30}}',
+          frame: {
+            x: 0,
+            y: 30,
+            width: 200,
+            height: 30,
+          },
+          type: 'Label',
+          role: 'AXLabel',
+          role_description: 'label',
+          enabled: false,
+        },
+        {
+          AXUniqueId: null,
+          AXLabel: 'Label 3',
+          AXFrame: '{{0, 60}, {200, 30}}',
+          frame: {
+            x: 0,
+            y: 60,
+            width: 200,
+            height: 30,
+          },
+          type: 'Label',
+          role: 'AXLabel',
+          role_description: 'label',
+          enabled: false,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -122,12 +270,42 @@ describe('accessibility-quality-check', () => {
 
   describe('Quality Assessment - Moderate Data', () => {
     it('should classify as moderate when 2-3 tappable elements', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"Button 1","enabled":true,"frame":"{{0, 0}, {100, 50}}"}
-{"type":"Button","label":"Button 2","enabled":true,"frame":"{{0, 50}, {100, 50}}"}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: null,
+          AXLabel: 'Button 1',
+          AXFrame: '{{0, 0}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 0,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+        {
+          AXUniqueId: null,
+          AXLabel: 'Button 2',
+          AXFrame: '{{0, 50}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 50,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -143,11 +321,27 @@ describe('accessibility-quality-check', () => {
 
   describe('Element Type Detection', () => {
     it('should detect buttons as tappable', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"Test","enabled":true,"frame":"{{0, 0}, {100, 50}}"}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: null,
+          AXLabel: 'Test',
+          AXFrame: '{{0, 0}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 0,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -159,11 +353,27 @@ describe('accessibility-quality-check', () => {
     });
 
     it('should detect cells as tappable', async () => {
-      const ndjsonOutput = `{"type":"Cell","label":"List Item","enabled":true,"frame":"{{0, 0}, {400, 60}}"}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: null,
+          AXLabel: 'List Item',
+          AXFrame: '{{0, 0}, {400, 60}}',
+          frame: {
+            x: 0,
+            y: 0,
+            width: 400,
+            height: 60,
+          },
+          type: 'Cell',
+          role: 'AXCell',
+          role_description: 'cell',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -175,11 +385,27 @@ describe('accessibility-quality-check', () => {
     });
 
     it('should detect links as tappable', async () => {
-      const ndjsonOutput = `{"type":"Link","label":"Learn More","enabled":true,"frame":"{{0, 0}, {200, 30}}"}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: null,
+          AXLabel: 'Learn More',
+          AXFrame: '{{0, 0}, {200, 30}}',
+          frame: {
+            x: 0,
+            y: 0,
+            width: 200,
+            height: 30,
+          },
+          type: 'Link',
+          role: 'AXLink',
+          role_description: 'link',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -191,12 +417,42 @@ describe('accessibility-quality-check', () => {
     });
 
     it('should detect text fields', async () => {
-      const ndjsonOutput = `{"type":"TextField","label":"Email Input","enabled":true,"frame":"{{0, 0}, {300, 40}}"}
-{"type":"SecureTextField","label":"Password","enabled":true,"frame":"{{0, 50}, {300, 40}}"}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: null,
+          AXLabel: 'Email Input',
+          AXFrame: '{{0, 0}, {300, 40}}',
+          frame: {
+            x: 0,
+            y: 0,
+            width: 300,
+            height: 40,
+          },
+          type: 'TextField',
+          role: 'AXTextField',
+          role_description: 'textfield',
+          enabled: true,
+        },
+        {
+          AXUniqueId: null,
+          AXLabel: 'Password',
+          AXFrame: '{{0, 50}, {300, 40}}',
+          frame: {
+            x: 0,
+            y: 50,
+            width: 300,
+            height: 40,
+          },
+          type: 'SecureTextField',
+          role: 'AXSecureTextField',
+          role_description: 'securetextfield',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -208,12 +464,42 @@ describe('accessibility-quality-check', () => {
     });
 
     it('should not count disabled elements as tappable', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"Disabled","enabled":false,"frame":"{{0, 0}, {100, 50}}"}
-{"type":"Button","label":"Enabled","enabled":true,"frame":"{{0, 50}, {100, 50}}"}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: null,
+          AXLabel: 'Disabled',
+          AXFrame: '{{0, 0}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 0,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: false,
+        },
+        {
+          AXUniqueId: null,
+          AXLabel: 'Enabled',
+          AXFrame: '{{0, 50}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 50,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -293,14 +579,72 @@ describe('accessibility-quality-check', () => {
 
   describe('Guidance Messages', () => {
     it('should provide accessibility-first guidance for rich data', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"B1","enabled":true,"frame":"{{0, 0}, {100, 50}}"}
-{"type":"Button","label":"B2","enabled":true,"frame":"{{0, 50}, {100, 50}}"}
-{"type":"Button","label":"B3","enabled":true,"frame":"{{0, 100}, {100, 50}}"}
-{"type":"Button","label":"B4","enabled":true,"frame":"{{0, 150}, {100, 50}}"}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: null,
+          AXLabel: 'B1',
+          AXFrame: '{{0, 0}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 0,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+        {
+          AXUniqueId: null,
+          AXLabel: 'B2',
+          AXFrame: '{{0, 50}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 50,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+        {
+          AXUniqueId: null,
+          AXLabel: 'B3',
+          AXFrame: '{{0, 100}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 100,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+        {
+          AXUniqueId: null,
+          AXLabel: 'B4',
+          AXFrame: '{{0, 150}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 150,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -329,12 +673,42 @@ describe('accessibility-quality-check', () => {
     });
 
     it('should provide try-first guidance for moderate data', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"B1","enabled":true,"frame":"{{0, 0}, {100, 50}}"}
-{"type":"Button","label":"B2","enabled":true,"frame":"{{0, 50}, {100, 50}}"}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: null,
+          AXLabel: 'B1',
+          AXFrame: '{{0, 0}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 0,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+        {
+          AXUniqueId: null,
+          AXLabel: 'B2',
+          AXFrame: '{{0, 50}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 50,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -349,14 +723,72 @@ describe('accessibility-quality-check', () => {
 
   describe('Quality Reasoning', () => {
     it('should explain rich quality assessment', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"B1","enabled":true,"frame":"{{0, 0}, {100, 50}}"}
-{"type":"Button","label":"B2","enabled":true,"frame":"{{0, 50}, {100, 50}}"}
-{"type":"Button","label":"B3","enabled":true,"frame":"{{0, 100}, {100, 50}}"}
-{"type":"Button","label":"B4","enabled":true,"frame":"{{0, 150}, {100, 50}}"}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: null,
+          AXLabel: 'B1',
+          AXFrame: '{{0, 0}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 0,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+        {
+          AXUniqueId: null,
+          AXLabel: 'B2',
+          AXFrame: '{{0, 50}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 50,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+        {
+          AXUniqueId: null,
+          AXLabel: 'B3',
+          AXFrame: '{{0, 100}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 100,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+        {
+          AXUniqueId: null,
+          AXLabel: 'B4',
+          AXFrame: '{{0, 150}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 150,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 

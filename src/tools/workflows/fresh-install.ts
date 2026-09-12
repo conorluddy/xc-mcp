@@ -4,12 +4,12 @@ import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
  * Workflow: Fresh Install - Clean slate app installation
  *
  * Orchestrates a complete clean installation cycle:
- * 1. simctl-device shutdown → Ensure simulator is stopped
- * 2. (optional) simctl-device erase → Wipe simulator data
- * 3. simctl-device boot → Start fresh simulator
+ * 1. simctl-shutdown → Ensure simulator is stopped
+ * 2. (optional) simctl-erase → Wipe simulator data
+ * 3. simctl-boot → Start fresh simulator
  * 4. xcodebuild-build → Build the project
- * 5. simctl-app install → Install the app
- * 6. simctl-app launch → Start the app
+ * 5. simctl-install → Install the app
+ * 6. simctl-launch → Start the app
  *
  * This workflow keeps intermediate results internal, returning only the final outcome.
  * Reduces agent context usage by ~70% compared to calling each tool manually.
@@ -402,9 +402,7 @@ export async function workflowFreshInstallTool(args: FreshInstallArgs) {
         `• Check build errors: xcodebuild-build --projectPath "${projectPath}" --scheme "${scheme}"`,
         `• Check available simulators: simctl-list`,
         `• Check simulator health: simctl-health-check`,
-        targetUdid
-          ? `• Check simulator state: simctl-device --operation boot --deviceId ${targetUdid}`
-          : undefined,
+        targetUdid ? `• Check simulator state: simctl-boot --udid ${targetUdid}` : undefined,
       ].filter(Boolean),
     };
 
@@ -513,8 +511,8 @@ Targets specific simulator with custom launch configuration.
 
 - **workflow-tap-element**: UI interaction after install
 - **xcodebuild-build**: Direct build (used internally)
-- **simctl-device**: Direct simulator control (used internally)
-- **simctl-app**: Direct app management (used internally)
+- **simctl-boot** / **simctl-shutdown** / **simctl-erase**: Direct simulator control (used internally)
+- **simctl-install** / **simctl-launch**: Direct app management (used internally)
 
 ## Notes
 

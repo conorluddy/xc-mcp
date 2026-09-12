@@ -187,7 +187,7 @@ await idbTargetsToolUnified({
 
 ## Related Tools
 
-- \`idb-app\`: App management on IDB targets
+- \`idb-install\` / \`idb-launch\` / \`idb-terminate\` / \`idb-uninstall\`: App management on IDB targets
 - \`idb-ui-tap\`, \`idb-ui-input\`, \`idb-ui-gesture\`: UI automation on targets
 `;
 
