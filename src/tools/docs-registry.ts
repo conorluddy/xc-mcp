@@ -93,6 +93,9 @@ import {
   HANG_LIST_DOCS,
 } from './diagnostics/hang/tools.js';
 import { IDB_DOCTOR_DOCS } from './diagnostics/idb-doctor.js';
+import { IDB_CRASH_LIST_DOCS, IDB_CRASH_SHOW_DOCS, IDB_CRASH_DELETE_DOCS } from './idb/crash.js';
+import { IDB_SIMULATE_MEMORY_WARNING_DOCS, IDB_CLEAR_KEYCHAIN_DOCS } from './idb/device-state.js';
+import { IDB_XCTEST_LIST_DOCS } from './idb/xctest.js';
 import { TEST_RECORD_STEP_DOCS } from './workflows/test-record-step.js';
 import { TEST_RECORD_REPORT_DOCS } from './workflows/test-record-report.js';
 
@@ -502,6 +505,9 @@ export const TOOL_CATEGORIES: Record<string, string[]> = {
   ],
   io: ['simctl-io', 'simctl-addmedia', 'screenshot'],
   testing: [
+    'idb-simulate-memory-warning',
+    'idb-clear-keychain',
+    'idb-xctest-list',
     'simctl-privacy',
     'simctl-push',
     'simctl-pbcopy',
@@ -523,7 +529,16 @@ export const TOOL_CATEGORIES: Record<string, string[]> = {
     'test-record-step',
     'test-record-report',
   ],
-  diagnostics: ['idb-doctor', 'hang-start', 'hang-stop', 'hang-get-details', 'hang-list'],
+  diagnostics: [
+    'idb-doctor',
+    'idb-crash-list',
+    'idb-crash-show',
+    'idb-crash-delete',
+    'hang-start',
+    'hang-stop',
+    'hang-get-details',
+    'hang-list',
+  ],
 };
 
 export const CATEGORY_DESCRIPTIONS: Record<string, { name: string; description: string }> = {
@@ -574,7 +589,8 @@ export const CATEGORY_DESCRIPTIONS: Record<string, { name: string; description: 
   },
   diagnostics: {
     name: 'Runtime Diagnostics',
-    description: 'Diagnose the idb environment and capture/cluster main-thread hangs (HangBuster)',
+    description:
+      'Diagnose the idb environment, inspect crash reports, and capture/cluster main-thread hangs (HangBuster)',
   },
 };
 
@@ -673,6 +689,12 @@ export const TOOL_DOCS: Record<string, string> = {
   'hang-get-details': HANG_GET_DETAILS_DOCS,
   'hang-list': HANG_LIST_DOCS,
   'idb-doctor': IDB_DOCTOR_DOCS,
+  'idb-crash-list': IDB_CRASH_LIST_DOCS,
+  'idb-crash-show': IDB_CRASH_SHOW_DOCS,
+  'idb-crash-delete': IDB_CRASH_DELETE_DOCS,
+  'idb-simulate-memory-warning': IDB_SIMULATE_MEMORY_WARNING_DOCS,
+  'idb-clear-keychain': IDB_CLEAR_KEYCHAIN_DOCS,
+  'idb-xctest-list': IDB_XCTEST_LIST_DOCS,
 
   // Discrete tools (v4 — dissolved from v2/v3 routers, each documents its own usage)
   // Simctl device lifecycle
