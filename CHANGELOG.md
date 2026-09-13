@@ -3,6 +3,61 @@
 All notable changes to XC-MCP are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [4.2.0]
+
+Tested against a real app. Driving Grapla end-to-end on an Xcode 27 simulator found that the
+accessibility-first path — the workflow this server exists to promote — had never worked against
+real idb output, while a 1,456-test suite stayed green. This release fixes that, adds crash
+reporting so an agent can tell a no-op tap from a crashed app, and removes configuration that never
+did anything. 71 → 77 tools.
+
+### Fixed
+
+- **`accessibility-quality-check` rated every screen `minimal`.** `idb ui describe-all` returns one
+  line holding a JSON array; a line-by-line NDJSON parser counted the whole array as one element.
+  The tool meant to steer agents away from screenshots always recommended them.
+- **`idb-ui-find-element` never matched anything.** It read `label`/`identifier`; idb emits
+  `AXLabel`/`AXUniqueId`.
+- **`idb-ui-find-element` threw once matching worked** — it kept a string-only frame parser while
+  idb supplies `frame` as an object. Consolidated into `src/utils/ax-frame.ts`.
+- **Off-screen taps passed validation and silently vanished.** Screen dimensions were stored in
+  pixels (1206×2622) while every UI tool works in points (402×874), making bounds checks ~3× too
+  permissive. Now uses idb's `width_points`/`height_points`.
+- **`workflow-build-and-run` ignored `simulatorUdid` when building**, and the smart-destination
+  fallback could select a watchOS device as an `iOS Simulator` destination.
+- Startup banner reported `v4.0.0`; the version is now read from `package.json`.
+- Runtime guidance and `rtfm` docs no longer direct agents to the removed v2/v3 routers.
+- `rtfm` now resolves `idb-doctor`, and no longer advertises the unregistered
+  `list-cached-responses`.
+
+### Added
+
+- **Crash reporting:** `idb-crash-list` (bundle/time filters, `outputSchema`), `idb-crash-show`
+  (summary of exception, signal and faulting frames, full report behind a resource link) and
+  `idb-crash-delete` (destructive).
+- **Element visibility:** `idb-ui-find-element` and `idb-ui-describe` report `visible` per element,
+  with an `offscreenReason` naming the scroll gesture needed. Frames are in scrolled-content space,
+  so a coordinate is not necessarily tappable.
+- **Test isolation:** `idb-simulate-memory-warning` and `idb-clear-keychain` (destructive).
+- **`idb-xctest-list`** — lists installed test bundles or the tests within one.
+- Codex CLI setup instructions.
+
+### Removed
+
+- **The `defer_loading` flag and `XC_MCP_DEFER_LOADING` env var.** `defer_loading` is a Messages
+  API field that an MCP server cannot set, and the MCP SDK drops unknown `registerTool` keys, so it
+  never reached a client. Tool deferral is client-side. Setting the env var is now simply ignored —
+  nothing that worked before stops working.
+
+### Changed
+
+- **TypeScript 6.0** with `moduleResolution: "nodenext"`, and **ESLint 10**. Wrapped errors now
+  preserve their `cause`.
+- Test fixtures rebuilt from captured idb output; reintroducing the `AXLabel` bug now fails ten
+  tests.
+- README and CLAUDE.md rewritten from scratch, including a history of how context cost shaped the
+  tool design.
+
 ## [4.1.0]
 
 Xcode 27 readiness. idb-companion older than 1.5.1 cannot drive simulator UI on Xcode 27,

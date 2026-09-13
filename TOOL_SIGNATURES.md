@@ -1,6 +1,6 @@
 # XC-MCP Tool Reference
 
-**77 tools**, generated from `src/registry/*.ts` for XC-MCP v4.1.0.
+**77 tools**, generated from `src/registry/*.ts` for XC-MCP v4.2.0.
 
 This file is an index: tool name, what it does, and its MCP annotations. **Parameter schemas live in the
 server itself** — call `rtfm({ toolName: "xcodebuild-build" })` (or `rtfm({ categoryName: "build" })`)
