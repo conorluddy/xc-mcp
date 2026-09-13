@@ -83,6 +83,7 @@ export async function buildAndRunTool(args: any) {
         projectPath,
         scheme,
         configuration,
+        simulatorUdid, // Build for the same device the workflow installs to
         autoInstall: false, // We'll handle install manually in workflow
       });
 

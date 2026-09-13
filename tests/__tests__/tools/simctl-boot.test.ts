@@ -116,6 +116,78 @@ describe('simctlBootTool', () => {
       expect(response.success).toBe(true);
     });
 
+    describe('openGui on different Xcode versions', () => {
+      // Xcode 27 removed Simulator.app; DeviceHub.app replaced it.
+      const { executeCommand } = jest.requireMock('../../../src/utils/command.js') as {
+        executeCommand: jest.Mock;
+      };
+
+      const bootOk = { code: 0, stdout: 'Device booted successfully', stderr: '' };
+
+      afterEach(() => {
+        executeCommand.mockResolvedValue(bootOk);
+      });
+
+      it('opens DeviceHub.app when this Xcode ships it', async () => {
+        executeCommand.mockImplementation(async (command: string) => {
+          if (command === 'xcode-select -p')
+            return { code: 0, stdout: '/Applications/Xcode.app/Contents/Developer', stderr: '' };
+          if (command.startsWith('test -d') && command.includes('DeviceHub.app')) return bootOk;
+          return bootOk;
+        });
+
+        const result = await simctlBootTool({
+          deviceId: validUDID,
+          waitForBoot: false,
+          openGui: true,
+        });
+
+        expect(JSON.parse(result.content[0].text).success).toBe(true);
+        const opened = executeCommand.mock.calls.map(call => call[0] as string);
+        expect(
+          opened.some(command => command.includes('open -a') && command.includes('DeviceHub.app'))
+        ).toBe(true);
+        expect(opened).not.toContain('open -a Simulator');
+      });
+
+      it('falls back to Simulator.app on Xcode 26 and earlier', async () => {
+        executeCommand.mockImplementation(async (command: string) => {
+          if (command === 'xcode-select -p')
+            return { code: 0, stdout: '/Applications/Xcode.app/Contents/Developer', stderr: '' };
+          if (command.startsWith('test -d') && command.includes('DeviceHub.app'))
+            return { code: 1, stdout: '', stderr: '' }; // no DeviceHub on this Xcode
+          return bootOk;
+        });
+
+        const result = await simctlBootTool({
+          deviceId: validUDID,
+          waitForBoot: false,
+          openGui: true,
+        });
+
+        expect(JSON.parse(result.content[0].text).success).toBe(true);
+        expect(executeCommand.mock.calls.map(call => call[0] as string)).toContain(
+          'open -a Simulator'
+        );
+      });
+
+      it('still reports a successful boot when no GUI can be opened', async () => {
+        // Opening the GUI is a convenience; it must never fail the boot.
+        executeCommand.mockImplementation(async (command: string) => {
+          if (command.startsWith('xcrun simctl')) return bootOk;
+          return { code: 1, stdout: '', stderr: 'not found' };
+        });
+
+        const result = await simctlBootTool({
+          deviceId: validUDID,
+          waitForBoot: false,
+          openGui: true,
+        });
+
+        expect(JSON.parse(result.content[0].text).success).toBe(true);
+      });
+    });
+
     it('should include boot command in response', async () => {
       const result = await simctlBootTool({
         deviceId: validUDID,

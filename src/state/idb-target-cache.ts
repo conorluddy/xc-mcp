@@ -233,10 +233,7 @@ class IDBTargetCacheManager {
 
       // Update screen dimensions if available
       if (description.screen_dimensions) {
-        target.screenDimensions = {
-          width: description.screen_dimensions.width || 0,
-          height: description.screen_dimensions.height || 0,
-        };
+        target.screenDimensions = toPointDimensions(description.screen_dimensions);
       }
     } catch (error) {
       console.warn(
@@ -314,10 +311,7 @@ class IDBTargetCacheManager {
           state: target.state === 'Booted' ? 'Booted' : 'Shutdown',
           osVersion: target.os_version || 'Unknown',
           architecture: target.architecture || 'Unknown',
-          screenDimensions: {
-            width: target.screen_dimensions?.width || 0,
-            height: target.screen_dimensions?.height || 0,
-          },
+          screenDimensions: toPointDimensions(target.screen_dimensions),
           connectionType:
             target.connection_type === 'usb' || target.connection_type === 'wifi'
               ? target.connection_type
@@ -342,3 +336,30 @@ class IDBTargetCacheManager {
 
 // Export singleton instance
 export const IDBTargetCache = new IDBTargetCacheManager();
+
+/**
+ * Screen dimensions in POINTS, the unit every UI tool works in.
+ *
+ * `idb describe` reports `width`/`height` in PIXELS and `width_points`/`height_points` in points
+ * (1206x2622 vs 402x874 on an iPhone 17 Pro). Storing the pixel values makes bounds validation
+ * roughly 3x too permissive, so off-screen taps pass validation and are silently dropped by the
+ * simulator. Prefer the point fields and fall back to pixels / density only when they are absent.
+ */
+function toPointDimensions(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  screenDimensions: any
+): { width: number; height: number } {
+  if (!screenDimensions) {
+    return { width: 0, height: 0 };
+  }
+
+  if (screenDimensions.width_points && screenDimensions.height_points) {
+    return { width: screenDimensions.width_points, height: screenDimensions.height_points };
+  }
+
+  const density = screenDimensions.density || 1;
+  return {
+    width: Math.round((screenDimensions.width || 0) / density),
+    height: Math.round((screenDimensions.height || 0) / density),
+  };
+}

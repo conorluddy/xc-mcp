@@ -82,11 +82,11 @@ describe('idb-ui-describe', () => {
 
   describe('Operation: all', () => {
     it('should parse NDJSON output with multiple elements', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"Login","enabled":true,"frame":"{{100, 200}, {150, 50}}"}\n{"type":"Button","label":"Cancel","enabled":true,"frame":"{{100, 300}, {150, 50}}"}\n{"type":"TextField","label":"Email","enabled":true,"frame":"{{50, 100}, {300, 40}}"}`;
+      const describeOutput = `{"type":"Button","label":"Login","enabled":true,"frame":"{{100, 200}, {150, 50}}"}\n{"type":"Button","label":"Cancel","enabled":true,"frame":"{{100, 300}, {150, 50}}"}\n{"type":"TextField","label":"Email","enabled":true,"frame":"{{50, 100}, {300, 40}}"}`;
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -103,11 +103,11 @@ describe('idb-ui-describe', () => {
     });
 
     it('should classify as rich when >3 tappable elements', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"B1","enabled":true,"frame":"{{0, 0}, {100, 50}}"}\n{"type":"Button","label":"B2","enabled":true,"frame":"{{0, 50}, {100, 50}}"}\n{"type":"Button","label":"B3","enabled":true,"frame":"{{0, 100}, {100, 50}}"}\n{"type":"Button","label":"B4","enabled":true,"frame":"{{0, 150}, {100, 50}}"}`;
+      const describeOutput = `{"type":"Button","label":"B1","enabled":true,"frame":"{{0, 0}, {100, 50}}"}\n{"type":"Button","label":"B2","enabled":true,"frame":"{{0, 50}, {100, 50}}"}\n{"type":"Button","label":"B3","enabled":true,"frame":"{{0, 100}, {100, 50}}"}\n{"type":"Button","label":"B4","enabled":true,"frame":"{{0, 150}, {100, 50}}"}`;
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -122,11 +122,11 @@ describe('idb-ui-describe', () => {
     });
 
     it('should classify as rich when text fields present', async () => {
-      const ndjsonOutput = `{"type":"TextField","label":"Email","enabled":true,"frame":"{{0, 0}, {300, 40}}"}\n{"type":"Button","label":"Submit","enabled":true,"frame":"{{0, 50}, {100, 50}}"}`;
+      const describeOutput = `{"type":"TextField","label":"Email","enabled":true,"frame":"{{0, 0}, {300, 40}}"}\n{"type":"Button","label":"Submit","enabled":true,"frame":"{{0, 50}, {100, 50}}"}`;
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -141,11 +141,27 @@ describe('idb-ui-describe', () => {
     });
 
     it('should classify as minimal when ≤1 element', async () => {
-      const ndjsonOutput = `{"type":"Label","label":"Title","enabled":false,"frame":"{{0, 0}, {200, 30}}"}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: null,
+          AXLabel: 'Title',
+          AXFrame: '{{0, 0}, {200, 30}}',
+          frame: {
+            x: 0,
+            y: 0,
+            width: 200,
+            height: 30,
+          },
+          type: 'Label',
+          role: 'AXLabel',
+          role_description: 'label',
+          enabled: false,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -159,11 +175,11 @@ describe('idb-ui-describe', () => {
     });
 
     it('should classify as minimal when no tappable elements', async () => {
-      const ndjsonOutput = `{"type":"Label","label":"Label 1","enabled":false,"frame":"{{0, 0}, {200, 30}}"}\n{"type":"Label","label":"Label 2","enabled":false,"frame":"{{0, 30}, {200, 30}}"}`;
+      const describeOutput = `{"type":"Label","label":"Label 1","enabled":false,"frame":"{{0, 0}, {200, 30}}"}\n{"type":"Label","label":"Label 2","enabled":false,"frame":"{{0, 30}, {200, 30}}"}`;
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -178,11 +194,11 @@ describe('idb-ui-describe', () => {
     });
 
     it('should classify as moderate when 2-3 tappable elements', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"B1","enabled":true,"frame":"{{0, 0}, {100, 50}}"}\n{"type":"Button","label":"B2","enabled":true,"frame":"{{0, 50}, {100, 50}}"}`;
+      const describeOutput = `{"type":"Button","label":"B1","enabled":true,"frame":"{{0, 0}, {100, 50}}"}\n{"type":"Button","label":"B2","enabled":true,"frame":"{{0, 50}, {100, 50}}"}`;
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -197,11 +213,27 @@ describe('idb-ui-describe', () => {
     });
 
     it('should extract centerX and centerY coordinates', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"Tap Me","enabled":true,"frame":"{{50, 100}, {200, 80}}"}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: null,
+          AXLabel: 'Tap Me',
+          AXFrame: '{{50, 100}, {200, 80}}',
+          frame: {
+            x: 50,
+            y: 100,
+            width: 200,
+            height: 80,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -256,11 +288,27 @@ describe('idb-ui-describe', () => {
     });
 
     it('should cache full UI tree for progressive disclosure', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"Test","enabled":true,"frame":"{{0, 0}, {100, 50}}"}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: null,
+          AXLabel: 'Test',
+          AXFrame: '{{0, 0}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 0,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -275,7 +323,7 @@ describe('idb-ui-describe', () => {
       expect(mockResponseCache.store).toHaveBeenCalledWith(
         expect.objectContaining({
           tool: 'idb-ui-describe-all',
-          fullOutput: ndjsonOutput,
+          fullOutput: describeOutput,
           metadata: expect.objectContaining({
             udid: 'test-udid-123',
             targetName: 'iPhone 16 Pro',
@@ -316,11 +364,11 @@ describe('idb-ui-describe', () => {
     });
 
     it('should skip empty lines in NDJSON', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"B1","enabled":true,"frame":"{{0, 0}, {100, 50}}"}\n\n{"type":"Button","label":"B2","enabled":true,"frame":"{{0, 50}, {100, 50}}"}`;
+      const describeOutput = `{"type":"Button","label":"B1","enabled":true,"frame":"{{0, 0}, {100, 50}}"}\n\n{"type":"Button","label":"B2","enabled":true,"frame":"{{0, 50}, {100, 50}}"}`;
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -334,11 +382,11 @@ describe('idb-ui-describe', () => {
     });
 
     it('should handle malformed JSON lines gracefully', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"Valid","enabled":true,"frame":"{{0, 0}, {100, 50}}"}\n{malformed json\n{"type":"Button","label":"Valid2","enabled":true,"frame":"{{0, 50}, {100, 50}}"}`;
+      const describeOutput = `{"type":"Button","label":"Valid","enabled":true,"frame":"{{0, 0}, {100, 50}}"}\n{malformed json\n{"type":"Button","label":"Valid2","enabled":true,"frame":"{{0, 50}, {100, 50}}"}`;
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -353,11 +401,11 @@ describe('idb-ui-describe', () => {
     });
 
     it('should count element types', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"B1","enabled":true,"frame":"{{0, 0}, {100, 50}}"}\n{"type":"Button","label":"B2","enabled":true,"frame":"{{0, 50}, {100, 50}}"}\n{"type":"TextField","label":"Email","enabled":true,"frame":"{{0, 100}, {300, 40}}"}`;
+      const describeOutput = `{"type":"Button","label":"B1","enabled":true,"frame":"{{0, 0}, {100, 50}}"}\n{"type":"Button","label":"B2","enabled":true,"frame":"{{0, 50}, {100, 50}}"}\n{"type":"TextField","label":"Email","enabled":true,"frame":"{{0, 100}, {300, 40}}"}`;
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -374,11 +422,11 @@ describe('idb-ui-describe', () => {
     });
 
     it('should not count disabled elements as tappable', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"Disabled","enabled":false,"frame":"{{0, 0}, {100, 50}}"}\n{"type":"Button","label":"Enabled","enabled":true,"frame":"{{0, 50}, {100, 50}}"}`;
+      const describeOutput = `{"type":"Button","label":"Disabled","enabled":false,"frame":"{{0, 0}, {100, 50}}"}\n{"type":"Button","label":"Enabled","enabled":true,"frame":"{{0, 50}, {100, 50}}"}`;
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -640,11 +688,27 @@ describe('idb-ui-describe', () => {
 
   describe('Element Type Detection', () => {
     it('should detect Cells as tappable', async () => {
-      const ndjsonOutput = `{"type":"Cell","label":"List Item","enabled":true,"frame":"{{0, 0}, {400, 60}}"}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: null,
+          AXLabel: 'List Item',
+          AXFrame: '{{0, 0}, {400, 60}}',
+          frame: {
+            x: 0,
+            y: 0,
+            width: 400,
+            height: 60,
+          },
+          type: 'Cell',
+          role: 'AXCell',
+          role_description: 'cell',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -658,11 +722,27 @@ describe('idb-ui-describe', () => {
     });
 
     it('should detect Links as tappable', async () => {
-      const ndjsonOutput = `{"type":"Link","label":"Learn More","enabled":true,"frame":"{{0, 0}, {200, 30}}"}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: null,
+          AXLabel: 'Learn More',
+          AXFrame: '{{0, 0}, {200, 30}}',
+          frame: {
+            x: 0,
+            y: 0,
+            width: 200,
+            height: 30,
+          },
+          type: 'Link',
+          role: 'AXLink',
+          role_description: 'link',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -676,11 +756,27 @@ describe('idb-ui-describe', () => {
     });
 
     it('should detect SecureTextField', async () => {
-      const ndjsonOutput = `{"type":"SecureTextField","label":"Password","enabled":true,"frame":"{{0, 0}, {300, 40}}"}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: null,
+          AXLabel: 'Password',
+          AXFrame: '{{0, 0}, {300, 40}}',
+          frame: {
+            x: 0,
+            y: 0,
+            width: 300,
+            height: 40,
+          },
+          type: 'SecureTextField',
+          role: 'AXSecureTextField',
+          role_description: 'securetextfield',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -805,11 +901,11 @@ describe('idb-ui-describe', () => {
     });
 
     it('should include filter level in guidance for rich data', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"B1","enabled":true,"frame":"{{0, 0}, {100, 50}}"}\n{"type":"Button","label":"B2","enabled":true,"frame":"{{0, 50}, {100, 50}}"}\n{"type":"Button","label":"B3","enabled":true,"frame":"{{0, 100}, {100, 50}}"}\n{"type":"Button","label":"B4","enabled":true,"frame":"{{0, 150}, {100, 50}}"}`;
+      const describeOutput = `{"type":"Button","label":"B1","enabled":true,"frame":"{{0, 0}, {100, 50}}"}\n{"type":"Button","label":"B2","enabled":true,"frame":"{{0, 50}, {100, 50}}"}\n{"type":"Button","label":"B3","enabled":true,"frame":"{{0, 100}, {100, 50}}"}\n{"type":"Button","label":"B4","enabled":true,"frame":"{{0, 150}, {100, 50}}"}`;
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -866,11 +962,11 @@ describe('idb-ui-describe', () => {
 
   describe('iOS-Specific Field Detection', () => {
     it('should detect buttons via role field', async () => {
-      const ndjsonOutput = `{"role":"AXButton","AXLabel":"Submit","enabled":true,"AXFrame":"{{100, 200}, {150, 50}}"}`;
+      const describeOutput = `{"role":"AXButton","AXLabel":"Submit","enabled":true,"AXFrame":"{{100, 200}, {150, 50}}"}`;
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -885,11 +981,11 @@ describe('idb-ui-describe', () => {
     });
 
     it('should detect buttons via role_description field', async () => {
-      const ndjsonOutput = `{"role_description":"button","AXLabel":"Login","enabled":true,"AXFrame":"{{50, 100}, {200, 60}}"}`;
+      const describeOutput = `{"role_description":"button","AXLabel":"Login","enabled":true,"AXFrame":"{{50, 100}, {200, 60}}"}`;
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -904,11 +1000,21 @@ describe('idb-ui-describe', () => {
     });
 
     it('should normalize AXLabel to label', async () => {
-      const ndjsonOutput = `{"type":"Button","AXLabel":"Click Me","enabled":true,"AXFrame":"{{0, 0}, {100, 50}}"}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: null,
+          AXLabel: 'Click Me',
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+          AXFrame: '{{0, 0}, {100, 50}}',
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -921,11 +1027,21 @@ describe('idb-ui-describe', () => {
     });
 
     it('should normalize AXFrame to frame coordinates', async () => {
-      const ndjsonOutput = `{"type":"Button","AXLabel":"Test","enabled":true,"AXFrame":"{{25, 50}, {100, 75}}"}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: null,
+          AXLabel: 'Test',
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+          AXFrame: '{{25, 50}, {100, 75}}',
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -941,11 +1057,11 @@ describe('idb-ui-describe', () => {
     });
 
     it('should handle mixed iOS and standard field names', async () => {
-      const ndjsonOutput = `{"type":"Button","AXLabel":"Standard Button","enabled":true,"frame":"{{0, 0}, {100, 50}}"}\n{"role":"AXButton","role_description":"button","AXLabel":"iOS Button","enabled":true,"AXFrame":"{{0, 60}, {100, 50}}"}`;
+      const describeOutput = `{"type":"Button","AXLabel":"Standard Button","enabled":true,"frame":"{{0, 0}, {100, 50}}"}\n{"role":"AXButton","role_description":"button","AXLabel":"iOS Button","enabled":true,"AXFrame":"{{0, 60}, {100, 50}}"}`;
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -962,11 +1078,11 @@ describe('idb-ui-describe', () => {
     });
 
     it('should detect links via role_description', async () => {
-      const ndjsonOutput = `{"role_description":"link","AXLabel":"Learn More","enabled":true,"AXFrame":"{{10, 20}, {80, 30}}"}`;
+      const describeOutput = `{"role_description":"link","AXLabel":"Learn More","enabled":true,"AXFrame":"{{10, 20}, {80, 30}}"}`;
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -981,11 +1097,11 @@ describe('idb-ui-describe', () => {
     });
 
     it('should detect tabs via role field', async () => {
-      const ndjsonOutput = `{"role":"AXTab","AXLabel":"Profile","enabled":true,"AXFrame":"{{0, 700}, {100, 50}}"}`;
+      const describeOutput = `{"role":"AXTab","AXLabel":"Profile","enabled":true,"AXFrame":"{{0, 700}, {100, 50}}"}`;
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -1000,11 +1116,11 @@ describe('idb-ui-describe', () => {
     });
 
     it('should handle disabled elements with iOS fields', async () => {
-      const ndjsonOutput = `{"role":"AXButton","role_description":"button","AXLabel":"Disabled","enabled":false,"AXFrame":"{{0, 0}, {100, 50}}"}`;
+      const describeOutput = `{"role":"AXButton","role_description":"button","AXLabel":"Disabled","enabled":false,"AXFrame":"{{0, 0}, {100, 50}}"}`;
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 

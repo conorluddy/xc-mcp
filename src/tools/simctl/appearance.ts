@@ -240,7 +240,7 @@ export async function simctlAppearanceTool(args: any) {
       }
     } else {
       guidance.push('One or more appearance operations failed. Check results for details.');
-      guidance.push('Ensure the simulator is booted: simctl-device({ operation: "boot" })');
+      guidance.push('Ensure the simulator is booted: simctl-boot({ udid })');
     }
 
     const responseData = {
