@@ -105,7 +105,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
     registerAllTools(this.server);
 
     console.error(
-      `XC-MCP v${SERVER_VERSION}: descriptions=${config.minimalDescriptions ? 'mini' : 'full'}, defer_loading=${config.deferLoading ? 'enabled' : 'disabled'}, build_only=${config.buildOnly ? 'enabled' : 'disabled'}`
+      `XC-MCP v${SERVER_VERSION}: descriptions=${config.minimalDescriptions ? 'mini' : 'full'}, build_only=${config.buildOnly ? 'enabled' : 'disabled'}`
     );
   }
 

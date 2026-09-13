@@ -5,11 +5,6 @@ import { getDescription } from './types.js';
 import { getToolDocsTool } from '../tools/get-tool-docs.js';
 import { RTFM_DOCS, RTFM_DOCS_MINI } from '../tools/docs-registry.js';
 
-const ENABLE_DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
-const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
-  ? ({ defer_loading: true } as Record<string, unknown>)
-  : {};
-
 export function registerSystemTools(server: McpServer): void {
   // rtfm - Documentation tool
   server.registerTool(
@@ -27,7 +22,6 @@ export function registerSystemTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {

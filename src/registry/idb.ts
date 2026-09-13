@@ -71,11 +71,6 @@ import { idbUninstallTool, IDB_UNINSTALL_DOCS } from '../tools/idb/uninstall.js'
 import { idbLaunchTool, IDB_LAUNCH_DOCS } from '../tools/idb/launch.js';
 import { idbTerminateTool, IDB_TERMINATE_DOCS } from '../tools/idb/terminate.js';
 
-const ENABLE_DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
-const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
-  ? ({ defer_loading: true } as Record<string, unknown>)
-  : {};
-
 export function registerIdbTools(server: McpServer): void {
   // idb-targets
   server.registerTool(
@@ -95,7 +90,6 @@ export function registerIdbTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => idbTargetsRouter(args)
   );
@@ -127,7 +121,6 @@ export function registerIdbTools(server: McpServer): void {
         idempotentHint: false,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => idbUiTapTool(args)
   );
@@ -170,7 +163,6 @@ export function registerIdbTools(server: McpServer): void {
         idempotentHint: false,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => idbUiInputTool(args)
   );
@@ -205,7 +197,6 @@ export function registerIdbTools(server: McpServer): void {
         idempotentHint: false,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => idbUiGestureTool(args)
   );
@@ -230,7 +221,6 @@ export function registerIdbTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => idbUiDescribeTool(args)
   );
@@ -251,7 +241,6 @@ export function registerIdbTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => idbUiFindElementTool(args)
   );
@@ -283,7 +272,6 @@ export function registerIdbTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => accessibilityQualityCheckTool(args)
   );
@@ -310,7 +298,6 @@ export function registerIdbTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => accessibilityAuditTool(args)
   );
@@ -332,7 +319,6 @@ export function registerIdbTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => idbListAppsTool(args)
   );
@@ -377,7 +363,6 @@ export function registerIdbTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => idbCrashListTool(args)
   );
@@ -398,7 +383,6 @@ export function registerIdbTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => idbCrashShowTool(args)
   );
@@ -421,7 +405,6 @@ export function registerIdbTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => idbCrashDeleteTool(args)
   );
@@ -446,7 +429,6 @@ export function registerIdbTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => idbSimulateMemoryWarningTool(args)
   );
@@ -468,7 +450,6 @@ export function registerIdbTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => idbClearKeychainTool(args)
   );
@@ -492,7 +473,6 @@ export function registerIdbTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => idbXctestListTool(args)
   );
@@ -513,7 +493,6 @@ export function registerIdbTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => idbInstallTool(args)
   );
@@ -534,7 +513,6 @@ export function registerIdbTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => idbUninstallTool(args)
   );
@@ -558,7 +536,6 @@ export function registerIdbTools(server: McpServer): void {
         idempotentHint: false,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => idbLaunchTool(args)
   );
@@ -579,7 +556,6 @@ export function registerIdbTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => idbTerminateTool(args)
   );

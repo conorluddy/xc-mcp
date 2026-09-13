@@ -23,11 +23,6 @@ import {
   IDB_DOCTOR_DOCS_MINI,
 } from '../tools/diagnostics/idb-doctor.js';
 
-const ENABLE_DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
-const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
-  ? ({ defer_loading: true } as Record<string, unknown>)
-  : {};
-
 /**
  * Register HangBuster diagnostics tools: capture and analyze main-thread hangs
  * via os_log streaming + a clustering pipeline.
@@ -46,7 +41,6 @@ export function registerDiagnosticsTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async () => idbDoctorTool()
   );
@@ -68,7 +62,6 @@ export function registerDiagnosticsTools(server: McpServer): void {
         idempotentHint: false,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -101,7 +94,6 @@ export function registerDiagnosticsTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -132,7 +124,6 @@ export function registerDiagnosticsTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -160,7 +151,6 @@ export function registerDiagnosticsTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async () => {
       try {

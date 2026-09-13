@@ -11,11 +11,6 @@ import { persistenceEnableTool, PERSISTENCE_ENABLE_DOCS } from '../tools/persist
 import { persistenceDisableTool, PERSISTENCE_DISABLE_DOCS } from '../tools/persistence/disable.js';
 import { persistenceStatusTool, PERSISTENCE_STATUS_DOCS } from '../tools/persistence/status.js';
 
-const ENABLE_DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
-const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
-  ? ({ defer_loading: true } as Record<string, unknown>)
-  : {};
-
 export function registerCacheTools(server: McpServer): void {
   // cache-get-stats
   server.registerTool(
@@ -30,7 +25,6 @@ export function registerCacheTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -62,7 +56,6 @@ export function registerCacheTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -97,7 +90,6 @@ export function registerCacheTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -129,7 +121,6 @@ export function registerCacheTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -161,7 +152,6 @@ export function registerCacheTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -193,7 +183,6 @@ export function registerCacheTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -225,7 +214,6 @@ export function registerCacheTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
