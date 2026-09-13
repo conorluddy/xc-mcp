@@ -10,6 +10,8 @@ export default {
       'ts-jest',
       {
         useESM: true,
+        // Tests need jest globals, which the production tsconfig deliberately excludes.
+        tsconfig: 'tsconfig.test.json',
       },
     ],
   },

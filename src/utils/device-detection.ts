@@ -49,7 +49,7 @@ export async function getBootedDevice(): Promise<BootedDevice> {
     if (error instanceof Error) {
       throw error;
     }
-    throw new Error(`Failed to detect booted device: ${String(error)}`);
+    throw new Error(`Failed to detect booted device: ${String(error)}`, { cause: error });
   }
 }
 
