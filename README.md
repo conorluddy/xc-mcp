@@ -41,6 +41,20 @@ exact errors it needs.
 claude mcp add xc-mcp -- npx -y xc-mcp
 ```
 
+**Codex CLI:**
+
+```bash
+codex mcp add xc-mcp -- npx -y xc-mcp
+```
+
+or add it to `~/.codex/config.toml` directly:
+
+```toml
+[mcp_servers.xc-mcp]
+command = "npx"
+args = ["-y", "xc-mcp"]
+```
+
 **Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 ```json
 {
@@ -175,7 +189,7 @@ parameters come from the server itself via `rtfm({ toolName: "..." })`.
 | `--mini`, `-m` | One-line tool descriptions; `rtfm` supplies the detail |
 | `--build-only`, `-b` | Registers 18 build-focused tools instead of 77 |
 
-Flags combine: `["-y", "xc-mcp", "--mini", "--build-only"]`. Both matter mainly for clients that
+Flags combine: `["-y", "xc-mcp", "--mini", "--build-only"]` — the same `args` array works in Claude Desktop and Codex's `config.toml`. Both matter mainly for clients that
 load every tool description upfront; see the history below.
 
 | Environment variable | Default | Controls |
