@@ -28,7 +28,7 @@ export function parseBuildSettingsJson(jsonOutput: string): BuildSettings {
   try {
     data = JSON.parse(jsonOutput);
   } catch (error) {
-    throw new Error(`Invalid JSON from xcodebuild: ${error}`);
+    throw new Error(`Invalid JSON from xcodebuild: ${error}`, { cause: error });
   }
 
   if (!Array.isArray(data)) {

@@ -230,7 +230,7 @@ export class BuildSettingsCache {
       // Parse JSON output
       return parseBuildSettingsJson(result.stdout);
     } catch (error) {
-      throw new Error(`Failed to fetch build settings: ${error}`);
+      throw new Error(`Failed to fetch build settings: ${error}`, { cause: error });
     }
   }
 }
