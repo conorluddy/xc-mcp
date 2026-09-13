@@ -54,11 +54,6 @@ import {
   SIMCTL_CONTAINER_DOCS_MINI,
 } from '../tools/simctl/container.js';
 
-const ENABLE_DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
-const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
-  ? ({ defer_loading: true } as Record<string, unknown>)
-  : {};
-
 /**
  * Register only simctl-list tool (used in build-only mode for simulator discovery)
  */
@@ -82,7 +77,6 @@ export function registerSimctlListTool(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -122,7 +116,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -155,7 +148,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -186,7 +178,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -219,7 +210,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: false,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -250,7 +240,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -282,7 +271,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -314,7 +302,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: false,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -346,7 +333,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -375,7 +361,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async _args => {
       try {
@@ -407,7 +392,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -439,7 +423,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -473,7 +456,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: false,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -505,7 +487,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -541,7 +522,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -573,7 +553,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: false,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -611,7 +590,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: false,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -646,7 +624,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: false,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -685,7 +662,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -717,7 +693,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: false,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -749,7 +724,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -785,7 +759,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -822,7 +795,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -857,7 +829,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -891,7 +862,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -926,7 +896,6 @@ export function registerSimctlTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {

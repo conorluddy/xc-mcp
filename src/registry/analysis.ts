@@ -18,11 +18,6 @@ import {
   VISUAL_DIFF_DOCS_MINI,
 } from '../tools/io/visual-diff.js';
 
-const ENABLE_DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
-const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
-  ? ({ defer_loading: true } as Record<string, unknown>)
-  : {};
-
 /**
  * Register static-analysis tools: localization audit, Core Data/SwiftData model
  * inspection, and screenshot visual diffing. These analyze project files and image
@@ -53,7 +48,6 @@ export function registerAnalysisTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -93,7 +87,6 @@ export function registerAnalysisTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -131,7 +124,6 @@ export function registerAnalysisTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {

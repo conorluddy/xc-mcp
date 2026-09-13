@@ -9,7 +9,7 @@
 
 **Production-grade MCP server for Xcode workflows — optimized for AI agents with accessibility-first iOS automation**
 
-XC-MCP makes Xcode and iOS simulator tooling accessible to AI agents through intelligent context engineering. **V4 exposes 77 discrete tools** with MCP tool annotations, structured output and resources, all registered with platform-native `defer_loading` — the client discovers tools on demand, so the baseline context cost stays near zero.
+XC-MCP makes Xcode and iOS simulator tooling accessible to AI agents through intelligent context engineering. **V4 exposes 77 discrete tools** with MCP tool annotations, structured output and resources. Clients that support tool search (Claude Code among them) load tool schemas on demand, so a large tool count costs little at baseline; `--mini` covers the clients that don't.
 
 <img width="807" height="727" alt="Screenshot 2025-11-07 at 08 37 00" src="https://github.com/user-attachments/assets/141de013-947e-458e-acaf-91c039f0f48e" />
 
@@ -30,8 +30,8 @@ Traditional Xcode CLI wrappers dump massive output that exceeds MCP protocol lim
 
 **V4 Architecture:**
 ```
-77 discrete tools, all registered with defer_loading
-├─ Client tool search discovers tools on demand (near-zero baseline)
+77 discrete tools, discovered on demand by the client
+├─ Client-side tool search loads schemas only when needed
 ├─ Tool annotations (readOnly / destructive / idempotent) so clients can gate risky ops
 ├─ Structured output (outputSchema) on build, test and audit tools
 ├─ Resources: large cached output at xcmcp://response/{cacheId}
@@ -49,12 +49,12 @@ Traditional Xcode CLI wrappers dump massive output that exceeds MCP protocol lim
 | V3.0.0 | 30 | Platform `defer_loading` + workflow tools |
 | **V4.1.0 (current)** | **77** | **Discrete tools + MCP annotations / outputSchema / resources** |
 
-The tool count went *up* in V4 while the baseline cost stayed flat: with `defer_loading`, the client
-loads a tool's schema only when it needs it, so routers (which existed to shrink the upfront tool list)
-cost more than they saved — a router can't carry per-operation annotations or an output schema.
+The tool count went *up* in V4 while the baseline cost stayed flat: a client with tool search loads a
+tool's schema only when it needs it, so routers (which existed to shrink the upfront tool list) cost
+more than they saved — a router can't carry per-operation annotations or an output schema.
 
 **Key capabilities:**
-- ⚠️ **Deferred loading** — declared on every tool, but [currently dropped by the SDK](#deferred-tool-loading); use `--mini` / `--build-only` meanwhile
+- ✅ **Client-side tool discovery** — schemas load on demand; `--mini` / `--build-only` for clients without it
 - ✅ **Tool annotations** — destructive operations (delete/erase/uninstall/clear) are declared as such
 - ✅ **Structured output** — validated `structuredContent` on build, test, and audit tools
 - ✅ **Resources** — cached output addressable as `xcmcp://response/{cacheId}`
@@ -88,7 +88,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 }
 ```
 
-**Minimal Mode** (for Claude Code and other clients that don't support `defer_loading`):
+**Minimal Mode** (for clients that load every tool description upfront):
 ```json
 {
   "mcpServers": {
@@ -180,7 +180,7 @@ xcodebuild-build({ scheme: "MyApp", configuration: "Debug" })
 ### Discrete Tools, Not Routers (V4)
 
 V2 collapsed 21 tools into 6 operation-enum routers (`simctl-device({ operation: "boot" })`) to shrink the
-upfront tool list. V4 undid that: `defer_loading` already keeps unused tools out of context, and the MCP
+upfront tool list. V4 undid that: client-side tool search already keeps unused tools out of context, and the MCP
 spec attaches `annotations` and `outputSchema` per tool — a router can only declare one set for every
 operation it hides, so `simctl-erase` (destructive) and `simctl-boot` (not) would share a label.
 
@@ -277,43 +277,45 @@ if (quality === "rich" || quality === "moderate") {
 
 ---
 
-## Deferred Tool Loading
+## Tool Discovery and Context Cost
 
-### How It Works
+### Deferral is the client's job, not the server's
 
-Every tool is registered with `defer_loading: true` so that an MCP client supporting tool search can
-discover tools on demand and load a schema only when it's relevant, keeping baseline overhead near zero.
-(The V3 `tool-search` tool is gone — client-side search replaces it.)
+MCP servers advertise tools; the **client** decides how to spend context on them. Clients with tool
+search — Claude Code among them — list the tool *names* and fetch a schema only when a tool is
+actually needed, so 77 tools cost roughly what 7 would at baseline.
 
-> [!WARNING]
-> **This does not currently reach the wire.** `@modelcontextprotocol/sdk@1.29`'s `registerTool()`
-> destructures only `{ title, description, inputSchema, outputSchema, annotations, _meta }` from the tool
-> config and drops unknown keys, so `defer_loading` never appears in `tools/list` — verified: 0 of 77
-> tools carry it. **Use `--mini` and/or `--build-only` to control baseline context cost** until this is
-> fixed. `rtfm` supplies full detail on demand either way.
+There is no server-side switch for this, and XC-MCP does not try to provide one.
+
+> **Historical note.** v3.0.0 set a `defer_loading: true` flag on every tool registration, and this
+> README claimed it produced a near-zero baseline. That was wrong twice over: `defer_loading` is a
+> **Messages API** field that belongs on tool definitions sent to the API (paired with the
+> `tool_search_tool_*` server tools), not something an MCP server can set; and
+> `@modelcontextprotocol/sdk` drops unknown keys from the `registerTool` config anyway, so it never
+> reached the wire. Verified against a live `tools/list`: 0 of 77 tools carried the flag. The dead
+> code and its `XC_MCP_DEFER_LOADING` env var were removed — deferral worked the whole time, just
+> from the client side, and removing a flag no client ever saw changes no behaviour.
+
+### For clients without tool search
+
+Two flags reduce what loads upfront:
+
+- `--mini` shrinks every tool description to a one-liner (`rtfm` supplies the detail on demand)
+- `--build-only` registers 18 tools instead of 77
+
+They combine: `["--mini", "--build-only"]`.
 
 ### RTFM: On-Demand Documentation
 
 ```typescript
 // 1. Browse tool categories
 rtfm({ categoryName: "build" })
-// Returns all build-related tools with descriptions
 
 // 2. Get comprehensive docs for a specific tool
 rtfm({ toolName: "xcodebuild-build" })
-// Returns full documentation with parameters, examples, related tools
 
 // 3. Execute with discovered parameters
 xcodebuild-build({ scheme: "MyApp", configuration: "Debug" })
-```
-
-### Environment Variable: Disable defer_loading
-
-```bash
-# Default: all tools deferred, client discovers them on demand
-
-# Load all 77 tools at startup instead (testing, debugging, client compatibility)
-export XC_MCP_DEFER_LOADING=false
 ```
 
 ---
@@ -689,7 +691,6 @@ cd xc-mcp && npm install && npm run build
 ```
 
 **Environment Variables** (optional):
-- `XC_MCP_DEFER_LOADING`: set to `false` to register all tools at startup (default: `true`)
 - `XC_MCP_CACHE_DIR`: cache directory for disk persistence (default: `~/.xc-mcp`, honours `XDG_CACHE_HOME`)
 - `XC_MCP_HANG_DIR`: HangBuster session directory (default: `~/.xc-mcp/hang-sessions`)
 - `XC_MCP_RECORDINGS_DIR`: test-recording output directory (default: `~/.xc-mcp/test-recordings`)
@@ -733,8 +734,8 @@ persistence({operation:"status"})            → persistence-status({...})
 `idb-targets` keeps its `operation` enum (`list` | `describe` | `connect` | `disconnect`).
 `rtfm({ toolName: "simctl-device" })` fuzzy-matches removed router names to their replacements.
 
-**Also removed:** the custom `tool-search` tool — clients' own tool search handles discovery via
-`defer_loading`. Use `rtfm` for documentation.
+**Also removed:** the custom `tool-search` tool — clients' own tool search handles discovery.
+Use `rtfm` for documentation.
 
 **Also new in V4:** tool annotations on every tool, `outputSchema` on the high-value tools, the
 `resources` capability (`xcmcp://response/{cacheId}`), and feature parity with `ios-simulator-skill`
@@ -774,7 +775,7 @@ npm run format            # Prettier code formatting
 
 **Core Components:**
 - `src/index.ts` — MCP server with tool registration and routing
-- `src/registry/` — per-category MCP tool registration (annotations, schemas, defer_loading)
+- `src/registry/` — per-category MCP tool registration (annotations, schemas, outputSchema)
 - `src/tools/` — 77 tool implementations organized by category
 - `src/state/` — Multi-layer intelligent caching (simulator, project, response, build settings)
 - `src/utils/` — Shared utilities (command execution, validation, error formatting)

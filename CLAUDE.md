@@ -8,7 +8,7 @@ XC-MCP is a Model Context Protocol (MCP) server that provides intelligent access
 
 ### Architecture (V4.1.0)
 
-**77 discrete tools, MCP-spec-modernized, with deferred loading (near-zero startup cost).**
+**77 discrete tools, MCP-spec-modernized. Clients with tool search load schemas on demand.**
 
 Current release: **4.1.0**. The authoritative tool list is `src/registry/*.ts`; the generated index is
 [TOOL_SIGNATURES.md](./TOOL_SIGNATURES.md); per-tool parameter docs come from `rtfm`.
@@ -19,7 +19,7 @@ Current release: **4.1.0**. The authoritative tool list is `src/registry/*.ts`; 
 | Pre-RTFM (v1.2.1) | 51 | Individual tools (~7,850 tokens) |
 | V1.3.2 (RTFM) | 51 | Individual + RTFM (~3,000 tokens) |
 | V2.0.0 | 28 | Operation-enum routers + accessibility-first |
-| V3.0.0 | 30 | Deferred loading + workflows (~1k startup) |
+| V3.0.0 | 30 | Client-side tool discovery + workflows |
 | V4.0.0 | 70 | Discrete tools + MCP spec (annotations / outputSchema / resources) + skill feature parity |
 | V4.1.0 | 71 | Adds `idb-doctor`; idb-companion 1.5.1 floor for Xcode 27 HID writes |
 | **V4.1.0+ (Current)** | **77** | **Crash tools, element visibility, test-isolation primitives, xctest listing** |
@@ -31,15 +31,22 @@ V4.0 modernizes the MCP layer and reaches feature parity with the `ios-simulator
 - **Structured output**: high-value tools (xcodebuild-build/-test, accessibility-audit, localization-audit, xcode-model-inspect, visual-diff) declare `outputSchema` and return validated `structuredContent`.
 - **Resources**: large cached output is exposed via the `resources` capability at `xcmcp://response/{cacheId}`; build/test/list/ui-describe emit `resource_link` blocks (cache IDs retained for back-compat).
 - **listChanged** capability declared for deferred/dynamic tool loading.
-- **Deferred loading** retained (`XC_MCP_DEFER_LOADING`); `rtfm` provides progressive docs; old router names still fuzzy-match in `rtfm`.
+- **Tool discovery** is client-side; `rtfm` provides progressive docs; old router names still fuzzy-match in `rtfm`.
 
-> **KNOWN BUG — `defer_loading` is a no-op.** `registerTool()` in `@modelcontextprotocol/sdk@1.29`
-> destructures only `{ title, description, inputSchema, outputSchema, annotations, _meta }` from the
-> tool config (`server/mcp.js:703`) and silently drops unknown keys, so `...DEFER_LOADING_CONFIG` never
-> reaches `tools/list` — confirmed against a live server: 0 of 77 tools carry the flag. Only
-> `annotations` and `_meta` survive. Every token claim that depends on deferral is therefore currently
-> unmet; `--mini` and `--build-only` are the working levers. Fixing this needs the actual client-side
-> wire contract — do not guess a field name.
+> **`defer_loading` was removed in favour of client-side deferral (do not re-add it).**
+> v3.0.0 set `defer_loading: true` on every tool registration on the theory that it produced a
+> near-zero baseline. It never did. `defer_loading` is a **Messages API** field, set on tool
+> definitions sent to the API alongside the `tool_search_tool_*` server tools — an MCP server cannot
+> set it. And `@modelcontextprotocol/sdk` destructures only
+> `{ title, description, inputSchema, outputSchema, annotations, _meta }` from the `registerTool`
+> config (`server/mcp.js:703`), dropping unknown keys, so it never reached `tools/list` — confirmed
+> against a live server: 0 of 77 tools carried it.
+>
+> Deferral works anyway, because the **client** does it: Claude Code lists tool names and fetches a
+> schema only when a tool is used. The flag, its `XC_MCP_DEFER_LOADING` env var, and all 98
+> occurrences were deleted. Removing code no client ever saw changed no behaviour.
+>
+> For clients without tool search, the working levers are `--mini` and `--build-only`.
 
 **Tool Categories (V4.1):**
 - `build`: xcodebuild-version/-list/-build/-clean/-test/-get-details/-showsdks/-inspect-scheme/-validate-capabilities
@@ -205,7 +212,7 @@ Tools return structured responses with:
 - **V1.x**: 51 individual tools; v1.3.2 added `rtfm` for on-demand docs.
 - **V2.0**: collapsed 21 tools into 6 operation-enum routers; added the accessibility-first tools
   (`idb-ui-find-element`, `accessibility-quality-check`).
-- **V3.0**: added platform `defer_loading` plus a custom `tool-search` tool and the first workflow tools.
+- **V3.0**: added a `defer_loading` flag (inert — see the note above), a custom `tool-search` tool, and the first workflow tools.
 - **V4.0**: routers dissolved back into discrete tools (see the Migration Guide above); `tool-search`
   **removed** — client-side tool search handles discovery. Added annotations, `outputSchema`, resources,
   and the ios-simulator-skill parity tools.
@@ -226,7 +233,6 @@ none of them exist. Tools once described as removed (`xcodebuild-showsdks`, `sim
 - Run `idb-doctor` first when any `idb-*` interaction appears to succeed but nothing moves on screen.
 
 **Environment Variables:**
-- `XC_MCP_DEFER_LOADING=false` — stop setting the (currently inert) `defer_loading` flag (default: `true`)
 - `XC_MCP_CACHE_DIR` — disk-persistence cache directory (default `~/.xc-mcp`, honours `XDG_CACHE_HOME`)
 - `XC_MCP_HANG_DIR` — HangBuster sessions (default `~/.xc-mcp/hang-sessions`)
 - `XC_MCP_RECORDINGS_DIR` — test recordings (default `~/.xc-mcp/test-recordings`)

@@ -14,11 +14,6 @@ import {
   SIMCTL_LOCATION_DOCS_MINI,
 } from '../tools/simctl/location.js';
 
-const ENABLE_DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
-const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
-  ? ({ defer_loading: true } as Record<string, unknown>)
-  : {};
-
 /**
  * Register device-state tools (appearance/locale, location simulation).
  * These mutate simulator environment state for testing different conditions.
@@ -47,7 +42,6 @@ export function registerDeviceStateTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -86,7 +80,6 @@ export function registerDeviceStateTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {

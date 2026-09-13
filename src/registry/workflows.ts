@@ -29,11 +29,6 @@ import {
   TEST_RECORD_REPORT_DOCS_MINI,
 } from '../tools/workflows/test-record-report.js';
 
-const ENABLE_DEFER_LOADING = process.env.XC_MCP_DEFER_LOADING !== 'false';
-const DEFER_LOADING_CONFIG = ENABLE_DEFER_LOADING
-  ? ({ defer_loading: true } as Record<string, unknown>)
-  : {};
-
 export function registerWorkflowTools(server: McpServer): void {
   // workflow-tap-element
   server.registerTool(
@@ -54,7 +49,6 @@ export function registerWorkflowTools(server: McpServer): void {
         idempotentHint: false,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -91,7 +85,6 @@ export function registerWorkflowTools(server: McpServer): void {
         idempotentHint: false,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -134,7 +127,6 @@ export function registerWorkflowTools(server: McpServer): void {
         idempotentHint: false,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -169,7 +161,6 @@ export function registerWorkflowTools(server: McpServer): void {
         idempotentHint: false,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
@@ -201,7 +192,6 @@ export function registerWorkflowTools(server: McpServer): void {
         idempotentHint: true,
         openWorldHint: false,
       },
-      ...DEFER_LOADING_CONFIG,
     },
     async args => {
       try {
