@@ -11,9 +11,6 @@ XC-MCP wraps `xcodebuild`, `simctl` and `idb` as 77 tools. Its job is not just t
 commands but to make their output fit in a model's context: summaries first, full detail on demand,
 and the accessibility tree instead of screenshots wherever the app allows it.
 
-> **This README describes `main`.** The latest npm release is **4.1.0** (71 tools). Crash reporting,
-> element visibility, the test-isolation tools and the idb parsing fixes are unreleased — see the
-> [history](#unreleased--77-tools-tested-against-a-real-app) below.
 
 ---
 
@@ -264,7 +261,7 @@ Xcode 27 broke idb in a way that failed silently: older companions read the acce
 correctly but dropped every tap while reporting success. v4.1 added `idb-doctor`, a 1.5.1 companion
 floor, and a preflight that makes HID-writing tools refuse to run rather than pretend.
 
-### Unreleased — 77 tools, tested against a real app
+### v4.2 · Sep 2026 — 77 tools, tested against a real app
 
 Driving a real app end-to-end found four bugs that had passed 1,456 tests, all in parsing idb's
 output. The tests mocked a format idb never emits — newline-delimited objects with `label` fields —
@@ -286,7 +283,7 @@ inert `defer_loading` flag.
 | v3.0 | 30 | A server-side deferral flag that never took effect |
 | v4.0 | 70 | Client-side deferral; routers dissolved for per-tool annotations |
 | v4.1 | 71 | Unchanged model; Xcode 27 support |
-| unreleased | 77 | Unchanged model, verified against real idb output |
+| v4.2 | 77 | Unchanged model, verified against real idb output |
 
 Two lessons carried forward. **Context cost is the client's call** — a server should describe its
 tools honestly and let the client decide how to spend context on them. And **a structured response
