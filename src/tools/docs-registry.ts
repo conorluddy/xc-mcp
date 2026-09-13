@@ -48,7 +48,6 @@ import { ACCESSIBILITY_QUALITY_CHECK_DOCS } from './idb/accessibility-quality-ch
 import { IDB_LIST_APPS_DOCS } from './idb/list-apps.js';
 
 // Cache documentation (non-consolidated only)
-import { CACHE_LIST_CACHED_RESPONSES_DOCS } from './cache/list-cached.js';
 
 // Workflow documentation (v3.0.0)
 import { WORKFLOW_TAP_ELEMENT_DOCS } from './workflows/tap-element.js';
@@ -93,6 +92,10 @@ import {
   HANG_GET_DETAILS_DOCS,
   HANG_LIST_DOCS,
 } from './diagnostics/hang/tools.js';
+import { IDB_DOCTOR_DOCS } from './diagnostics/idb-doctor.js';
+import { IDB_CRASH_LIST_DOCS, IDB_CRASH_SHOW_DOCS, IDB_CRASH_DELETE_DOCS } from './idb/crash.js';
+import { IDB_SIMULATE_MEMORY_WARNING_DOCS, IDB_CLEAR_KEYCHAIN_DOCS } from './idb/device-state.js';
+import { IDB_XCTEST_LIST_DOCS } from './idb/xctest.js';
 import { TEST_RECORD_STEP_DOCS } from './workflows/test-record-step.js';
 import { TEST_RECORD_REPORT_DOCS } from './workflows/test-record-report.js';
 
@@ -235,11 +238,12 @@ export const RTFM_DOCS = `
 
 ## Overview
 
-The rtfm tool provides access to comprehensive documentation for any of the 28 consolidated tools in this MCP server (v2.0+). This implements progressive disclosure: tool descriptions in the main list include full documentation (~18.7k tokens total for optimal agent understanding), while rtfm provides additional context and examples on demand.
+The rtfm tool provides access to comprehensive documentation for any of the discrete tools in this MCP server. This implements progressive disclosure: run the server with \`--mini\` to reduce every tool description to a one-liner, then call rtfm for full parameters, examples and related tools on demand.
 
 **Version History:**
-- v1.x: 51 individual tools (~3,000-7,850 tokens depending on approach)
-- v2.0+: 28 consolidated tools (~18.7k tokens) - Comprehensive docs for optimal reasoning
+- v1.x: 51 individual tools; v1.3.2 introduced rtfm
+- v2.0-v3.x: 28-30 tools behind operation-enum routers
+- v4.x: routers dissolved; discrete tools with per-tool annotations and outputSchema
 
 ## Why rtfm?
 
@@ -250,7 +254,7 @@ The rtfm tool provides access to comprehensive documentation for any of the 28 c
 ## Parameters
 
 - **toolName** (optional): Name of specific tool to get documentation for
-  - Examples: "xcodebuild-build", "simctl-device", "idb-app", "cache", "persistence"
+  - Examples: "xcodebuild-build", "simctl-boot", "idb-ui-tap", "cache-get-stats"
   - Case-sensitive, must match exact tool registration name
 - **categoryName** (optional): Browse tools in a specific category
   - Examples: "build", "simulator", "app", "idb", "cache", "system"
@@ -259,11 +263,11 @@ The rtfm tool provides access to comprehensive documentation for any of the 28 c
 ## Examples
 
 \`\`\`typescript
-// Get documentation for consolidated simulator device tool
-rtfm({ toolName: "simctl-device" })
+// Get documentation for a specific tool
+rtfm({ toolName: "simctl-boot" })
 
-// Get documentation for consolidated app management tool
-rtfm({ toolName: "idb-app" })
+// Removed router names still fuzzy-match to their replacements
+rtfm({ toolName: "simctl-device" })
 
 // Browse all tools in the cache category
 rtfm({ categoryName: "cache" })
@@ -272,18 +276,20 @@ rtfm({ categoryName: "cache" })
 rtfm({})
 \`\`\`
 
-## Migration from v1.x to v2.0
+## Migration to v4.0 (routers removed)
 
-**Old individual tools are now consolidated into single tools with operation parameters:**
+**v2/v3 consolidated routers were dissolved back into discrete tools.** Annotations and
+outputSchema are per-tool, so each operation is now its own tool. Drop the \`operation\` field and
+call the matching tool name — operation-specific parameters are unchanged:
 
-- \`simctl-boot\`, \`simctl-shutdown\`, \`simctl-create\`, \`simctl-delete\`, \`simctl-erase\`, \`simctl-clone\`, \`simctl-rename\` → **simctl-device** (operation enum)
-- \`simctl-install\`, \`simctl-uninstall\`, \`simctl-launch\`, \`simctl-terminate\` → **simctl-app** (operation enum)
-- \`idb-install\`, \`idb-uninstall\`, \`idb-launch\`, \`idb-terminate\` → **idb-app** (operation enum)
-- \`cache-get-stats\`, \`cache-get-config\`, \`cache-set-config\`, \`cache-clear\` → **cache** (operation enum)
-- \`persistence-enable\`, \`persistence-disable\`, \`persistence-status\` → **persistence** (operation enum)
-- \`idb-targets\` extended with \`idb-connect\` and \`idb-disconnect\` operations
+- **simctl-device**(operation) → \`simctl-boot\`, \`simctl-shutdown\`, \`simctl-create\`, \`simctl-delete\`, \`simctl-erase\`, \`simctl-clone\`, \`simctl-rename\`
+- **simctl-app**(operation) → \`simctl-install\`, \`simctl-uninstall\`, \`simctl-launch\`, \`simctl-terminate\`
+- **idb-app**(operation) → \`idb-install\`, \`idb-uninstall\`, \`idb-launch\`, \`idb-terminate\`
+- **cache**(operation) → \`cache-get-stats\`, \`cache-get-config\`, \`cache-set-config\`, \`cache-clear\`
+- **persistence**(operation) → \`persistence-enable\`, \`persistence-disable\`, \`persistence-status\`
 
-For detailed examples and parameter specifications for each operation, use \`rtfm({ toolName: "simctl-device" })\` etc.
+\`idb-targets\` keeps its operation enum (list/describe/focus/connect/disconnect). Passing a removed
+router name to this tool returns fuzzy suggestions for its replacements.
 
 ## Response Format
 
@@ -326,29 +332,28 @@ Available tools (28 total):
 - xcodebuild-build, xcodebuild-clean, xcodebuild-test
 - xcodebuild-get-details
 
-**Simctl Lifecycle Tools (6)**
-- simctl-list, simctl-get-details, **simctl-device** (consolidated: boot/shutdown/create/delete/erase/clone/rename)
+**Simctl Lifecycle Tools**
+- simctl-list, simctl-get-details, simctl-boot, simctl-shutdown, simctl-create, simctl-delete, simctl-erase, simctl-clone, simctl-rename
 - simctl-suggest, simctl-health-check
 
-**Simctl App Management Tools (3)**
-- **simctl-app** (consolidated: install/uninstall/launch/terminate)
-- simctl-get-app-container, simctl-openurl
+**Simctl App Management Tools**
+- simctl-install, simctl-uninstall, simctl-launch, simctl-terminate
+- simctl-get-app-container, simctl-container, simctl-openurl
 
 **Simctl I/O & Testing Tools (7)**
 - simctl-io, simctl-addmedia, simctl-privacy, simctl-push
 - simctl-pbcopy, simctl-status-bar, screenshot
 
-**IDB Tools (6)**
-- **idb-targets** (extended: list/describe/focus/connect/disconnect)
-- idb-ui-tap, idb-ui-input, idb-ui-gesture, idb-ui-describe, idb-list-apps
-- **idb-app** (consolidated: install/uninstall/launch/terminate)
+**IDB Tools**
+- idb-targets (list/describe/focus/connect/disconnect)
+- idb-ui-tap, idb-ui-input, idb-ui-gesture, idb-ui-describe, idb-ui-find-element, idb-list-apps
+- idb-install, idb-uninstall, idb-launch, idb-terminate
 
-**Cache Management Tools (2)**
-- list-cached-responses
-- **cache** (consolidated: get-stats/get-config/set-config/clear)
+**Cache Management Tools (4)**
+- cache-get-stats, cache-get-config, cache-set-config, cache-clear
 
-**Persistence Tools (1)**
-- **persistence** (consolidated: enable/disable/status)
+**Persistence Tools (3)**
+- persistence-enable, persistence-disable, persistence-status
 
 **Documentation Tool (1)**
 - rtfm (this tool!)
@@ -419,7 +424,6 @@ rtfm({ toolName: "simctl" })  // Shows simctl-* suggestions
 
 ## Related Tools
 
-- **list-cached-responses**: View cached progressive disclosure responses
 - **cache-get-stats**: Monitor cache performance and usage
 
 ## Notes
@@ -501,19 +505,16 @@ export const TOOL_CATEGORIES: Record<string, string[]> = {
   ],
   io: ['simctl-io', 'simctl-addmedia', 'screenshot'],
   testing: [
+    'idb-simulate-memory-warning',
+    'idb-clear-keychain',
+    'idb-xctest-list',
     'simctl-privacy',
     'simctl-push',
     'simctl-pbcopy',
     'simctl-status-bar',
     'simctl-stream-logs',
   ],
-  cache: [
-    'list-cached-responses',
-    'cache-get-stats',
-    'cache-get-config',
-    'cache-set-config',
-    'cache-clear',
-  ],
+  cache: ['cache-get-stats', 'cache-get-config', 'cache-set-config', 'cache-clear'],
   system: [
     'persistence-enable',
     'persistence-disable',
@@ -528,7 +529,16 @@ export const TOOL_CATEGORIES: Record<string, string[]> = {
     'test-record-step',
     'test-record-report',
   ],
-  diagnostics: ['hang-start', 'hang-stop', 'hang-get-details', 'hang-list'],
+  diagnostics: [
+    'idb-doctor',
+    'idb-crash-list',
+    'idb-crash-show',
+    'idb-crash-delete',
+    'hang-start',
+    'hang-stop',
+    'hang-get-details',
+    'hang-list',
+  ],
 };
 
 export const CATEGORY_DESCRIPTIONS: Record<string, { name: string; description: string }> = {
@@ -579,7 +589,8 @@ export const CATEGORY_DESCRIPTIONS: Record<string, { name: string; description: 
   },
   diagnostics: {
     name: 'Runtime Diagnostics',
-    description: 'Capture and cluster main-thread hangs (HangBuster)',
+    description:
+      'Diagnose the idb environment, inspect crash reports, and capture/cluster main-thread hangs (HangBuster)',
   },
 };
 
@@ -663,7 +674,6 @@ export const TOOL_DOCS: Record<string, string> = {
   'visual-diff': VISUAL_DIFF_DOCS,
 
   // Cache tools (non-consolidated)
-  'list-cached-responses': CACHE_LIST_CACHED_RESPONSES_DOCS,
 
   // Documentation tool
   rtfm: RTFM_DOCS,
@@ -678,6 +688,13 @@ export const TOOL_DOCS: Record<string, string> = {
   'hang-stop': HANG_STOP_DOCS,
   'hang-get-details': HANG_GET_DETAILS_DOCS,
   'hang-list': HANG_LIST_DOCS,
+  'idb-doctor': IDB_DOCTOR_DOCS,
+  'idb-crash-list': IDB_CRASH_LIST_DOCS,
+  'idb-crash-show': IDB_CRASH_SHOW_DOCS,
+  'idb-crash-delete': IDB_CRASH_DELETE_DOCS,
+  'idb-simulate-memory-warning': IDB_SIMULATE_MEMORY_WARNING_DOCS,
+  'idb-clear-keychain': IDB_CLEAR_KEYCHAIN_DOCS,
+  'idb-xctest-list': IDB_XCTEST_LIST_DOCS,
 
   // Discrete tools (v4 — dissolved from v2/v3 routers, each documents its own usage)
   // Simctl device lifecycle

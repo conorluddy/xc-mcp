@@ -68,12 +68,42 @@ describe('idb-ui-find-element', () => {
 
   describe('Element Matching', () => {
     it('should find element by label (exact match)', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"Login","identifier":"login-button","frame":"{{100, 200}, {150, 50}}","enabled":true}
-{"type":"Button","label":"Cancel","identifier":"cancel-button","frame":"{{100, 300}, {150, 50}}","enabled":true}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: 'login-button',
+          AXLabel: 'Login',
+          AXFrame: '{{100, 200}, {150, 50}}',
+          frame: {
+            x: 100,
+            y: 200,
+            width: 150,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+        {
+          AXUniqueId: 'cancel-button',
+          AXLabel: 'Cancel',
+          AXFrame: '{{100, 300}, {150, 50}}',
+          frame: {
+            x: 100,
+            y: 300,
+            width: 150,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -92,11 +122,27 @@ describe('idb-ui-find-element', () => {
     });
 
     it('should find element by identifier (partial match)', async () => {
-      const ndjsonOutput = `{"type":"TextField","label":"Email","identifier":"email-input-field","frame":"{{50, 100}, {300, 40}}","enabled":true}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: 'email-input-field',
+          AXLabel: 'Email',
+          AXFrame: '{{50, 100}, {300, 40}}',
+          frame: {
+            x: 50,
+            y: 100,
+            width: 300,
+            height: 40,
+          },
+          type: 'TextField',
+          role: 'AXTextField',
+          role_description: 'textfield',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -112,13 +158,57 @@ describe('idb-ui-find-element', () => {
     });
 
     it('should find multiple matching elements', async () => {
-      const ndjsonOutput = `{"type":"Cell","label":"Item 1","identifier":"list-item-1","frame":"{{0, 100}, {400, 60}}","enabled":true}
-{"type":"Cell","label":"Item 2","identifier":"list-item-2","frame":"{{0, 160}, {400, 60}}","enabled":true}
-{"type":"Cell","label":"Item 3","identifier":"list-item-3","frame":"{{0, 220}, {400, 60}}","enabled":true}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: 'list-item-1',
+          AXLabel: 'Item 1',
+          AXFrame: '{{0, 100}, {400, 60}}',
+          frame: {
+            x: 0,
+            y: 100,
+            width: 400,
+            height: 60,
+          },
+          type: 'Cell',
+          role: 'AXCell',
+          role_description: 'cell',
+          enabled: true,
+        },
+        {
+          AXUniqueId: 'list-item-2',
+          AXLabel: 'Item 2',
+          AXFrame: '{{0, 160}, {400, 60}}',
+          frame: {
+            x: 0,
+            y: 160,
+            width: 400,
+            height: 60,
+          },
+          type: 'Cell',
+          role: 'AXCell',
+          role_description: 'cell',
+          enabled: true,
+        },
+        {
+          AXUniqueId: 'list-item-3',
+          AXLabel: 'Item 3',
+          AXFrame: '{{0, 220}, {400, 60}}',
+          frame: {
+            x: 0,
+            y: 220,
+            width: 400,
+            height: 60,
+          },
+          type: 'Cell',
+          role: 'AXCell',
+          role_description: 'cell',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -134,11 +224,27 @@ describe('idb-ui-find-element', () => {
     });
 
     it('should be case-insensitive', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"Submit Form","identifier":"submit-btn","frame":"{{100, 400}, {200, 50}}","enabled":true}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: 'submit-btn',
+          AXLabel: 'Submit Form',
+          AXFrame: '{{100, 400}, {200, 50}}',
+          frame: {
+            x: 100,
+            y: 400,
+            width: 200,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -154,11 +260,27 @@ describe('idb-ui-find-element', () => {
     });
 
     it('should return empty array when no matches found', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"Cancel","identifier":"cancel-button","frame":"{{100, 300}, {150, 50}}","enabled":true}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: 'cancel-button',
+          AXLabel: 'Cancel',
+          AXFrame: '{{100, 300}, {150, 50}}',
+          frame: {
+            x: 100,
+            y: 300,
+            width: 150,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -177,11 +299,27 @@ describe('idb-ui-find-element', () => {
 
   describe('Coordinate Extraction', () => {
     it('should extract centerX and centerY from frame', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"Tap Me","identifier":"tap-button","frame":"{{50, 100}, {200, 80}}","enabled":true}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: 'tap-button',
+          AXLabel: 'Tap Me',
+          AXFrame: '{{50, 100}, {200, 80}}',
+          frame: {
+            x: 50,
+            y: 100,
+            width: 200,
+            height: 80,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -202,12 +340,35 @@ describe('idb-ui-find-element', () => {
     });
 
     it('should skip elements without valid frame coordinates', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"No Frame","identifier":"no-frame-btn","enabled":true}
-{"type":"Button","label":"Valid Frame","identifier":"valid-btn","frame":"{{100, 200}, {50, 50}}","enabled":true}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: 'no-frame-btn',
+          AXLabel: 'No Frame',
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+        {
+          AXUniqueId: 'valid-btn',
+          AXLabel: 'Valid Frame',
+          AXFrame: '{{100, 200}, {50, 50}}',
+          frame: {
+            x: 100,
+            y: 200,
+            width: 50,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -225,13 +386,57 @@ describe('idb-ui-find-element', () => {
 
   describe('NDJSON Parsing', () => {
     it('should parse newline-delimited JSON correctly', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"Button 1","identifier":"btn1","frame":"{{0, 0}, {100, 50}}","enabled":true}
-{"type":"Button","label":"Button 2","identifier":"btn2","frame":"{{0, 50}, {100, 50}}","enabled":true}
-{"type":"Button","label":"Button 3","identifier":"btn3","frame":"{{0, 100}, {100, 50}}","enabled":true}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: 'btn1',
+          AXLabel: 'Button 1',
+          AXFrame: '{{0, 0}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 0,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+        {
+          AXUniqueId: 'btn2',
+          AXLabel: 'Button 2',
+          AXFrame: '{{0, 50}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 50,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+        {
+          AXUniqueId: 'btn3',
+          AXLabel: 'Button 3',
+          AXFrame: '{{0, 100}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 100,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -245,13 +450,42 @@ describe('idb-ui-find-element', () => {
     });
 
     it('should skip empty lines in NDJSON', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"Test","identifier":"test","frame":"{{0, 0}, {100, 50}}","enabled":true}
-
-{"type":"Button","label":"Test 2","identifier":"test2","frame":"{{0, 50}, {100, 50}}","enabled":true}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: 'test',
+          AXLabel: 'Test',
+          AXFrame: '{{0, 0}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 0,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+        {
+          AXUniqueId: 'test2',
+          AXLabel: 'Test 2',
+          AXFrame: '{{0, 50}, {100, 50}}',
+          frame: {
+            x: 0,
+            y: 50,
+            width: 100,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -265,13 +499,13 @@ describe('idb-ui-find-element', () => {
     });
 
     it('should handle malformed JSON lines gracefully', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"Valid","identifier":"valid","frame":"{{0, 0}, {100, 50}}","enabled":true}
+      const describeOutput = `{"type":"Button","label":"Valid","identifier":"valid","frame":"{{0, 0}, {100, 50}}","enabled":true}
 {malformed json line
 {"type":"Button","label":"Valid 2","identifier":"valid2","frame":"{{0, 50}, {100, 50}}","enabled":true}`;
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -353,11 +587,27 @@ describe('idb-ui-find-element', () => {
 
   describe('Response Format', () => {
     it('should include success indicator and match count', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"Login","identifier":"login-btn","frame":"{{100, 200}, {150, 50}}","enabled":true}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: 'login-btn',
+          AXLabel: 'Login',
+          AXFrame: '{{100, 200}, {150, 50}}',
+          frame: {
+            x: 100,
+            y: 200,
+            width: 150,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 
@@ -392,11 +642,27 @@ describe('idb-ui-find-element', () => {
     });
 
     it('should provide helpful guidance for matches', async () => {
-      const ndjsonOutput = `{"type":"Button","label":"Submit","identifier":"submit-btn","frame":"{{100, 400}, {200, 50}}","enabled":true}`;
+      const describeOutput = JSON.stringify([
+        {
+          AXUniqueId: 'submit-btn',
+          AXLabel: 'Submit',
+          AXFrame: '{{100, 400}, {200, 50}}',
+          frame: {
+            x: 100,
+            y: 400,
+            width: 200,
+            height: 50,
+          },
+          type: 'Button',
+          role: 'AXButton',
+          role_description: 'button',
+          enabled: true,
+        },
+      ]);
 
       mockExecuteCommand.mockResolvedValueOnce({
         code: 0,
-        stdout: ndjsonOutput,
+        stdout: describeOutput,
         stderr: '',
       });
 

@@ -5,6 +5,12 @@ import { IDBTargetCache } from '../../state/idb-target-cache.js';
 import { responseCache, responseResourceLink } from '../../utils/response-cache.js';
 import { formatToolError } from '../../utils/error-formatter.js';
 import { parseFlexibleJson } from '../../utils/json-parser.js';
+import {
+  parseAXFrame,
+  isFrameVisible,
+  extractViewport,
+  type Viewport,
+} from '../../utils/ax-frame.js';
 
 interface IdbUiDescribeArgs {
   udid?: string;
@@ -253,7 +259,8 @@ async function executeDescribeAllOperation(
 
   // Extract summary information from parsed elements
   const filterLevel = context.filterLevel || 'moderate';
-  const summary = extractUiTreeSummary(elements, filterLevel);
+  const viewport = target.screenDimensions ?? extractViewport(elements);
+  const summary = extractUiTreeSummary(elements, filterLevel, viewport);
 
   // Assess data richness for hybrid approach
   const isRichData = summary.tappableCount > 3 || summary.textFieldCount > 0;
@@ -268,7 +275,9 @@ async function executeDescribeAllOperation(
       totalElements: summary.elementCount,
       elementTypes: summary.elementTypes,
       tappableElements: summary.tappableCount,
+      visibleTappableElements: summary.visibleTappableCount,
       textFields: summary.textFieldCount,
+      viewport,
       dataQuality: isRichData ? 'rich' : isMinimalData ? 'minimal' : 'moderate',
     },
     // Progressive disclosure: provide cache ID for full tree
@@ -420,71 +429,6 @@ async function executeDescribePointOperation(udid: string, x: number, y: number)
 // ============================================================================
 
 /**
- * Parse AXFrame string format to coordinates
- *
- * Why: IDB returns frame as "{{x, y}, {width, height}}"
- * Need to extract individual values and calculate center coordinates.
- *
- * Example: "{{100, 200}, {50, 100}}" -> { x: 100, y: 200, width: 50, height: 100, centerX: 125, centerY: 250 }
- */
-function parseAXFrame(frameInput: string | object | undefined): {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  centerX: number;
-  centerY: number;
-} | null {
-  if (!frameInput) {
-    return null;
-  }
-
-  // If already parsed as object (from JSON array format)
-  if (typeof frameInput === 'object' && 'x' in frameInput && 'y' in frameInput) {
-    const frame = frameInput as { x: number; y: number; width: number; height: number };
-    return {
-      x: frame.x,
-      y: frame.y,
-      width: frame.width,
-      height: frame.height,
-      centerX: frame.x + frame.width / 2,
-      centerY: frame.y + frame.height / 2,
-    };
-  }
-
-  // Parse string format "{{x, y}, {width, height}}"
-  if (typeof frameInput !== 'string') {
-    return null;
-  }
-
-  const match = frameInput.match(/\{\{([^}]+)\},\s*\{([^}]+)\}\}/);
-  if (!match) {
-    return null;
-  }
-
-  const coords = match[1].split(',').map((v: string) => parseInt(v.trim(), 10));
-  const size = match[2].split(',').map((v: string) => parseInt(v.trim(), 10));
-
-  if (coords.length !== 2 || size.length !== 2 || coords.some(isNaN) || size.some(isNaN)) {
-    return null;
-  }
-
-  const x = coords[0];
-  const y = coords[1];
-  const width = size[0];
-  const height = size[1];
-
-  return {
-    x,
-    y,
-    width,
-    height,
-    centerX: x + width / 2,
-    centerY: y + height / 2,
-  };
-}
-
-/**
  * Check if element is tappable based on filter level
  *
  * Why: iOS returns multiple field names (type, role, role_description).
@@ -563,10 +507,12 @@ function isElementTappable(element: any, filterLevel: string = 'moderate'): bool
 
 function extractUiTreeSummary(
   elements: any[],
-  filterLevel: string = 'moderate'
+  filterLevel: string = 'moderate',
+  viewport: Viewport = { width: 0, height: 0 }
 ): {
   elementCount: number;
   tappableCount: number;
+  visibleTappableCount: number;
   textFieldCount: number;
   elementTypes: Record<string, number>;
   interactiveElements: Array<{
@@ -579,9 +525,11 @@ function extractUiTreeSummary(
     y?: number;
     centerX?: number;
     centerY?: number;
+    visible?: boolean;
   }>;
 } {
   const elementTypes: Record<string, number> = {};
+  let visibleTappableCount = 0;
   const interactiveElements: Array<{
     type: string;
     label?: string;
@@ -592,6 +540,7 @@ function extractUiTreeSummary(
     y?: number;
     centerX?: number;
     centerY?: number;
+    visible?: boolean;
   }> = [];
   let tappableCount = 0;
   let textFieldCount = 0;
@@ -614,6 +563,12 @@ function extractUiTreeSummary(
       // Extract frame and calculate center
       const parsedFrame = parseAXFrame(frame);
 
+      // Frames are in scrolled-content space, so a coordinate alone does not mean it is tappable.
+      const visible = parsedFrame ? isFrameVisible(parsedFrame, viewport) : true;
+      if (visible) {
+        visibleTappableCount++;
+      }
+
       interactiveElements.push({
         type,
         label,
@@ -624,6 +579,7 @@ function extractUiTreeSummary(
         y: parsedFrame?.y,
         centerX: parsedFrame?.centerX,
         centerY: parsedFrame?.centerY,
+        visible,
       });
     }
 
@@ -640,9 +596,13 @@ function extractUiTreeSummary(
   return {
     elementCount: elements.length,
     tappableCount,
+    visibleTappableCount,
     textFieldCount,
     elementTypes,
-    interactiveElements,
+    // Visible elements first so a truncated preview shows what the agent can actually touch.
+    interactiveElements: interactiveElements.sort(
+      (a, b) => Number(b.visible ?? true) - Number(a.visible ?? true)
+    ),
   };
 }
 

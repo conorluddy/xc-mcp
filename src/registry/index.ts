@@ -19,7 +19,7 @@ import { registerDiagnosticsTools } from './diagnostics.js';
  * - xcodebuild tools (build, test, clean, list, version, get-details)
  * - simctl-list (for simulator discovery during builds)
  * - cache tools (cache, persistence)
- * - system tools (rtfm, tool-search)
+ * - system tools (rtfm)
  */
 export function registerAllTools(server: McpServer): void {
   // Always register build-related tools

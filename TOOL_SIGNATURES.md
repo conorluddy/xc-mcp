@@ -1,374 +1,183 @@
-# XC-MCP Tool Signatures Reference
+# XC-MCP Tool Reference
 
-**Purpose:** Document all current tool signatures and behaviors for migration reference.
-**Usage:** Ensure zero regression when converting to `registerTool()` pattern.
+**77 tools**, generated from `src/registry/*.ts` for XC-MCP v4.1.0.
 
-## V3.0.0 Deferred Loading
+This file is an index: tool name, what it does, and its MCP annotations. **Parameter schemas live in the
+server itself** — call `rtfm({ toolName: "xcodebuild-build" })` (or `rtfm({ categoryName: "build" })`)
+for full, always-current documentation rather than trusting a hand-maintained copy here.
 
-Starting with v3.0.0, XC-MCP implements **progressive tool enablement** to reduce context overhead for agents:
+> **Grouping note:** sections below mirror the registry modules in `src/registry/`, which is where
+> the tools are defined. `rtfm` groups by documentation category instead, so a few tools appear in a
+> different bucket there — the crash tools live in `registry/idb.ts` but `rtfm` lists them under
+> `diagnostics`. Same tools either way.
 
-- **By default:** Only `tool-search` and `rtfm` are registered
-- **Discovery:** Use `tool-search` to find and enable other tools dynamically
-- **Full registration:** Set `XC_MCP_DEFER_LOADING=false` to load all tools upfront
-- **Benefits:**
-  - Agents discover tools on-demand rather than facing full 28-tool list
-  - Context usage reduced for typical workflows (search + few tools vs all tools)
-  - Tool discovery integrated into agent reasoning loop
-  - Backward compatible: all tools still available, just not all registered initially
+## Reading the table
 
-## Tool Categories & Signatures
+- **Read-only** — declares `readOnlyHint: true`; makes no changes to the environment.
+- **Destructive** — declares `destructiveHint: true`; deletes, erases, uninstalls or clears something. MCP
+  clients may gate these behind confirmation.
+- **Structured** — declares an `outputSchema` and returns validated `structuredContent` alongside text.
 
-### 1. Xcodebuild Tools (6 tools)
+> [!WARNING]
+> **`defer_loading` is currently a no-op.** Every tool is registered with `defer_loading: true`
+> (unless `XC_MCP_DEFER_LOADING=false`), but `@modelcontextprotocol/sdk@1.29`'s `registerTool()`
+> destructures only `{ title, description, inputSchema, outputSchema, annotations, _meta }` from the
+> tool config and silently drops everything else — verified against a live `tools/list`, where 0 of 77
+> tools carry the flag. Until that is resolved, assume all 77 descriptions load upfront and use
+> `--mini` and/or `--build-only` to control baseline cost.
 
-#### `xcodebuild-list`
-**Function:** `xcodebuildListTool(args)`  
-**Input Schema:**
-```typescript
-{
-  projectPath: string, // required - Path to .xcodeproj or .xcworkspace file
-  outputFormat?: "json" | "text" // default: "json"  
-}
-```
-**Key Behaviors:**
-- 1-hour intelligent caching prevents expensive re-runs
-- Validates Xcode installation and project path
-- Returns structured project information (targets, schemes, configurations)
-- Smart caching remembers results to avoid redundant operations
+## Build & Test (9)
 
-#### `xcodebuild-showsdks`
-**Function:** `xcodebuildShowSDKsTool(args)`  
-**Input Schema:**
-```typescript
-{
-  outputFormat?: "json" | "text" // default: "json"
-}
-```
-**Key Behaviors:**
-- Smart caching prevents redundant SDK queries
-- Returns available SDKs for iOS, macOS, watchOS, tvOS
-- Structured JSON data vs parsing raw CLI text
+xcodebuild wrappers with progressive disclosure. Large logs are cached; drill down with `xcodebuild-get-details` or the `xcmcp://response/{cacheId}` resource.
 
-#### `xcodebuild-version`
-**Function:** `xcodebuildVersionTool(args)`  
-**Input Schema:**
-```typescript
-{
-  outputFormat?: "json" | "text", // default: "json"
-  sdk?: string // optional - specific SDK to query
-}
-```
-**Key Behaviors:**
-- Cached results for faster subsequent queries
-- Validates Xcode installation first
-- Comprehensive Xcode and SDK version info
+| Tool | Title | Read-only | Destructive | Structured |
+|---|---|---|---|---|
+| `xcodebuild-version` | Xcode Version Info | ✓ |  |  |
+| `xcodebuild-list` | List Xcode Schemes & Targets | ✓ |  |  |
+| `xcodebuild-build` | Build Xcode Scheme |  |  | ✓ |
+| `xcodebuild-clean` | Clean Xcode Build |  | ✓ |  |
+| `xcodebuild-test` | Run Xcode Tests |  |  | ✓ |
+| `xcodebuild-get-details` | Get Build/Test Details | ✓ |  |  |
+| `xcodebuild-showsdks` | List Available SDKs | ✓ |  |  |
+| `xcodebuild-inspect-scheme` | Inspect Xcode Scheme | ✓ |  |  |
+| `xcodebuild-validate-capabilities` | Validate App Capabilities | ✓ |  |  |
 
-#### `xcodebuild-build`
-**Function:** `xcodebuildBuildTool(args)`  
-**Input Schema:**
-```typescript
-{
-  projectPath: string, // required
-  scheme: string, // required  
-  configuration?: string, // default: "Debug"
-  destination?: string, // optional - uses intelligent defaults
-  sdk?: string, // optional
-  derivedDataPath?: string // optional
-}
-```
-**Key Behaviors:**
-- **CRITICAL:** Intelligent building with learning and performance tracking
-- Learns from successful builds and suggests optimal configurations
-- Smart caching (1-hour default) dramatically speeds up workflows
-- **Progressive disclosure:** Returns `buildId` for full logs via `xcodebuild-get-details`
-- Records build times and optimization metrics
-- Smart defaults based on usage history and available simulators
-- Auto-suggests optimal simulators based on project history
+## Simulator & App Lifecycle (26)
 
-#### `xcodebuild-clean`
-**Function:** `xcodebuildCleanTool(args)`
-**Input Schema:**
-```typescript
-{
-  projectPath: string, // required
-  scheme: string, // required
-  configuration?: string // optional
-}
-```
-**Key Behaviors:**
-- Pre-validates project exists and Xcode is installed
-- Structured JSON responses vs parsing CLI output
-- Better error messages and troubleshooting context
+Device lifecycle, app management, I/O and device state via `simctl`.
 
-#### `xcodebuild-get-details`
-**Function:** `xcodebuildGetDetailsTool(args)`
-**Input Schema:**
-```typescript
-{
-  buildId: string, // required - from xcodebuild-build
-  detailType: "full-log" | "errors-only" | "warnings-only" | "summary" | "command" | "metadata",
-  maxLines?: number // default: 100
-}
-```
-**Key Behaviors:**
-- **CRITICAL:** Progressive disclosure prevents token overflow
-- Gets detailed build information from cached results
-- Essential for debugging build failures
+| Tool | Title | Read-only | Destructive | Structured |
+|---|---|---|---|---|
+| `simctl-list` | List Simulators | ✓ |  |  |
+| `simctl-get-details` | Get Simulator List Details | ✓ |  |  |
+| `simctl-boot` | Boot Simulator |  |  |  |
+| `simctl-shutdown` | Shutdown Simulator |  |  |  |
+| `simctl-create` | Create Simulator |  |  |  |
+| `simctl-delete` | Delete Simulator |  | ✓ |  |
+| `simctl-erase` | Erase Simulator (Factory Reset) |  | ✓ |  |
+| `simctl-clone` | Clone Simulator |  |  |  |
+| `simctl-rename` | Rename Simulator |  |  |  |
+| `simctl-health-check` | Simulator Environment Health Check | ✓ |  |  |
+| `simctl-install` | Install App on Simulator |  |  |  |
+| `simctl-uninstall` | Uninstall App from Simulator |  | ✓ |  |
+| `simctl-launch` | Launch App on Simulator |  |  |  |
+| `simctl-terminate` | Terminate App on Simulator |  |  |  |
+| `simctl-get-app-container` | Get App Container Path | ✓ |  |  |
+| `simctl-openurl` | Open URL on Simulator |  |  |  |
+| `simctl-io` | Simulator Screenshot/Video Capture |  |  |  |
+| `simctl-push` | Send Push Notification |  |  |  |
+| `screenshot` | Inline Simulator Screenshot | ✓ |  |  |
+| `simctl-addmedia` | Add Media to Simulator |  |  |  |
+| `simctl-pbcopy` | Copy Text to Simulator Clipboard |  |  |  |
+| `simctl-privacy` | Manage App Privacy Permissions |  |  |  |
+| `simctl-status-bar` | Override Simulator Status Bar |  |  |  |
+| `simctl-stream-logs` | Stream Simulator Logs | ✓ |  |  |
+| `simctl-suggest` | Suggest Best Simulator | ✓ |  |  |
+| `simctl-container` | Inspect App Sandbox Container | ✓ |  |  |
 
-### 2. Simctl Tools (4 tools)
+## UI Automation & Accessibility (19)
 
-#### `simctl-list`
-**Function:** `simctlListTool(args)`
-**Input Schema:**
-```typescript
-{
-  concise?: boolean, // default: true
-  deviceType?: string, // e.g. "iPhone", "iPad"
-  runtime?: string, // e.g. "17", "iOS 17.0"
-  availability?: "available" | "unavailable" | "all", // default: "available"
-  outputFormat?: "json" | "text" // default: "json"
-}
-```
-**Key Behaviors:**
-- **CRITICAL:** Progressive disclosure - 57k→2k token reduction!
-- Smart recommendations with recently used simulators first
-- 1-hour caching dramatically faster than repeated simctl calls
-- Usage tracking learns which simulators work best
-- Returns concise summaries by default, full details via cache ID
+Accessibility-first UI automation via `idb`. Requires idb-companion 1.5.1+ — run `idb-doctor` if writes appear to do nothing.
 
-#### `simctl-get-details`
-**Function:** `simctlGetDetailsTool(args)`
-**Input Schema:**
-```typescript
-{
-  cacheId: string, // required - from simctl-list
-  detailType: "full-list" | "devices-only" | "runtimes-only" | "available-only",
-  deviceType?: string,
-  maxDevices?: number, // default: 20
-  runtime?: string
-}
-```
-**Key Behaviors:**
-- Progressive access to full simulator data
-- Prevents token overflow with filtered results
+| Tool | Title | Read-only | Destructive | Structured |
+|---|---|---|---|---|
+| `idb-targets` | Manage IDB Targets |  |  |  |
+| `idb-ui-tap` | Tap UI Element |  |  |  |
+| `idb-ui-input` | Send Text/Key Input |  |  |  |
+| `idb-ui-gesture` | Perform Gesture / Button Press |  |  |  |
+| `idb-ui-describe` | Describe Accessibility Tree | ✓ |  |  |
+| `idb-ui-find-element` | Find UI Element | ✓ |  |  |
+| `accessibility-quality-check` | Accessibility Quality Check | ✓ |  | ✓ |
+| `accessibility-audit` | Accessibility (WCAG) Audit | ✓ |  | ✓ |
+| `idb-list-apps` | List Installed Apps (IDB) | ✓ |  |  |
+| `idb-crash-list` | List Crash Reports | ✓ |  | ✓ |
+| `idb-crash-show` | Show Crash Report | ✓ |  |  |
+| `idb-crash-delete` | Delete Crash Reports |  | ✓ |  |
+| `idb-simulate-memory-warning` | Simulate Memory Warning |  |  |  |
+| `idb-clear-keychain` | Clear Simulator Keychain |  | ✓ |  |
+| `idb-xctest-list` | List XCTest Bundles | ✓ |  |  |
+| `idb-install` | Install App (IDB) |  |  |  |
+| `idb-uninstall` | Uninstall App (IDB) |  | ✓ |  |
+| `idb-launch` | Launch App (IDB) |  |  |  |
+| `idb-terminate` | Terminate App (IDB) |  |  |  |
 
-#### `simctl-boot`
-**Function:** `simctlBootTool(args)`
-**Input Schema:**
-```typescript
-{
-  deviceId: string, // required - UDID from simctl-list or "booted"
-  waitForBoot?: boolean // default: true
-}
-```
-**Key Behaviors:**
-- Performance tracking records boot times
-- Learning system tracks which devices work best for projects  
-- Intelligent waiting for complete boot vs guessing
-- Automatically tracks usage patterns for optimization
+## Analysis (3)
 
-#### `simctl-shutdown`
-**Function:** `simctlShutdownTool(args)`
-**Input Schema:**
-```typescript
-{
-  deviceId: string // required - UDID, "booted", or "all"
-}
-```
-**Key Behaviors:**
-- Smart device targeting with "booted" and "all" options
-- Updates internal device state for better recommendations
-- Efficient batch operations for multiple devices
+Static and visual analysis of projects and screenshots.
 
-### 3. Cache Management Tools (5 tools)
+| Tool | Title | Read-only | Destructive | Structured |
+|---|---|---|---|---|
+| `localization-audit` | Audit Localization Catalog | ✓ |  | ✓ |
+| `xcode-model-inspect` | Inspect Core Data / SwiftData Models | ✓ |  | ✓ |
+| `visual-diff` | Compare Screenshots (Pixel Diff) |  |  | ✓ |
 
-#### `cache-get-stats`
-**Function:** `getCacheStatsTool(args)`
-**Input Schema:** `{}` (no parameters)
-**Key Behaviors:**
-- Comprehensive cache statistics across all caching layers
-- Cache hit rates, expiry times, storage usage, performance metrics
-- Essential for monitoring cache effectiveness
+## Diagnostics (5)
 
-#### `cache-get-config`
-**Function:** `getCacheConfigTool(args)`
-**Input Schema:**
-```typescript
-{
-  cacheType?: "simulator" | "project" | "response" | "all" // default: "all"
-}
-```
-**Key Behaviors:**
-- Current cache configuration settings
-- Shows cache timeouts and policies
+Environment diagnosis, crash reports, and HangBuster main-thread hang capture.
 
-#### `cache-set-config`
-**Function:** `setCacheConfigTool(args)`
-**Input Schema:**
-```typescript
-{
-  cacheType: "simulator" | "project" | "response" | "all", // required
-  maxAgeMs?: number,
-  maxAgeMinutes?: number,
-  maxAgeHours?: number
-}
-```
-**Key Behaviors:**
-- Fine-tune XC-MCP's intelligent caching for workflows
-- Performance tuning: longer caches = faster repeated operations
-- Fresh data control: shorter caches = more up-to-date information
+| Tool | Title | Read-only | Destructive | Structured |
+|---|---|---|---|---|
+| `idb-doctor` | Diagnose idb Environment | ✓ |  |  |
+| `hang-start` | Start Hang Capture |  |  |  |
+| `hang-stop` | Stop & Analyze Hang Capture |  |  |  |
+| `hang-get-details` | Get Hang Capture Details | ✓ |  |  |
+| `hang-list` | List Hang Capture Sessions | ✓ |  |  |
 
-#### `cache-clear`
-**Function:** `clearCacheTool(args)`
-**Input Schema:**
-```typescript
-{
-  cacheType: "simulator" | "project" | "response" | "all" // required
-}
-```
-**Key Behaviors:**
-- Clear cached data to force fresh data retrieval
-- Selective cache clearing by type
+## Device State (2)
 
-#### `list-cached-responses`
-**Function:** `listCachedResponsesTool(args)`
-**Input Schema:**
-```typescript
-{
-  limit?: number, // default: 10
-  tool?: string // optional filter
-}
-```
-**Key Behaviors:**
-- List recent cached build/test results for progressive disclosure
-- Essential for accessing full logs via buildId/cacheId
+Appearance, Dynamic Type, locale and simulated location.
 
-### 4. Persistence Tools (3 tools)
+| Tool | Title | Read-only | Destructive | Structured |
+|---|---|---|---|---|
+| `simctl-appearance` | Set Simulator Appearance/Locale |  |  |  |
+| `simctl-location` | Simulate Location |  |  |  |
 
-#### `persistence-enable`
-**Function:** `persistenceEnableTool(args)`
-**Input Schema:**
-```typescript
-{
-  cacheDir?: string // optional custom directory
-}
-```
-**Key Behaviors:**
-- Opt-in file-based persistence for cache data
-- Privacy first: disabled by default, only usage patterns stored
-- Learns over time with persistent build configurations
+## Workflows & Test Recording (5)
 
-#### `persistence-disable`
-**Function:** `persistenceDisableTool(args)`
-**Input Schema:**
-```typescript
-{
-  clearData?: boolean // default: false
-}
-```
-**Key Behaviors:**
-- Return to in-memory caching only
-- Optionally clears existing cache data files
+High-level compositions of several primitive tools, plus test-run recording.
 
-#### `persistence-status`
-**Function:** `persistenceStatusTool(args)`
-**Input Schema:**
-```typescript
-{
-  includeStorageInfo?: boolean // default: true
-}
-```
-**Key Behaviors:**
-- Detailed information about persistent state management
-- Current state, cache directory, disk usage, timestamps
-- Privacy and security information
+| Tool | Title | Read-only | Destructive | Structured |
+|---|---|---|---|---|
+| `workflow-tap-element` | Tap Element (Workflow) |  |  |  |
+| `workflow-fresh-install` | Fresh Install (Workflow) |  | ✓ |  |
+| `workflow-build-and-run` | Build & Run (Workflow) |  |  |  |
+| `test-record-step` | Record Test Step |  |  |  |
+| `test-record-report` | Generate Test Recording Report |  |  |  |
 
-### 5. V3.0.0 Tools (3 tools)
+## Cache & Persistence (7)
 
-#### `tool-search`
-**Function:** `toolSearchTool(args)`
-**Input Schema:**
-```typescript
-{
-  query?: string,                // optional - search term (name, description, keywords)
-  category?: 'build' | 'simulator' | 'app' | 'idb' | 'io' | 'cache' | 'system' | 'workflow',  // optional
-  limit?: number,                // default: 10 - max results
-  showAll?: boolean              // default: false - show all tools
-}
-```
-**Key Behaviors:**
-- **CRITICAL:** Discovery tool for v3.0.0 deferred loading
-- Searches tool names, descriptions, and keywords to find relevant tools
-- Returns matching tools with key metadata (name, category, description, synopsis)
-- When match found, returns instructions for enabling tool
-- Progressive disclosure: use with specific query for fast discovery
-- Cache results for frequently searched tools
+Cache inspection, configuration, and on-disk persistence across restarts.
 
-#### `workflow-tap-element`
-**Function:** `workflowTapElementTool(args)`
-**Input Schema:**
-```typescript
-{
-  elementQuery: string,          // required - element search term (e.g., "Login", "Submit")
-  inputText?: string,            // optional - text to type after tapping
-  verifyResult?: boolean,        // default: false - screenshot after action
-  udid?: string,                 // optional - target device (default: "booted")
-  screenContext?: string         // optional - screen name for tracking
-}
-```
-**Key Behaviors:**
-- High-level semantic UI automation combining discovery + interaction
-- Uses accessibility tree for semantic element search vs visual matching
-- Simplifies common pattern: find element → tap → optionally type → optionally verify
-- Reduces context by combining multiple steps into single action
-- Returns success/failure with coordinates tapped and optional verification screenshot
-- Ideal for test automation and UI workflows
+| Tool | Title | Read-only | Destructive | Structured |
+|---|---|---|---|---|
+| `cache-get-stats` | Get Cache Statistics | ✓ |  |  |
+| `cache-get-config` | Get Cache Configuration | ✓ |  |  |
+| `cache-set-config` | Set Cache Configuration |  |  |  |
+| `cache-clear` | Clear Cache |  | ✓ |  |
+| `persistence-enable` | Enable Disk Persistence |  |  |  |
+| `persistence-disable` | Disable Disk Persistence |  |  |  |
+| `persistence-status` | Persistence Status | ✓ |  |  |
 
-#### `workflow-fresh-install`
-**Function:** `workflowFreshInstallTool(args)`
-**Input Schema:**
-```typescript
-{
-  projectPath: string,                            // required
-  scheme: string,                                 // required
-  simulatorUdid?: string,                         // optional - target simulator
-  eraseSimulator?: boolean,                       // default: false - wipe simulator data
-  configuration?: 'Debug' | 'Release',            // default: "Debug"
-  launchArguments?: string[],                     // optional - app launch args
-  environmentVariables?: Record<string, string>   // optional - app env vars
-}
-```
-**Key Behaviors:**
-- **CRITICAL:** Orchestration workflow combining 5+ tool operations into single action
-- Handles complete clean installation: erase simulator (optional) → build → install → launch
-- Configurable simulator erasure to reset app state
-- Supports launch arguments and environment variables for testing
-- Returns comprehensive status: erase status, build success, install success, launch success
-- Essential for reproducible test scenarios with clean state
-- Single-step alternative to manually chaining erase → build → install → launch
+## System (1)
 
-## Critical Migration Notes
+Documentation access.
 
-### Must Preserve
-1. **Progressive Disclosure:** `simctl-list` (57k→2k), `xcodebuild-build` (buildId system)
-2. **Intelligent Caching:** 3-layer cache system with 1-hour defaults
-3. **Learning System:** Build configs, simulator preferences, performance metrics
-4. **Smart Defaults:** Auto-suggestion based on usage history
-5. **Error Handling:** Structured McpError responses with proper codes
-6. **Xcode Validation:** All tools validate installation before execution
-7. **V3.0.0 Features:**
-   - **Deferred Loading:** `tool-search` + `rtfm` enable discovery-driven agent workflows
-   - **Workflow Orchestration:** `workflow-tap-element` and `workflow-fresh-install` combine multiple operations
-   - **Dynamic Tool Registration:** Tools enabled on-demand via `tool-search` results
-   - **Environment Control:** `XC_MCP_DEFER_LOADING` flag for backward compatibility
+| Tool | Title | Read-only | Destructive | Structured |
+|---|---|---|---|---|
+| `rtfm` | Read The Manual (Tool Docs) | ✓ |  |  |
 
-### Schema Conversion Notes
-- All current schemas use plain objects, need conversion to Zod schemas
-- Optional parameters have defaults that must be preserved
-- Enum values must be maintained exactly (e.g., outputFormat, cacheType)
-- Required vs optional parameter patterns must match exactly
+## Startup modes
 
-### Performance Considerations
-- Tool registration should not impact performance
-- Cache systems must remain intact during migration
-- Progressive disclosure cache IDs must continue working
-- Build time tracking and metrics must be preserved
+| Flag | Tools registered | Use for |
+|---|---|---|
+| _(none)_ | 77 | Full functionality |
+| `--build-only` / `-b` | 18 (xcodebuild, `simctl-list`, cache/persistence, `rtfm`) | Build-focused workflows without UI automation |
+| `--mini` / `-m` | 77, with one-line descriptions | Clients that load all descriptions upfront; use `rtfm` for detail |
+
+`--mini` and `--build-only` combine.
+
+## Resources
+
+Large cached output is also exposed through the MCP `resources` capability at
+`xcmcp://response/{cacheId}`. Build, test, list and UI-describe responses emit `resource_link` blocks;
+the cache IDs they also return remain valid for the `*-get-details` tools.

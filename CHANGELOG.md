@@ -3,6 +3,49 @@
 All notable changes to XC-MCP are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [4.1.0]
+
+Xcode 27 readiness. idb-companion older than 1.5.1 cannot drive simulator UI on Xcode 27,
+and it fails silently — the companion starts, the accessibility tree reads correctly, and
+every `idb ui` write reports success while the events are dropped. For an agent that means
+green results and a frozen app. This release detects that, refuses to pretend, and explains
+the fix.
+
+### Added
+
+- **`idb-doctor` tool** — reports the idb environment with remediation: CLI and companion
+  presence, companion version against the 1.5.1 floor, the Xcode framework layout, and
+  stale companion registrations in `/tmp/idb/state`.
+- **HID write preflight** — `idb-ui-tap`, `idb-ui-gesture` and `idb-ui-input` now check the
+  environment and fail with an actionable error instead of reporting a success that never
+  reached the simulator. Deliberately conservative: a version that cannot be determined
+  (installed outside Homebrew) is treated as unknown rather than old, probes fall back to
+  permissive if they throw, and reads are never blocked.
+- `src/utils/idb-environment.ts`, the shared detection used by both.
+
+### Fixed
+
+- **`simctl-boot` with `openGui` could not open a simulator on Xcode 27.** It ran
+  `open -a Simulator`, but Xcode 27 has no `Simulator.app` — `DeviceHub.app` replaced it.
+  The call sits in a non-fatal try/catch, so this failed silently and the option simply did
+  nothing. It now prefers DeviceHub and falls back for Xcode 26 and earlier.
+- **Two wrong commands were being handed to users mid-failure** in `idb-connect` error
+  guidance: `brew reinstall idb-companion` (the formula was removed from Homebrew core and
+  now lives in Meta's `facebook/fb` tap) and `brew services start idb-companion` (that
+  formula defines no service, so it never worked).
+
+### Documentation
+
+- README prerequisites now list idb, which was absent entirely despite every `idb-*` tool
+  requiring it, with the `facebook/fb` tap install for both the companion and the CLI.
+- New "Xcode 27 and idb" section covering the silent-tap failure, the missing
+  `Simulator.app`, and recovering from a stale companion with `idb disconnect <udid>`.
+
+### Tests
+
+- 1456 tests pass. `idb-doctor` is fully covered, and `idb-ui-tap`, `idb-ui-gesture` and
+  `idb-ui-input` gain their first tests.
+
 ## [4.0.1]
 
 Maintenance release — development-dependency bumps only. No runtime changes; the shipped

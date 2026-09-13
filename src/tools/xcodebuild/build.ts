@@ -95,7 +95,9 @@ export async function xcodebuildBuildTool(args: any) {
     // Get smart defaults from cache
     const preferredConfig = await projectCache.getPreferredBuildConfig(projectPath);
     const smartDestination =
-      destination || (await getSmartDestination(preferredConfig, projectPath));
+      destination ||
+      (simulatorUdid ? `platform=iOS Simulator,id=${simulatorUdid}` : undefined) ||
+      (await getSmartDestination(preferredConfig, projectPath));
 
     // Build final configuration
     const finalConfig: BuildConfig = {
@@ -293,11 +295,19 @@ async function getSmartDestination(
     return preferredConfig.destination;
   }
 
-  // Try to get a smart simulator destination with project-specific preference
+  // Try to get a smart simulator destination with project-specific preference.
+  // Only iOS simulators qualify: this destination is hardcoded to "iOS Simulator", so a watchOS or
+  // tvOS device here produces "Unable to find a device matching the provided destination specifier".
   try {
+    const iosSimulators = await simulatorCache.getAvailableSimulators(undefined, 'iOS');
+
     const preferredSim = await simulatorCache.getPreferredSimulator(projectPath);
-    if (preferredSim) {
+    if (preferredSim && iosSimulators.some(sim => sim.udid === preferredSim.udid)) {
       return `platform=iOS Simulator,id=${preferredSim.udid}`;
+    }
+
+    if (iosSimulators.length > 0) {
+      return `platform=iOS Simulator,id=${iosSimulators[0].udid}`;
     }
   } catch {
     // Fallback to no destination if simulator cache fails
