@@ -338,8 +338,8 @@ await simctlListTool({ runtime: "17.0" });
 ## Related Tools
 
 - simctl-get-details: Retrieve full device list using cache ID (bypasses max limit)
-- simctl-device: Boot, shutdown, or manage specific simulators
-- simctl-app: Install and launch apps on simulators
+- simctl-boot / simctl-shutdown: Boot, shutdown, or manage specific simulators
+- simctl-install / simctl-launch: Install and launch apps on simulators
 
 ## Notes
 

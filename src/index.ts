@@ -6,6 +6,12 @@ import { z } from 'zod';
 import { registerAllTools } from './registry/index.js';
 import { debugWorkflowPrompt } from './tools/prompts/debug-workflow.js';
 import { config } from './config.js';
+import { createRequire } from 'node:module';
+
+/** Single source of truth for the reported version — package.json, never a hand-copied literal. */
+const { version: SERVER_VERSION } = createRequire(import.meta.url)('../package.json') as {
+  version: string;
+};
 
 class XcodeCLIMCPServer {
   private server: McpServer;
@@ -14,7 +20,7 @@ class XcodeCLIMCPServer {
     this.server = new McpServer(
       {
         name: 'xc-mcp',
-        version: '4.0.1',
+        version: SERVER_VERSION,
         description:
           'Wraps xcodebuild, simctl, and IDB with intelligent caching, for efficient iOS development. The RTFM tool can be called with any of the tool names to return further documentation if required. Tool descriptions are intentionally minimal to reduce MCP context usage.',
       },
@@ -99,7 +105,7 @@ Call \`rtfm\` with tool name for full documentation. Example: \`rtfm({ toolName:
     registerAllTools(this.server);
 
     console.error(
-      `XC-MCP v4.0.0: descriptions=${config.minimalDescriptions ? 'mini' : 'full'}, defer_loading=${config.deferLoading ? 'enabled' : 'disabled'}, build_only=${config.buildOnly ? 'enabled' : 'disabled'}`
+      `XC-MCP v${SERVER_VERSION}: descriptions=${config.minimalDescriptions ? 'mini' : 'full'}, defer_loading=${config.deferLoading ? 'enabled' : 'disabled'}, build_only=${config.buildOnly ? 'enabled' : 'disabled'}`
     );
   }
 

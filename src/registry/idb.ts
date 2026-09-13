@@ -42,6 +42,30 @@ import {
   IDB_LIST_APPS_DOCS,
   IDB_LIST_APPS_DOCS_MINI,
 } from '../tools/idb/list-apps.js';
+import {
+  idbCrashListTool,
+  idbCrashShowTool,
+  idbCrashDeleteTool,
+  IDB_CRASH_LIST_DOCS,
+  IDB_CRASH_LIST_DOCS_MINI,
+  IDB_CRASH_SHOW_DOCS,
+  IDB_CRASH_SHOW_DOCS_MINI,
+  IDB_CRASH_DELETE_DOCS,
+  IDB_CRASH_DELETE_DOCS_MINI,
+} from '../tools/idb/crash.js';
+import {
+  idbSimulateMemoryWarningTool,
+  idbClearKeychainTool,
+  IDB_SIMULATE_MEMORY_WARNING_DOCS,
+  IDB_SIMULATE_MEMORY_WARNING_DOCS_MINI,
+  IDB_CLEAR_KEYCHAIN_DOCS,
+  IDB_CLEAR_KEYCHAIN_DOCS_MINI,
+} from '../tools/idb/device-state.js';
+import {
+  idbXctestListTool,
+  IDB_XCTEST_LIST_DOCS,
+  IDB_XCTEST_LIST_DOCS_MINI,
+} from '../tools/idb/xctest.js';
 import { idbInstallTool, IDB_INSTALL_DOCS } from '../tools/idb/install.js';
 import { idbUninstallTool, IDB_UNINSTALL_DOCS } from '../tools/idb/uninstall.js';
 import { idbLaunchTool, IDB_LAUNCH_DOCS } from '../tools/idb/launch.js';
@@ -311,6 +335,166 @@ export function registerIdbTools(server: McpServer): void {
       ...DEFER_LOADING_CONFIG,
     },
     async args => idbListAppsTool(args)
+  );
+
+  // idb-crash-list: an agent otherwise cannot tell a no-op tap from a crashed app
+  server.registerTool(
+    'idb-crash-list',
+    {
+      title: 'List Crash Reports',
+      description: getDescription(IDB_CRASH_LIST_DOCS, IDB_CRASH_LIST_DOCS_MINI),
+      inputSchema: {
+        udid: z.string().optional(),
+        bundleId: z.string().optional().describe('Only crashes for this bundle id'),
+        since: z
+          .number()
+          .optional()
+          .describe('Unix timestamp in SECONDS - crashes newer than this'),
+        before: z
+          .number()
+          .optional()
+          .describe('Unix timestamp in SECONDS - crashes older than this'),
+        limit: z.number().optional().describe('Max crashes to return, newest first (default 20)'),
+      },
+      outputSchema: {
+        success: z.boolean(),
+        crashCount: z.number().describe('Crashes returned after applying limit'),
+        totalMatched: z.number().describe('Crashes matching the filters before limit'),
+        crashes: z.array(
+          z.object({
+            name: z.string(),
+            bundleId: z.string().optional(),
+            processName: z.string().optional(),
+            processId: z.number().optional(),
+            timestamp: z.number().optional(),
+            occurredAt: z.string().optional(),
+          })
+        ),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+      ...DEFER_LOADING_CONFIG,
+    },
+    async args => idbCrashListTool(args)
+  );
+
+  // idb-crash-show
+  server.registerTool(
+    'idb-crash-show',
+    {
+      title: 'Show Crash Report',
+      description: getDescription(IDB_CRASH_SHOW_DOCS, IDB_CRASH_SHOW_DOCS_MINI),
+      inputSchema: {
+        udid: z.string().optional(),
+        name: z.string().describe('Crash report name from idb-crash-list'),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+      ...DEFER_LOADING_CONFIG,
+    },
+    async args => idbCrashShowTool(args)
+  );
+
+  // idb-crash-delete: irreversible, so clients should be able to gate it
+  server.registerTool(
+    'idb-crash-delete',
+    {
+      title: 'Delete Crash Reports',
+      description: getDescription(IDB_CRASH_DELETE_DOCS, IDB_CRASH_DELETE_DOCS_MINI),
+      inputSchema: {
+        udid: z.string().optional(),
+        name: z.string().optional().describe('Delete one report by name'),
+        bundleId: z.string().optional().describe('Delete all reports for this bundle id'),
+        all: z.boolean().optional().describe('Delete every crash report on the target'),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+      ...DEFER_LOADING_CONFIG,
+    },
+    async args => idbCrashDeleteTool(args)
+  );
+
+  // idb-simulate-memory-warning
+  server.registerTool(
+    'idb-simulate-memory-warning',
+    {
+      title: 'Simulate Memory Warning',
+      description: getDescription(
+        IDB_SIMULATE_MEMORY_WARNING_DOCS,
+        IDB_SIMULATE_MEMORY_WARNING_DOCS_MINI
+      ),
+      inputSchema: {
+        udid: z.string().optional(),
+        scenario: z.string().optional().describe('Test scenario name for the audit entry'),
+        step: z.number().optional().describe('Step number within the scenario'),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+      ...DEFER_LOADING_CONFIG,
+    },
+    async args => idbSimulateMemoryWarningTool(args)
+  );
+
+  // idb-clear-keychain: wipes credentials for every app on the simulator
+  server.registerTool(
+    'idb-clear-keychain',
+    {
+      title: 'Clear Simulator Keychain',
+      description: getDescription(IDB_CLEAR_KEYCHAIN_DOCS, IDB_CLEAR_KEYCHAIN_DOCS_MINI),
+      inputSchema: {
+        udid: z.string().optional(),
+        scenario: z.string().optional().describe('Test scenario name for the audit entry'),
+        step: z.number().optional().describe('Step number within the scenario'),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+      ...DEFER_LOADING_CONFIG,
+    },
+    async args => idbClearKeychainTool(args)
+  );
+
+  // idb-xctest-list
+  server.registerTool(
+    'idb-xctest-list',
+    {
+      title: 'List XCTest Bundles',
+      description: getDescription(IDB_XCTEST_LIST_DOCS, IDB_XCTEST_LIST_DOCS_MINI),
+      inputSchema: {
+        udid: z.string().optional(),
+        testBundleId: z
+          .string()
+          .optional()
+          .describe('List the tests inside this bundle instead of listing installed bundles'),
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+      ...DEFER_LOADING_CONFIG,
+    },
+    async args => idbXctestListTool(args)
   );
 
   // idb-install

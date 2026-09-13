@@ -112,8 +112,9 @@ export async function simctlBootTool(args: any) {
       // Open Simulator.app GUI if requested
       if (openGui) {
         try {
-          await executeCommand('open -a Simulator', { timeout: 5000 });
-          console.error('[simctl-boot] Opened Simulator.app GUI');
+          // Xcode 27 removed Simulator.app in favour of DeviceHub.app, so try
+          // the modern host first and fall back for Xcode 26 and earlier.
+          await openSimulatorGui();
         } catch (openError) {
           // Non-fatal - simulator still booted successfully
           console.warn(
@@ -253,3 +254,30 @@ Success response includes:
 - First boot of a device type may take longer than subsequent boots
 - Opening GUI with \`openGui: true\` provides visual feedback but increases boot time slightly
 `;
+
+/**
+ * Open whichever simulator GUI host this Xcode ships.
+ *
+ * Xcode 27 replaced Simulator.app with DeviceHub.app (Contents/Applications/).
+ * Note that quitting DeviceHub shuts down the simulator it is hosting.
+ */
+async function openSimulatorGui(): Promise<void> {
+  const developerDir = await executeCommand('xcode-select -p', { timeout: 5000 });
+  if (developerDir.code === 0 && developerDir.stdout) {
+    const deviceHub = `${developerDir.stdout}/../Applications/DeviceHub.app`;
+    const exists = await executeCommand(`test -d "${deviceHub}"`, { timeout: 5000 });
+    if (exists.code === 0) {
+      const opened = await executeCommand(`open -a "${deviceHub}"`, { timeout: 5000 });
+      if (opened.code === 0) {
+        console.error('[simctl-boot] Opened DeviceHub.app (Xcode 27+)');
+        return;
+      }
+    }
+  }
+
+  const legacy = await executeCommand('open -a Simulator', { timeout: 5000 });
+  if (legacy.code !== 0) {
+    throw new Error(legacy.stderr || 'Neither DeviceHub.app nor Simulator.app could be opened');
+  }
+  console.error('[simctl-boot] Opened Simulator.app GUI');
+}

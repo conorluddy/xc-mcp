@@ -2,6 +2,13 @@ import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
 import { IDBTargetCache } from '../../state/idb-target-cache.js';
+import { parseFlexibleJson } from '../../utils/json-parser.js';
+import {
+  parseAXFrame,
+  isFrameVisible,
+  describeOffscreenReason,
+  extractViewport,
+} from '../../utils/ax-frame.js';
 
 interface IdbUiFindElementArgs {
   udid?: string;
@@ -169,8 +176,18 @@ export async function idbUiFindElementTool(args: IdbUiFindElementArgs) {
     // STAGE 3: Parse and Filter Elements
     // ============================================================================
 
-    const elements = parseNdJson(result.stdout);
-    const matches = filterElementsByQuery(elements, normalizedQuery);
+    const elements = parseFlexibleJson(result.stdout);
+    const viewport = target.screenDimensions ?? extractViewport(elements);
+    const matches = filterElementsByQuery(elements, normalizedQuery)
+      .map(element => ({
+        ...element,
+        visible: isFrameVisible(element, viewport),
+        offscreenReason: describeOffscreenReason(element, viewport) ?? undefined,
+      }))
+      // Visible matches first: matchedElements[0] should be one the agent can actually tap.
+      .sort((a, b) => Number(b.visible) - Number(a.visible));
+
+    const visibleMatchCount = matches.filter(element => element.visible).length;
 
     // Record successful operation
     IDBTargetCache.recordSuccess(resolvedUdid);
@@ -220,11 +237,14 @@ export async function idbUiFindElementTool(args: IdbUiFindElementArgs) {
               udid: resolvedUdid,
               targetName: target.name,
               matchCount: matches.length,
+              visibleMatchCount,
               matchedElements: matches.map(el => ({
                 type: el.type,
                 label: el.label,
                 identifier: el.identifier,
                 enabled: el.enabled,
+                visible: el.visible,
+                ...(el.offscreenReason ? { offscreenReason: el.offscreenReason } : {}),
                 // Tap-ready coordinates
                 centerX: el.centerX,
                 centerY: el.centerY,
@@ -237,14 +257,20 @@ export async function idbUiFindElementTool(args: IdbUiFindElementArgs) {
                 },
               })),
               guidance: [
-                `✅ Found ${matches.length} element${matches.length === 1 ? '' : 's'} matching "${query}"`,
+                `✅ Found ${matches.length} element${matches.length === 1 ? '' : 's'} matching "${query}"` +
+                  (visibleMatchCount === matches.length
+                    ? ''
+                    : ` (${visibleMatchCount} currently on screen)`),
                 ``,
-                `Quick tap:`,
+                visibleMatchCount === 0
+                  ? `⚠️ No match is on screen right now — tapping these coordinates will be rejected:`
+                  : `Quick tap:`,
                 matches
                   .slice(0, 3)
-                  .map(
-                    (el, idx) =>
-                      `${idx + 1}. "${el.label || el.identifier || el.type}": idb-ui-tap --x ${el.centerX} --y ${el.centerY}`
+                  .map((el, idx) =>
+                    el.visible
+                      ? `${idx + 1}. "${el.label || el.identifier || el.type}": idb-ui-tap --x ${el.centerX} --y ${el.centerY}`
+                      : `${idx + 1}. "${el.label || el.identifier || el.type}": offscreen — ${el.offscreenReason}`
                   )
                   .join('\n'),
                 matches.length > 3
@@ -280,72 +306,8 @@ export async function idbUiFindElementTool(args: IdbUiFindElementArgs) {
 // ============================================================================
 
 /**
- * Parse AXFrame string format to coordinates
- */
-function parseAXFrame(frameStr: string | undefined): {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  centerX: number;
-  centerY: number;
-} | null {
-  if (!frameStr) {
-    return null;
-  }
-
-  // Parse "{{x, y}, {width, height}}"
-  const match = frameStr.match(/\{\{([^}]+)\},\s*\{([^}]+)\}\}/);
-  if (!match) {
-    return null;
-  }
-
-  const coords = match[1].split(',').map((v: string) => parseInt(v.trim(), 10));
-  const size = match[2].split(',').map((v: string) => parseInt(v.trim(), 10));
-
-  if (coords.length !== 2 || size.length !== 2 || coords.some(isNaN) || size.some(isNaN)) {
-    return null;
-  }
-
-  const x = coords[0];
-  const y = coords[1];
-  const width = size[0];
-  const height = size[1];
-
-  return {
-    x,
-    y,
-    width,
-    height,
-    centerX: x + width / 2,
-    centerY: y + height / 2,
-  };
-}
-
-/**
  * Parse NDJSON output from idb ui describe-all
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function parseNdJson(ndjsonText: string): any[] {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const elements: any[] = [];
-  const lines = ndjsonText.split('\n');
-
-  for (const line of lines) {
-    if (!line.trim()) {
-      continue;
-    }
-
-    try {
-      const element = JSON.parse(line);
-      elements.push(element);
-    } catch {
-      console.error(`[idb-ui-find-element] Failed to parse NDJSON line: ${line}`);
-    }
-  }
-
-  return elements;
-}
 
 /**
  * Filter elements matching search query
@@ -380,12 +342,16 @@ function filterElementsByQuery(
   }> = [];
 
   for (const element of elements) {
-    const label = (element.label || '').toLowerCase();
-    const identifier = (element.identifier || '').toLowerCase();
+    // iOS `idb ui describe-all` emits AXLabel/AXUniqueId; other versions emit label/identifier.
+    const elementLabel = element.label || element.AXLabel;
+    const elementIdentifier = element.identifier || element.AXUniqueId;
+
+    const label = (elementLabel || '').toLowerCase();
+    const identifier = (elementIdentifier || '').toLowerCase();
 
     // Match if query appears in label or identifier
     if (label.includes(query) || identifier.includes(query)) {
-      const frame = parseAXFrame(element.frame);
+      const frame = parseAXFrame(element.frame ?? element.AXFrame);
 
       // Skip elements without frame coordinates
       if (!frame) {
@@ -394,8 +360,8 @@ function filterElementsByQuery(
 
       matches.push({
         type: element.type || 'Unknown',
-        label: element.label,
-        identifier: element.identifier,
+        label: elementLabel,
+        identifier: elementIdentifier,
         enabled: element.enabled !== false, // Default to true if not specified
         x: frame.x,
         y: frame.y,

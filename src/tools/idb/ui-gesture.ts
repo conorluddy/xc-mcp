@@ -1,5 +1,6 @@
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
+import { assertHidWritesSupported } from '../../utils/idb-environment.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
 import { IDBTargetCache } from '../../state/idb-target-cache.js';
 import { formatToolError } from '../../utils/error-formatter.js';
@@ -109,6 +110,9 @@ interface IdbUiGestureArgs {
  * @returns Tool result with gesture status and path information
  */
 export async function idbUiGestureTool(args: IdbUiGestureArgs) {
+  // Fail loudly rather than let a stale idb-companion drop the event silently.
+  await assertHidWritesSupported();
+
   const {
     udid,
     operation,
