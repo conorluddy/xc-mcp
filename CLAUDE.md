@@ -125,9 +125,9 @@ excludes. Jest maps `@modelcontextprotocol/sdk/types.js` to `tests/mocks/mcp-typ
 
 ### CI
 
-The `claude-review` check fails on every PR, including ones that merge cleanly — it can't obtain an
-OIDC token. It says nothing about the code. The signal is `Test & Build`, `test`, and
-`Xcode Compatibility Check`.
+The required signal is `Test & Build`, `test`, and `Xcode Compatibility Check`. The automatic
+`claude-review` workflow was removed; `claude.yml` (@claude mentions) needs a valid
+`CLAUDE_CODE_OAUTH_TOKEN` secret — regenerate with `claude setup-token` when it expires.
 
 ## Conventions
 
