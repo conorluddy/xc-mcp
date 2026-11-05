@@ -105,12 +105,12 @@ export async function idbSemanticActionTool(args: {
       for (let attempt = 0; attempt < 3; attempt++) {
         if (attempt) await new Promise(resolve => setTimeout(resolve, 300));
         const current = await read();
-        verified = current.some(
-          node =>
-            node.type === element.type &&
-            (!element.AXUniqueId || node.AXUniqueId === element.AXUniqueId) &&
-            String(node.AXValue ?? '') === args.value
-        );
+        const identityKey = element.AXUniqueId ? 'AXUniqueId' : 'AXLabel';
+        const candidates = current.filter(node => node[identityKey] === element[identityKey]);
+        verified =
+          candidates.length === 1 &&
+          candidates[0].type === element.type &&
+          String(candidates[0].AXValue ?? '') === args.value;
         if (verified) break;
       }
       if (!verified) return reply(false, { error: 'Value did not stick on read-back.' });

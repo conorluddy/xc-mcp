@@ -160,3 +160,25 @@ it('rejects invalid scroll counts before sending any events', async () => {
   ).rejects.toThrow('amount');
   expect(run).not.toHaveBeenCalled();
 });
+
+it('does not verify a label-only field using another field with the requested value', async () => {
+  const target = {
+    type: 'TextField',
+    AXLabel: 'Search',
+    AXValue: 'old',
+    frame: { x: 1, y: 1, width: 100, height: 40 },
+  };
+  const other = { ...target, AXLabel: 'Other', AXValue: 'new' };
+  run.mockImplementation(async (_binary, args) => ({
+    code: 0,
+    stdout: args.includes('describe-all') ? JSON.stringify([target, other]) : '',
+    stderr: '',
+  }));
+  const result = await idbSemanticActionTool({
+    operation: 'set-value',
+    query: 'Search',
+    value: 'new',
+  });
+  expect(result.isError).toBe(true);
+  expect(result.content[0].text).toContain('did not stick');
+});

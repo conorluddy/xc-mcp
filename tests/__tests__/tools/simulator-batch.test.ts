@@ -30,3 +30,11 @@ it('uses a filtered snapshot and reports partial failure', async () => {
   expect(result.isError).toBe(true);
   expect(JSON.parse(result.content[0].text).results).toHaveLength(2);
 });
+
+it('rejects explicit device IDs combined with batch filters before resolving devices', async () => {
+  await expect(
+    simulatorBatch('erase', { deviceId: 'single-device', runtime: '26', confirm: true })
+  ).rejects.toThrow('either deviceId or batch');
+  expect(simulatorCache.getAvailableSimulators).not.toHaveBeenCalled();
+  expect(simctlEraseTool).not.toHaveBeenCalled();
+});

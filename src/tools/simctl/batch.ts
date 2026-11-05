@@ -3,6 +3,7 @@ import { simulatorCache } from '../../state/simulator-cache.js';
 
 type Operation = 'boot' | 'shutdown' | 'erase' | 'delete';
 interface BatchArgs {
+  deviceId?: string;
   all?: boolean;
   deviceType?: string;
   runtime?: string;
@@ -13,6 +14,11 @@ interface BatchArgs {
 
 /** Resolve a snapshot before mutation so deletion cannot change the selected set. */
 export async function simulatorBatch(operation: Operation, args: BatchArgs) {
+  if (args.deviceId && args.deviceId !== 'all')
+    throw new McpError(
+      ErrorCode.InvalidRequest,
+      'Specify either deviceId or batch selection, not both'
+    );
   if ((operation === 'erase' || operation === 'delete') && args.confirm !== true)
     throw new McpError(
       ErrorCode.InvalidRequest,

@@ -5,8 +5,8 @@ All notable changes to XC-MCP are documented here. This project adheres to
 
 ## [5.0.0] — Unreleased
 
-Initial simulator-skill parity updates. Full parity and live UI validation remain in progress;
-see [the parity inventory](docs/simulator-skill-parity.md).
+Simulator-skill capability updates, including navigation, diagnostics, and batch device management.
+See [the parity audit](docs/simulator-skill-parity.md) for mappings and live-validation limits.
 
 ### Breaking changes
 
@@ -21,11 +21,21 @@ see [the parity inventory](docs/simulator-skill-parity.md).
 - Keyboard modifiers and field clearing; pinch, long press, multiple taps, drag, rotation and shake.
 - Opt-in deep accessibility reads, verified contrast control, and parallel-testing configuration.
 
+- Composite app-state diagnostic bundles with screenshots, accessibility trees, logs, and device metadata.
+- Batch boot/shutdown/erase/delete filters, multi-file media import, and container export.
+- Exact/type/identifier/index navigation, labelled-leaf coverage hints, scrolling and pull-to-refresh.
+- Raw hang capture with gzip, bounded stream retries, and aggregate storage pruning.
+- Reference-compatible visual-diff noise cutoff and side-by-side artifacts.
+
 ### Fixed
 
 - Keyboard names now resolve to HID codes and sequences send individual events.
 - Runner failures and zero-test executions no longer report or cache successful test runs.
 - Malformed companion identifiers no longer generate stale-device warnings.
+- Field read-back verifies the selected field rather than another field sharing its value.
+- Explicit device IDs cannot be combined with batch selectors that broaden the target set.
+- Simulator scoring uses runtime metadata and supports newer iPhone generations.
+- Accessibility audits report all matching rules in the highest applicable severity tier.
 
 ## [4.2.0]
 
