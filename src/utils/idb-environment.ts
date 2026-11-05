@@ -177,7 +177,12 @@ async function detectStaleRegistrations(): Promise<string[]> {
 
   const stale: string[] = [];
   for (const entry of entries) {
-    if (!entry?.pid || !entry?.udid) continue;
+    if (
+      !entry?.pid ||
+      !entry?.udid ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(entry.udid)
+    )
+      continue;
     const alive = await executeCommand(`kill -0 ${entry.pid} 2>/dev/null`, { timeout: 5000 });
     if (alive.code !== 0) stale.push(entry.udid);
   }

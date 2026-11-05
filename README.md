@@ -7,7 +7,7 @@
 
 **An MCP server that lets AI agents build, run and drive iOS apps — without drowning in Xcode's output.**
 
-XC-MCP wraps `xcodebuild`, `simctl` and `idb` as 77 tools. Its job is not just to expose those
+XC-MCP wraps `xcodebuild`, `simctl` and `idb` as 79 tools. Its job is not just to expose those
 commands but to make their output fit in a model's context: summaries first, full detail on demand,
 and the accessibility tree instead of screenshots wherever the app allows it.
 
@@ -161,7 +161,7 @@ validated `structuredContent`.
 
 ## Tools
 
-**77 tools.** [TOOL_SIGNATURES.md](./TOOL_SIGNATURES.md) indexes every tool with its annotations;
+**79 tools.** [TOOL_SIGNATURES.md](./TOOL_SIGNATURES.md) indexes every tool with its annotations;
 parameters come from the server itself via `rtfm({ toolName: "..." })`.
 
 | Area | Tools |
@@ -184,7 +184,7 @@ parameters come from the server itself via `rtfm({ toolName: "..." })`.
 | Flag | Effect |
 |---|---|
 | `--mini`, `-m` | One-line tool descriptions; `rtfm` supplies the detail |
-| `--build-only`, `-b` | Registers 18 build-focused tools instead of 77 |
+| `--build-only`, `-b` | Registers 18 build-focused tools instead of 79 |
 
 Flags combine: `["-y", "xc-mcp", "--mini", "--build-only"]` — the same `args` array works in Claude Desktop and Codex's `config.toml`. Both matter mainly for clients that
 load every tool description upfront; see the history below.
@@ -335,3 +335,7 @@ Pull requests need a passing build, tests and lint.
 ## License
 
 MIT, as declared in [`package.json`](./package.json).
+
+### Simulator skill compatibility update
+
+See [the parity inventory](docs/simulator-skill-parity.md) for ported fixes, new capabilities and remaining gaps. New tools are `idb-semantic-action` and `idb-library`. Destructive erase/delete/uninstall calls now require `confirm: true`; fresh-install retains explicit `eraseSimulator: true` consent.

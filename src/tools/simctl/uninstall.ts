@@ -3,6 +3,7 @@ import { executeCommand } from '../../utils/command.js';
 import { simulatorCache } from '../../state/simulator-cache.js';
 
 interface SimctlUninstallToolArgs {
+  confirm?: boolean;
   udid: string;
   bundleId: string;
 }
@@ -43,22 +44,21 @@ interface SimctlUninstallToolArgs {
  * @throws McpError for invalid bundle ID or uninstall failure
  */
 export async function simctlUninstallTool(args: any) {
+  if (args.confirm !== true)
+    throw new McpError(
+      ErrorCode.InvalidRequest,
+      'This operation permanently deletes simulator or app data. Set confirm: true to proceed.'
+    );
   const { udid, bundleId } = args as SimctlUninstallToolArgs;
 
   try {
     // Validate inputs
     if (!udid || udid.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'UDID is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'UDID is required and cannot be empty');
     }
 
     if (!bundleId || bundleId.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'Bundle ID is required and cannot be empty'
-      );
+      throw new McpError(ErrorCode.InvalidRequest, 'Bundle ID is required and cannot be empty');
     }
 
     // Validate bundle ID format
@@ -147,6 +147,10 @@ Uninstall iOS apps from simulators.
 ## Overview
 
 Removes an installed app from a simulator by its bundle ID. This cleans up all app data, preferences, and the app bundle itself from the simulator. Useful for clean testing, data removal, space management, and workflow automation.
+
+## Confirmation
+
+confirm: true is required before permanently deleting simulator or app data.
 
 ## Parameters
 

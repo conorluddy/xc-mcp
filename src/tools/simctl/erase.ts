@@ -4,6 +4,7 @@ import { executeCommand, buildSimctlCommand } from '../../utils/command.js';
 import { simulatorCache } from '../../state/simulator-cache.js';
 
 interface SimctlEraseToolArgs {
+  confirm?: boolean;
   deviceId: string;
   force?: boolean;
 }
@@ -44,6 +45,11 @@ interface SimctlEraseToolArgs {
  * @throws McpError for invalid device ID or erase failure
  */
 export async function simctlEraseTool(args: any) {
+  if (args.confirm !== true)
+    throw new McpError(
+      ErrorCode.InvalidRequest,
+      'This operation permanently deletes simulator or app data. Set confirm: true to proceed.'
+    );
   const { deviceId, force = false } = args as SimctlEraseToolArgs;
 
   try {
@@ -143,6 +149,10 @@ Reset iOS simulator devices to factory settings.
 ## Overview
 
 Resets a simulator to clean factory state without deleting the device itself. All apps and data are removed, but the simulator persists and can be immediately reused. Useful for clean state testing and fresh app installation workflows.
+
+## Confirmation
+
+confirm: true is required before permanently deleting simulator or app data.
 
 ## Parameters
 

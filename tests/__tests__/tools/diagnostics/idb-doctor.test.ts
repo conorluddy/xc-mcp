@@ -91,11 +91,16 @@ describe('idbDoctorTool', () => {
   });
 
   it('lists stale companion registrations', async () => {
-    mockEnvironment({ idbState: JSON.stringify([{ udid: 'ABC-123', pid: 42 }]), pidAlive: false });
+    mockEnvironment({
+      idbState: JSON.stringify([{ udid: '12345678-1234-1234-1234-123456789ABC', pid: 42 }]),
+      pidAlive: false,
+    });
     const report = parseReport((await idbDoctorTool()).content[0].text);
 
-    expect(report.staleRegistrations).toEqual(['ABC-123']);
-    expect(report.problems.join('\n')).toContain('idb disconnect ABC-123');
+    expect(report.staleRegistrations).toEqual(['12345678-1234-1234-1234-123456789ABC']);
+    expect(report.problems.join('\n')).toContain(
+      'idb disconnect 12345678-1234-1234-1234-123456789ABC'
+    );
   });
 
   it('probes fresh rather than serving a cached reading', async () => {

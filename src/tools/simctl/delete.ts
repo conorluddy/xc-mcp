@@ -4,6 +4,7 @@ import { executeCommand, buildSimctlCommand } from '../../utils/command.js';
 import { simulatorCache } from '../../state/simulator-cache.js';
 
 interface SimctlDeleteToolArgs {
+  confirm?: boolean;
   deviceId: string;
 }
 
@@ -39,6 +40,11 @@ interface SimctlDeleteToolArgs {
  * @throws McpError for invalid device ID, booted device, or deletion failure
  */
 export async function simctlDeleteTool(args: any) {
+  if (args.confirm !== true)
+    throw new McpError(
+      ErrorCode.InvalidRequest,
+      'This operation permanently deletes simulator or app data. Set confirm: true to proceed.'
+    );
   const { deviceId } = args as SimctlDeleteToolArgs;
 
   try {
@@ -133,6 +139,10 @@ Permanently delete iOS simulator devices.
 ## Overview
 
 Permanently removes a simulator device and all its data from the system. This action cannot be undone. The simulator must be shut down before deletion. Useful for cleaning up unused simulators to save disk space (simulators can be 5-10GB each).
+
+## Confirmation
+
+confirm: true is required before permanently deleting simulator or app data.
 
 ## Parameters
 

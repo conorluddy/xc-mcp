@@ -1,3 +1,5 @@
+import { IDB_SEMANTIC_ACTION_DOCS } from './idb/semantic-action.js';
+import { IDB_LIBRARY_DOCS } from './idb/library.js';
 /**
  * Central registry of all tool documentation.
  *
@@ -507,6 +509,8 @@ export const TOOL_CATEGORIES: Record<string, string[]> = {
   testing: [
     'idb-simulate-memory-warning',
     'idb-clear-keychain',
+    'idb-library',
+    'idb-semantic-action',
     'idb-xctest-list',
     'simctl-privacy',
     'simctl-push',
@@ -694,6 +698,8 @@ export const TOOL_DOCS: Record<string, string> = {
   'idb-crash-delete': IDB_CRASH_DELETE_DOCS,
   'idb-simulate-memory-warning': IDB_SIMULATE_MEMORY_WARNING_DOCS,
   'idb-clear-keychain': IDB_CLEAR_KEYCHAIN_DOCS,
+  'idb-library': IDB_LIBRARY_DOCS,
+  'idb-semantic-action': IDB_SEMANTIC_ACTION_DOCS,
   'idb-xctest-list': IDB_XCTEST_LIST_DOCS,
 
   // Discrete tools (v4 — dissolved from v2/v3 routers, each documents its own usage)

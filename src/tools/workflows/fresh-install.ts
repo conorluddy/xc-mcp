@@ -68,7 +68,7 @@ export async function workflowFreshInstallTool(args: FreshInstallArgs) {
 
   let targetUdid = simulatorUdid;
   let targetName = 'Unknown';
-  let bundleId = '';
+  let bundleId: string;
 
   try {
     // Dynamic imports to avoid circular dependencies
@@ -156,6 +156,7 @@ export async function workflowFreshInstallTool(args: FreshInstallArgs) {
 
       try {
         const eraseResult = await simctlEraseTool({
+          confirm: true,
           deviceId: targetUdid,
         });
 

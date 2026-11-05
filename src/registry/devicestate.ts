@@ -28,6 +28,7 @@ export function registerDeviceStateTools(server: McpServer): void {
       inputSchema: {
         udid: z.string().optional(),
         theme: z.enum(['light', 'dark']).optional(),
+        contrast: z.enum(['high', 'normal']).optional(),
         textSize: z
           .enum(['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'AX1', 'AX2', 'AX3', 'AX4', 'AX5'])
           .optional(),

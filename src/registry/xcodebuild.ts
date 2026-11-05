@@ -201,6 +201,7 @@ export function registerXcodebuildTools(server: McpServer): void {
         onlyTesting: z.array(z.string()).optional(),
         skipTesting: z.array(z.string()).optional(),
         testWithoutBuilding: z.boolean().default(false),
+        parallelTesting: z.boolean().optional(),
       },
       outputSchema: {
         testId: z.string().describe('Cache id for full test log (xcodebuild-get-details)'),

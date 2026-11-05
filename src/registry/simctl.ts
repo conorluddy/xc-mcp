@@ -232,6 +232,7 @@ export function registerSimctlTools(server: McpServer): void {
       title: 'Delete Simulator',
       description: getDescription(SIMCTL_DELETE_DOCS, SIMCTL_DELETE_DOCS),
       inputSchema: {
+        confirm: z.boolean().optional().describe('Explicitly confirm permanent data deletion.'),
         deviceId: z.string(),
       },
       annotations: {
@@ -262,6 +263,7 @@ export function registerSimctlTools(server: McpServer): void {
       title: 'Erase Simulator (Factory Reset)',
       description: getDescription(SIMCTL_ERASE_DOCS, SIMCTL_ERASE_DOCS),
       inputSchema: {
+        confirm: z.boolean().optional().describe('Explicitly confirm permanent data deletion.'),
         deviceId: z.string(),
         force: z.boolean().default(false),
       },
@@ -414,6 +416,7 @@ export function registerSimctlTools(server: McpServer): void {
       title: 'Uninstall App from Simulator',
       description: getDescription(SIMCTL_UNINSTALL_DOCS, SIMCTL_UNINSTALL_DOCS),
       inputSchema: {
+        confirm: z.boolean().optional().describe('Explicitly confirm permanent data deletion.'),
         udid: z.string(),
         bundleId: z.string(),
       },

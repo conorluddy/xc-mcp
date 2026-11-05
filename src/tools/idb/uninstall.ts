@@ -6,6 +6,7 @@ import { isValidBundleId } from '../../utils/shell-escape.js';
 import { formatToolError } from '../../utils/error-formatter.js';
 
 interface IdbUninstallArgs {
+  confirm?: boolean;
   udid?: string;
   bundleId: string; // App bundle identifier to uninstall
 }
@@ -53,6 +54,11 @@ interface IdbUninstallArgs {
  * @returns Tool result with uninstallation status and guidance
  */
 export async function idbUninstallTool(args: IdbUninstallArgs) {
+  if (args.confirm !== true)
+    throw new McpError(
+      ErrorCode.InvalidRequest,
+      'This operation permanently deletes simulator or app data. Set confirm: true to proceed.'
+    );
   const { udid, bundleId } = args;
 
   try {
@@ -213,6 +219,10 @@ Uninstall application from iOS target - remove apps with complete data deletion 
 ## Overview
 
 Removes installed applications by bundle ID with complete data and preferences deletion. Automatically terminates running apps before uninstall. Cannot remove system apps (user-installed only). Provides detailed error guidance for common failures (app not found, system app protection, uninstall errors).
+
+## Confirmation
+
+confirm: true is required before permanently deleting simulator or app data.
 
 ## Parameters
 
