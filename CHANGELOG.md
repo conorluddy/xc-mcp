@@ -3,6 +3,30 @@
 All notable changes to XC-MCP are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [5.0.0] — Unreleased
+
+Initial simulator-skill parity updates. Full parity and live UI validation remain in progress;
+see [the parity inventory](docs/simulator-skill-parity.md).
+
+### Breaking changes
+
+- `simctl-erase`, `simctl-delete`, `simctl-uninstall`, and `idb-uninstall` require
+  `confirm: true` before deleting data. Existing callers must provide explicit consent.
+  `workflow-fresh-install` retains its explicit `eraseSimulator: true` opt-in.
+
+### Added
+
+- Semantic accessibility presses and verified field replacement through `idb-semantic-action`.
+- Notification listing/clearing and confirmed photo-library clearing through `idb-library`.
+- Keyboard modifiers and field clearing; pinch, long press, multiple taps, drag, rotation and shake.
+- Opt-in deep accessibility reads, verified contrast control, and parallel-testing configuration.
+
+### Fixed
+
+- Keyboard names now resolve to HID codes and sequences send individual events.
+- Runner failures and zero-test executions no longer report or cache successful test runs.
+- Malformed companion identifiers no longer generate stale-device warnings.
+
 ## [4.2.0]
 
 Tested against a real app. Driving Grapla end-to-end on an Xcode 27 simulator found that the
