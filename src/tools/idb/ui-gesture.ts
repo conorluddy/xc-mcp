@@ -1,5 +1,5 @@
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
-import { executeCommand } from '../../utils/command.js';
+import { executeCommand, executeCommandWithArgs } from '../../utils/command.js';
 import { assertHidWritesSupported } from '../../utils/idb-environment.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
 import { IDBTargetCache } from '../../state/idb-target-cache.js';
@@ -14,7 +14,23 @@ import {
 
 interface IdbUiGestureArgs {
   udid?: string;
-  operation: 'swipe' | 'button';
+  operation:
+    | 'swipe'
+    | 'button'
+    | 'pinch'
+    | 'long-press'
+    | 'double-tap'
+    | 'drag'
+    | 'rotate'
+    | 'shake'
+    | 'scroll'
+    | 'refresh';
+  source?: string;
+  destination?: string;
+  amount?: number;
+  scale?: number;
+  count?: number;
+  orientation?: 'portrait' | 'portrait-upside-down' | 'landscape-left' | 'landscape-right';
 
   // For 'swipe' operation
   direction?: 'up' | 'down' | 'left' | 'right';
@@ -109,7 +125,135 @@ interface IdbUiGestureArgs {
  * @param args Tool arguments with operation type and gesture/button details
  * @returns Tool result with gesture status and path information
  */
-export async function idbUiGestureTool(args: IdbUiGestureArgs) {
+export async function idbUiGestureTool(args: IdbUiGestureArgs): Promise<{
+  content: Array<{ type: 'text'; text: string }>;
+  isError: boolean;
+}> {
+  if (args.operation === 'scroll' || args.operation === 'refresh') {
+    const amount = args.operation === 'refresh' ? 1 : (args.amount ?? 3);
+    if (!Number.isInteger(amount) || amount < 1 || amount > 100)
+      throw new McpError(ErrorCode.InvalidRequest, 'amount must be an integer from 1 to 100');
+    if (args.operation === 'scroll' && !['up', 'down'].includes(args.direction || ''))
+      throw new McpError(
+        ErrorCode.InvalidRequest,
+        'scroll direction must be up or down (content direction)'
+      );
+    const udid = await resolveIdbUdid(args.udid);
+    const target = await validateTargetBooted(udid);
+    const { width, height } = target.screenDimensions;
+    const refresh = args.operation === 'refresh';
+    const downward = refresh || args.direction === 'up';
+    for (let i = 0; i < amount; i++) {
+      const result = await idbUiGestureTool({
+        udid,
+        operation: 'swipe',
+        startX: width / 2,
+        endX: width / 2,
+        startY: height * (refresh ? 0.15 : downward ? 0.35 : 0.65),
+        endY: height * (refresh ? 0.85 : downward ? 0.65 : 0.35),
+        duration: args.duration ?? 500,
+      });
+      if (result.isError) return result;
+      if (i + 1 < amount) await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    return {
+      content: [
+        {
+          type: 'text' as const,
+          text: JSON.stringify({ success: true, operation: args.operation, amount }),
+        },
+      ],
+      isError: false,
+    };
+  }
+  if (!['swipe', 'button'].includes(args.operation)) {
+    const point = (x?: number, y?: number) => {
+      if (
+        x === undefined ||
+        y === undefined ||
+        !Number.isFinite(x) ||
+        !Number.isFinite(y) ||
+        x < 0 ||
+        y < 0
+      )
+        throw new McpError(
+          ErrorCode.InvalidRequest,
+          'Nonnegative finite point coordinates required'
+        );
+      return [String(Math.round(x)), String(Math.round(y))];
+    };
+    let command: string[];
+    switch (args.operation) {
+      case 'shake':
+        command = ['shake'];
+        break;
+      case 'rotate':
+        if (
+          !args.orientation ||
+          !['portrait', 'portrait-upside-down', 'landscape-left', 'landscape-right'].includes(
+            args.orientation
+          )
+        )
+          throw new McpError(ErrorCode.InvalidRequest, 'Valid orientation required');
+        command = ['rotate', args.orientation.toUpperCase().replaceAll('-', '_')];
+        break;
+      case 'pinch':
+        if (!args.scale || !Number.isFinite(args.scale) || args.scale <= 0)
+          throw new McpError(ErrorCode.InvalidRequest, 'Positive scale required');
+        command = ['pinch', ...point(args.startX, args.startY), String(args.scale)];
+        break;
+      case 'double-tap':
+        if (!Number.isInteger(args.count ?? 2) || (args.count ?? 2) < 2)
+          throw new McpError(ErrorCode.InvalidRequest, 'count must be an integer >= 2');
+        command = [
+          'multi-tap',
+          ...point(args.startX, args.startY),
+          '--count',
+          String(args.count ?? 2),
+        ];
+        break;
+      case 'long-press':
+        if (!Number.isFinite(args.duration ?? 2000) || (args.duration ?? 2000) <= 0)
+          throw new McpError(ErrorCode.InvalidRequest, 'Positive duration required');
+        command = [
+          'tap',
+          ...point(args.startX, args.startY),
+          '--duration',
+          String((args.duration ?? 2000) / 1000),
+        ];
+        break;
+      case 'drag':
+        command = [
+          'drag-and-drop',
+          ...(args.source ? [args.source] : point(args.startX, args.startY)),
+          ...(args.destination ? [args.destination] : point(args.endX, args.endY)),
+        ];
+        break;
+      default:
+        throw new McpError(ErrorCode.InvalidRequest, 'Unknown gesture');
+    }
+    const udid = await resolveIdbUdid(args.udid);
+    await validateTargetBooted(udid);
+    const result = await executeCommandWithArgs('idb', ['ui', ...command, '--udid', udid], {
+      timeout: 15000,
+    });
+    if (result.code === 0) IDBTargetCache.recordSuccess(udid);
+    return {
+      content: [
+        {
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: result.code === 0,
+            operation: args.operation,
+            error: result.code
+              ? result.stderr + ' (Check that idb CLI and companion support this operation.)'
+              : undefined,
+          }),
+        },
+      ],
+      isError: result.code !== 0,
+    };
+  }
   // Fail loudly rather than let a stale idb-companion drop the event silently.
   await assertHidWritesSupported();
 
@@ -303,7 +447,7 @@ async function executeSwipeCommand(
   let swipePath: any;
   // Convert duration from milliseconds to seconds (IDB expects seconds)
   let finalDuration = duration !== undefined ? duration / 1000 : undefined; // In seconds
-  let distance = 0; // In points
+  let distance: number; // In points
 
   if (direction) {
     // Directional swipe: Convert direction to integer coordinates with optional profile
@@ -514,6 +658,14 @@ Executes swipe gestures (directional or custom paths) and hardware button presse
 - Test hardware button interactions without physical device access - home button, lock, app switching
 - Execute precise custom swipe paths for complex gesture-based UIs (drawing, map navigation)
 - Track gesture-based test scenarios with semantic metadata (actionName, expectedOutcome)
+
+## Scrolling
+
+operation: scroll uses content direction up/down and amount (default 3, maximum 100). refresh performs one downward pull.
+
+## Additional gestures
+
+operation also accepts pinch (startX/startY and positive scale), long-press (startX/startY, duration in milliseconds; default 2000), double-tap (startX/startY, count >= 2), drag (start/end coordinates or source/destination accessibility labels), rotate (orientation: portrait, portrait-upside-down, landscape-left, landscape-right), and shake. Newer operations require a supporting idb CLI and companion.
 
 ## Parameters
 

@@ -237,73 +237,50 @@ function flattenTree(node: any, depth = 0): AuditElement[] {
 // === AUDIT LOGIC ===
 
 /**
- * Evaluate one element. One tier fires per element (critical first).
+ * Evaluate one element. All matching rules in the highest applicable tier fire per element (critical first).
  */
-function auditElement(el: AuditElement): Issue | null {
-  const elementType = el.type ?? 'Unknown';
-  const elementLabel = label(el) ?? null;
-  const elementRef = { type: elementType, label: elementLabel };
-
-  // Critical
-  const criticalChecks: Array<[string, () => boolean]> = [
-    ['missing_label', () => isMissingLabel(el)],
-    ['empty_button', () => isEmptyButton(el)],
-    ['image_no_alt', () => isImageNoAlt(el)],
+function auditElement(el: AuditElement): Issue[] {
+  const tiers: Array<{ severity: Issue['severity']; checks: Array<[string, boolean]> }> = [
+    {
+      severity: 'critical',
+      checks: [
+        ['missing_label', isMissingLabel(el)],
+        ['empty_button', isEmptyButton(el)],
+        ['image_no_alt', isImageNoAlt(el)],
+      ],
+    },
+    {
+      severity: 'warning',
+      checks: [
+        ['missing_hint', isMissingHint(el)],
+        ['missing_traits', isMissingTraits(el)],
+        ['small_touch_target', isSmallTouchTarget(el)],
+      ],
+    },
+    {
+      severity: 'info',
+      checks: [
+        ['no_identifier', hasNoIdentifier(el)],
+        ['deep_nesting', isDeepNesting(el)],
+      ],
+    },
   ];
-
-  for (const [rule, check] of criticalChecks) {
-    if (check()) {
-      return {
-        severity: 'critical',
-        rule,
-        elementType,
-        issue: ISSUE_DESCRIPTIONS[rule],
-        fix: ISSUE_FIXES[rule],
-        element: elementRef,
-      };
-    }
+  for (const { severity, checks } of tiers) {
+    const issues = checks
+      .filter(([, matched]) => matched)
+      .map(
+        ([rule]): Issue => ({
+          severity,
+          rule,
+          elementType: el.type ?? 'Unknown',
+          issue: ISSUE_DESCRIPTIONS[rule],
+          fix: ISSUE_FIXES[rule],
+          element: { type: el.type ?? 'Unknown', label: label(el) ?? null },
+        })
+      );
+    if (issues.length) return issues;
   }
-
-  // Warning
-  const warningChecks: Array<[string, () => boolean]> = [
-    ['missing_hint', () => isMissingHint(el)],
-    ['missing_traits', () => isMissingTraits(el)],
-    ['small_touch_target', () => isSmallTouchTarget(el)],
-  ];
-
-  for (const [rule, check] of warningChecks) {
-    if (check()) {
-      return {
-        severity: 'warning',
-        rule,
-        elementType,
-        issue: ISSUE_DESCRIPTIONS[rule],
-        fix: ISSUE_FIXES[rule],
-        element: elementRef,
-      };
-    }
-  }
-
-  // Info
-  const infoChecks: Array<[string, () => boolean]> = [
-    ['no_identifier', () => hasNoIdentifier(el)],
-    ['deep_nesting', () => isDeepNesting(el)],
-  ];
-
-  for (const [rule, check] of infoChecks) {
-    if (check()) {
-      return {
-        severity: 'info',
-        rule,
-        elementType,
-        issue: ISSUE_DESCRIPTIONS[rule],
-        fix: ISSUE_FIXES[rule],
-        element: elementRef,
-      };
-    }
-  }
-
-  return null;
+  return [];
 }
 
 const SEVERITY_ORDER: Record<string, number> = { critical: 0, warning: 1, info: 2 };
@@ -374,8 +351,7 @@ export async function accessibilityAuditTool(args: any) {
 
     const allIssues: Issue[] = [];
     for (const element of elements) {
-      const issue = auditElement(element);
-      if (issue) allIssues.push(issue);
+      allIssues.push(...auditElement(element));
     }
 
     IDBTargetCache.recordSuccess(resolvedUdid);

@@ -1,3 +1,4 @@
+import { labelledLeafCoverage } from '../../utils/ax-coverage.js';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
@@ -13,6 +14,7 @@ import {
 } from '../../utils/ax-frame.js';
 
 interface IdbUiDescribeArgs {
+  deep?: boolean;
   udid?: string;
   operation: 'all' | 'point';
 
@@ -141,6 +143,7 @@ export async function idbUiDescribeTool(args: IdbUiDescribeArgs) {
             screenContext,
             purposeDescription,
             filterLevel,
+            deep: args.deep,
           })
         : // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           await executeDescribePointOperation(resolvedUdid, x!, y!);
@@ -206,12 +209,13 @@ async function executeDescribeAllOperation(
   udid: string,
   target: any,
   context: {
+    deep?: boolean;
     screenContext?: string;
     purposeDescription?: string;
     filterLevel?: 'strict' | 'moderate' | 'permissive' | 'none';
   }
 ): Promise<any> {
-  const command = `idb ui describe-all --udid "${udid}"`;
+  const command = `idb ui describe-all --udid "${udid}"${context.deep ? ' --api axbridge' : ''}`;
 
   console.error(`[idb-ui-describe] Executing: ${command}`);
 
@@ -278,6 +282,11 @@ async function executeDescribeAllOperation(
       visibleTappableElements: summary.visibleTappableCount,
       textFields: summary.textFieldCount,
       viewport,
+      labelledLeafCoverage: labelledLeafCoverage(elements, viewport),
+      coverageHint:
+        labelledLeafCoverage(elements, viewport) < 0.1
+          ? 'Labelled elements cover under 10% of the screen; consider an explicit deep read (enables accessibility automation mode).'
+          : undefined,
       dataQuality: isRichData ? 'rich' : isMinimalData ? 'minimal' : 'moderate',
     },
     // Progressive disclosure: provide cache ID for full tree
@@ -679,6 +688,10 @@ Queries iOS accessibility tree to discover UI elements, their properties (type, 
 - Validate tap coordinates by querying elements at specific points before execution
 - Progressive disclosure prevents token overflow on complex UIs - get summary first, full tree on demand
 - Progressive filter escalation - start with moderate filtering, escalate to permissive/none if minimal data found
+
+## Deep reads
+
+For operation all, deep: true opts into axbridge. It enables device accessibility automation mode, which idb does not restore. Default reads retain the ordinary accessibility backend.
 
 ## Parameters
 

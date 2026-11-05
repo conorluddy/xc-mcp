@@ -5,7 +5,7 @@ import { executeCommand } from '../../utils/command.js';
 import { simulatorCache } from '../../state/simulator-cache.js';
 import { responseCache, responseResourceLink } from '../../utils/response-cache.js';
 
-type ContainerMode = 'ls' | 'cat' | 'userdefaults' | 'coredata-path';
+type ContainerMode = 'ls' | 'cat' | 'userdefaults' | 'coredata-path' | 'export';
 
 interface SimctlContainerToolArgs {
   udid?: string;
@@ -13,6 +13,7 @@ interface SimctlContainerToolArgs {
   mode: ContainerMode;
   path?: string;
   depth?: number;
+  destination?: string;
 }
 
 interface FileEntry {
@@ -438,14 +439,14 @@ export async function simctlContainerTool(args: any) {
       throw new McpError(ErrorCode.InvalidRequest, 'bundleId is required and cannot be empty');
     }
 
-    if (!bundleId.includes('.')) {
+    if (!/^[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/.test(bundleId)) {
       throw new McpError(
         ErrorCode.InvalidRequest,
         'bundleId should follow the format: com.company.appname'
       );
     }
 
-    const validModes: ContainerMode[] = ['ls', 'cat', 'userdefaults', 'coredata-path'];
+    const validModes: ContainerMode[] = ['ls', 'cat', 'userdefaults', 'coredata-path', 'export'];
     if (!mode || !validModes.includes(mode)) {
       throw new McpError(
         ErrorCode.InvalidRequest,
@@ -475,6 +476,29 @@ export async function simctlContainerTool(args: any) {
     let result: Record<string, unknown>;
 
     switch (mode) {
+      case 'export': {
+        const destination = (args as SimctlContainerToolArgs).destination;
+        if (!destination?.trim())
+          throw new McpError(ErrorCode.InvalidRequest, 'destination is required for export');
+        const target = nodePath.resolve(destination, bundleId);
+        const relative = nodePath.relative(containerRoot, target);
+        if (!relative.startsWith('..') || nodePath.isAbsolute(relative))
+          throw new McpError(
+            ErrorCode.InvalidRequest,
+            'Export destination must be outside the container'
+          );
+        if (fs.existsSync(target))
+          throw new McpError(ErrorCode.InvalidRequest, 'Export destination already exists');
+        fs.mkdirSync(nodePath.dirname(target), { recursive: true });
+        fs.cpSync(containerRoot, target, {
+          recursive: true,
+          dereference: false,
+          errorOnExist: true,
+          force: false,
+        });
+        result = { success: true, mode, bundleId, destination: target };
+        break;
+      }
       case 'ls':
         result = await handleLs(containerRoot, bundleId, subPath, depth);
         break;
@@ -540,6 +564,10 @@ Reads a file at \`path\` (relative to container root).
 - Falls back to UTF-8 text, then binary detection
 - Returns \`contentType\`: \`plist\` | \`text\` | \`binary\`
 - Files > 8 KB (text/plist) are stored in responseCache; returns \`cacheId\` + \`resourceLink\`
+
+### export
+
+Copies the data container to destination/BUNDLE_ID. Requires destination; refuses to overwrite an existing export.
 
 ### userdefaults
 Reads \`Library/Preferences/<bundleId>.plist\` and returns decoded key/value pairs.

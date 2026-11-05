@@ -54,7 +54,9 @@ export function registerDiagnosticsTools(server: McpServer): void {
       inputSchema: {
         udid: z.string().optional(),
         predicate: z.string().optional(),
-        minHangMs: z.number().optional(),
+        minHangMs: z.number().nonnegative().optional(),
+        rawCapture: z.boolean().optional(),
+        noGzip: z.boolean().optional(),
       },
       annotations: {
         readOnlyHint: false,

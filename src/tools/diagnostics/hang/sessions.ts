@@ -24,6 +24,8 @@ export interface SessionMeta {
   stoppedAt?: string; // ISO 8601
   rawLogPath: string;
   minHangMs: number;
+  rawCapture?: boolean;
+  noGzip?: boolean;
 }
 
 // === ROOT RESOLUTION ===
@@ -222,11 +224,37 @@ export function pruneExpired(ttlHours = 24): number {
 
   for (const meta of sessions) {
     const createdAt = new Date(meta.createdAt);
-    if (createdAt < cutoff) {
+    if (createdAt < cutoff && meta.status !== 'running') {
       deleteSession(meta.sessionId);
       deleted++;
     }
   }
 
+  return deleted;
+}
+
+/** Prune oldest completed sessions to the aggregate byte cap; active captures survive. */
+export function pruneToAggregateCap(maxBytes = 100 * 1024 * 1024): number {
+  if (!Number.isFinite(maxBytes) || maxBytes <= 0) return 0;
+  const size = (dir: string): number =>
+    fs.readdirSync(dir, { withFileTypes: true }).reduce((total, entry) => {
+      const file = path.join(dir, entry.name);
+      return (
+        total + (entry.isFile() ? fs.statSync(file).size : entry.isDirectory() ? size(file) : 0)
+      );
+    }, 0);
+  const sessions = listSessions()
+    .reverse()
+    .map(meta => ({ meta, bytes: size(getSessionDir(meta.sessionId)) }));
+  let total = sessions.reduce((sum, session) => sum + session.bytes, 0);
+  let deleted = 0;
+  for (const { meta, bytes } of sessions) {
+    if (total <= maxBytes) break;
+    if (meta.status === 'running') continue;
+    if (deleteSession(meta.sessionId)) {
+      total -= bytes;
+      deleted++;
+    }
+  }
   return deleted;
 }

@@ -99,17 +99,22 @@ describe('idb environment detection', () => {
 
   it('detects a companion registration whose process is gone', async () => {
     mockEnvironment({
-      idbState: JSON.stringify([{ udid: 'ABC-123', pid: 4242 }]),
+      idbState: JSON.stringify([{ udid: '12345678-1234-1234-1234-123456789ABC', pid: 4242 }]),
       pidAlive: false,
     });
     const environment = await getIdbEnvironment(true);
 
-    expect(environment.staleRegistrations).toEqual(['ABC-123']);
-    expect(describeIdbProblems(environment).join('\n')).toContain('idb disconnect ABC-123');
+    expect(environment.staleRegistrations).toEqual(['12345678-1234-1234-1234-123456789ABC']);
+    expect(describeIdbProblems(environment).join('\n')).toContain(
+      'idb disconnect 12345678-1234-1234-1234-123456789ABC'
+    );
   });
 
   it('ignores a live companion registration', async () => {
-    mockEnvironment({ idbState: JSON.stringify([{ udid: 'ABC-123', pid: 4242 }]), pidAlive: true });
+    mockEnvironment({
+      idbState: JSON.stringify([{ udid: '12345678-1234-1234-1234-123456789ABC', pid: 4242 }]),
+      pidAlive: true,
+    });
     expect((await getIdbEnvironment(true)).staleRegistrations).toEqual([]);
   });
 
@@ -169,6 +174,14 @@ describe('assertHidWritesSupported', () => {
   it('allows writes when the version cannot be determined', async () => {
     mockEnvironment({ brewVersion: null });
     await expect(assertHidWritesSupported()).resolves.toBeUndefined();
+  });
+
+  it('ignores malformed registration identifiers', async () => {
+    mockEnvironment({
+      idbState: JSON.stringify([{ udid: 'not-a-udid', pid: 42 }]),
+      pidAlive: false,
+    });
+    expect((await getIdbEnvironment(true)).staleRegistrations).toEqual([]);
   });
 
   it('does not block writes merely because a stale registration exists', async () => {

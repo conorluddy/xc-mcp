@@ -1,3 +1,5 @@
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { xcodeModelInspectTool } from '../../../src/tools/analysis/model-inspect.js';
 import * as path from 'path';
 
@@ -189,11 +191,16 @@ describe('xcodeModelInspectTool', () => {
 
     it('returns empty arrays with note when no models found', async () => {
       // Use a temp dir that has no models
-      const result = await xcodeModelInspectTool({ projectPath: '/tmp' });
-      const data = JSON.parse(result.content[0].text);
-      expect(data.coreData).toHaveLength(0);
-      expect(data.swiftData).toHaveLength(0);
-      expect(data.note).toBeDefined();
+      const directory = await mkdtemp(path.join(tmpdir(), 'xc-empty-model-'));
+      try {
+        const result = await xcodeModelInspectTool({ projectPath: directory });
+        const data = JSON.parse(result.content[0].text);
+        expect(data.coreData).toHaveLength(0);
+        expect(data.swiftData).toHaveLength(0);
+        expect(data.note).toBeDefined();
+      } finally {
+        await rm(directory, { recursive: true, force: true });
+      }
     });
   });
 });

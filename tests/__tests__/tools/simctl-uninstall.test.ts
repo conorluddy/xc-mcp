@@ -39,6 +39,7 @@ describe('simctlUninstallTool', () => {
   describe('successful uninstallation', () => {
     it('should uninstall app from simulator', async () => {
       const result = await simctlUninstallTool({
+        confirm: true,
         udid: validUDID,
         bundleId: validBundleID,
       });
@@ -52,6 +53,7 @@ describe('simctlUninstallTool', () => {
 
     it('should return simulator information', async () => {
       const result = await simctlUninstallTool({
+        confirm: true,
         udid: validUDID,
         bundleId: validBundleID,
       });
@@ -64,6 +66,7 @@ describe('simctlUninstallTool', () => {
 
     it('should provide next steps guidance', async () => {
       const result = await simctlUninstallTool({
+        confirm: true,
         udid: validUDID,
         bundleId: validBundleID,
       });
@@ -76,6 +79,7 @@ describe('simctlUninstallTool', () => {
 
     it('should format response correctly', async () => {
       const result = await simctlUninstallTool({
+        confirm: true,
         udid: validUDID,
         bundleId: validBundleID,
       });
@@ -91,28 +95,19 @@ describe('simctlUninstallTool', () => {
   describe('input validation', () => {
     it('should reject empty UDID', async () => {
       await expect(
-        simctlUninstallTool({
-          udid: '',
-          bundleId: validBundleID,
-        })
+        simctlUninstallTool({ confirm: true, udid: '', bundleId: validBundleID })
       ).rejects.toThrow(McpError);
     });
 
     it('should reject empty bundle ID', async () => {
       await expect(
-        simctlUninstallTool({
-          udid: validUDID,
-          bundleId: '',
-        })
+        simctlUninstallTool({ confirm: true, udid: validUDID, bundleId: '' })
       ).rejects.toThrow(McpError);
     });
 
     it('should reject invalid bundle ID format', async () => {
       await expect(
-        simctlUninstallTool({
-          udid: validUDID,
-          bundleId: 'invalid bundle id',
-        })
+        simctlUninstallTool({ confirm: true, udid: validUDID, bundleId: 'invalid bundle id' })
       ).rejects.toThrow(McpError);
     });
 
@@ -120,19 +115,13 @@ describe('simctlUninstallTool', () => {
       mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(null);
 
       await expect(
-        simctlUninstallTool({
-          udid: 'invalid-udid',
-          bundleId: validBundleID,
-        })
+        simctlUninstallTool({ confirm: true, udid: 'invalid-udid', bundleId: validBundleID })
       ).rejects.toThrow(McpError);
     });
 
     it('should handle whitespace-only inputs', async () => {
       await expect(
-        simctlUninstallTool({
-          udid: '   ',
-          bundleId: '   ',
-        })
+        simctlUninstallTool({ confirm: true, udid: '   ', bundleId: '   ' })
       ).rejects.toThrow(McpError);
     });
   });
@@ -140,6 +129,7 @@ describe('simctlUninstallTool', () => {
   describe('bundle ID variations', () => {
     it('should handle standard Apple bundle IDs', async () => {
       const result = await simctlUninstallTool({
+        confirm: true,
         udid: validUDID,
         bundleId: 'com.apple.mobilesafari',
       });
@@ -151,6 +141,7 @@ describe('simctlUninstallTool', () => {
     it('should handle bundle IDs with hyphens', async () => {
       const bundleId = 'com.example.my-app';
       const result = await simctlUninstallTool({
+        confirm: true,
         udid: validUDID,
         bundleId: bundleId,
       });
@@ -162,6 +153,7 @@ describe('simctlUninstallTool', () => {
     it('should handle bundle IDs with numbers', async () => {
       const bundleId = 'com.example.app2';
       const result = await simctlUninstallTool({
+        confirm: true,
         udid: validUDID,
         bundleId: bundleId,
       });
@@ -173,6 +165,7 @@ describe('simctlUninstallTool', () => {
     it('should handle very long bundle IDs', async () => {
       const bundleId = 'com.' + 'a'.repeat(200) + '.app';
       const result = await simctlUninstallTool({
+        confirm: true,
         udid: validUDID,
         bundleId: bundleId,
       });
@@ -188,6 +181,7 @@ describe('simctlUninstallTool', () => {
       mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(bootedSimulator as any);
 
       const result = await simctlUninstallTool({
+        confirm: true,
         udid: validUDID,
         bundleId: validBundleID,
       });
@@ -200,6 +194,7 @@ describe('simctlUninstallTool', () => {
       mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(shutdownSimulator as any);
 
       const result = await simctlUninstallTool({
+        confirm: true,
         udid: validUDID,
         bundleId: validBundleID,
       });
@@ -212,6 +207,7 @@ describe('simctlUninstallTool', () => {
       mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(unavailableSimulator as any);
 
       const result = await simctlUninstallTool({
+        confirm: true,
         udid: validUDID,
         bundleId: validBundleID,
       });
@@ -232,6 +228,7 @@ describe('simctlUninstallTool', () => {
       });
 
       const result = await simctlUninstallTool({
+        confirm: true,
         udid: validUDID,
         bundleId: validBundleID,
       });
@@ -246,10 +243,7 @@ describe('simctlUninstallTool', () => {
       executeCommand.mockRejectedValueOnce(new Error('Uninstall failed'));
 
       await expect(
-        simctlUninstallTool({
-          udid: validUDID,
-          bundleId: validBundleID,
-        })
+        simctlUninstallTool({ confirm: true, udid: validUDID, bundleId: validBundleID })
       ).rejects.toThrow(McpError);
     });
 
@@ -257,10 +251,7 @@ describe('simctlUninstallTool', () => {
       mockSimulatorCache.findSimulatorByUdid.mockRejectedValueOnce(new Error('Cache error'));
 
       await expect(
-        simctlUninstallTool({
-          udid: validUDID,
-          bundleId: validBundleID,
-        })
+        simctlUninstallTool({ confirm: true, udid: validUDID, bundleId: validBundleID })
       ).rejects.toThrow(McpError);
     });
 
@@ -273,6 +264,7 @@ describe('simctlUninstallTool', () => {
       });
 
       const result = await simctlUninstallTool({
+        confirm: true,
         udid: validUDID,
         bundleId: validBundleID,
       });
@@ -286,6 +278,7 @@ describe('simctlUninstallTool', () => {
   describe('response format', () => {
     it('should include all required fields on success', async () => {
       const result = await simctlUninstallTool({
+        confirm: true,
         udid: validUDID,
         bundleId: validBundleID,
       });
@@ -302,15 +295,13 @@ describe('simctlUninstallTool', () => {
       mockSimulatorCache.findSimulatorByUdid.mockResolvedValueOnce(null);
 
       await expect(
-        simctlUninstallTool({
-          udid: 'invalid',
-          bundleId: validBundleID,
-        })
+        simctlUninstallTool({ confirm: true, udid: 'invalid', bundleId: validBundleID })
       ).rejects.toThrow(McpError);
     });
 
     it('should be valid JSON', async () => {
       const result = await simctlUninstallTool({
+        confirm: true,
         udid: validUDID,
         bundleId: validBundleID,
       });
@@ -331,6 +322,7 @@ describe('simctlUninstallTool', () => {
       });
 
       const result = await simctlUninstallTool({
+        confirm: true,
         udid: validUDID,
         bundleId: 'com.nonexistent.app',
       });
@@ -340,11 +332,13 @@ describe('simctlUninstallTool', () => {
 
     it('should handle concurrent uninstalls', async () => {
       const result1 = await simctlUninstallTool({
+        confirm: true,
         udid: validUDID,
         bundleId: validBundleID,
       });
 
       const result2 = await simctlUninstallTool({
+        confirm: true,
         udid: validUDID,
         bundleId: 'com.example.other',
       });
@@ -362,6 +356,7 @@ describe('simctlUninstallTool', () => {
       } as any);
 
       const result = await simctlUninstallTool({
+        confirm: true,
         udid: longUDID,
         bundleId: validBundleID,
       });

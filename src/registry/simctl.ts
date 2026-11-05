@@ -138,7 +138,10 @@ export function registerSimctlTools(server: McpServer): void {
       title: 'Boot Simulator',
       description: getDescription(SIMCTL_BOOT_DOCS, SIMCTL_BOOT_DOCS),
       inputSchema: {
-        deviceId: z.string(),
+        deviceId: z.string().optional(),
+        all: z.boolean().optional(),
+        deviceType: z.string().optional(),
+        runtime: z.string().optional(),
         waitForBoot: z.boolean().default(true),
         openGui: z.boolean().default(true),
       },
@@ -170,7 +173,10 @@ export function registerSimctlTools(server: McpServer): void {
       title: 'Shutdown Simulator',
       description: getDescription(SIMCTL_SHUTDOWN_DOCS, SIMCTL_SHUTDOWN_DOCS),
       inputSchema: {
-        deviceId: z.string(),
+        deviceId: z.string().optional(),
+        all: z.boolean().optional(),
+        deviceType: z.string().optional(),
+        runtime: z.string().optional(),
       },
       annotations: {
         readOnlyHint: false,
@@ -232,7 +238,11 @@ export function registerSimctlTools(server: McpServer): void {
       title: 'Delete Simulator',
       description: getDescription(SIMCTL_DELETE_DOCS, SIMCTL_DELETE_DOCS),
       inputSchema: {
-        deviceId: z.string(),
+        confirm: z.boolean().optional().describe('Explicitly confirm permanent data deletion.'),
+        deviceId: z.string().optional(),
+        all: z.boolean().optional(),
+        deviceType: z.string().optional(),
+        runtime: z.string().optional(),
       },
       annotations: {
         readOnlyHint: false,
@@ -262,7 +272,11 @@ export function registerSimctlTools(server: McpServer): void {
       title: 'Erase Simulator (Factory Reset)',
       description: getDescription(SIMCTL_ERASE_DOCS, SIMCTL_ERASE_DOCS),
       inputSchema: {
-        deviceId: z.string(),
+        confirm: z.boolean().optional().describe('Explicitly confirm permanent data deletion.'),
+        deviceId: z.string().optional(),
+        all: z.boolean().optional(),
+        deviceType: z.string().optional(),
+        runtime: z.string().optional(),
         force: z.boolean().default(false),
       },
       annotations: {
@@ -414,6 +428,7 @@ export function registerSimctlTools(server: McpServer): void {
       title: 'Uninstall App from Simulator',
       description: getDescription(SIMCTL_UNINSTALL_DOCS, SIMCTL_UNINSTALL_DOCS),
       inputSchema: {
+        confirm: z.boolean().optional().describe('Explicitly confirm permanent data deletion.'),
         udid: z.string(),
         bundleId: z.string(),
       },
@@ -685,7 +700,8 @@ export function registerSimctlTools(server: McpServer): void {
       description: getDescription(SIMCTL_ADDMEDIA_DOCS, SIMCTL_ADDMEDIA_DOCS),
       inputSchema: {
         udid: z.string(),
-        mediaPath: z.string(),
+        mediaPath: z.string().optional(),
+        mediaPaths: z.array(z.string()).min(1).optional(),
       },
       annotations: {
         readOnlyHint: false,
@@ -820,7 +836,8 @@ export function registerSimctlTools(server: McpServer): void {
         udid: z.string(),
         bundleId: z.string().optional(),
         predicate: z.string().optional(),
-        duration: z.number().optional(),
+        duration: z.number().positive().optional(),
+        outputPath: z.string().optional(),
         capture: z.boolean().optional(),
       },
       annotations: {
@@ -886,7 +903,8 @@ export function registerSimctlTools(server: McpServer): void {
       inputSchema: {
         udid: z.string().optional(),
         bundleId: z.string(),
-        mode: z.enum(['ls', 'cat', 'userdefaults', 'coredata-path']),
+        mode: z.enum(['ls', 'cat', 'userdefaults', 'coredata-path', 'export']),
+        destination: z.string().optional(),
         path: z.string().optional(),
         depth: z.number().optional(),
       },

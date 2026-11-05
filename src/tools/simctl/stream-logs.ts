@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
 
@@ -80,6 +81,7 @@ export async function streamLogsTool(args: any) {
     duration = 10,
     capture: _capture = true,
     severity,
+    outputPath,
   } = args as any;
 
   if (!udid) {
@@ -111,6 +113,7 @@ export async function streamLogsTool(args: any) {
     });
 
     // Parse and classify all raw lines
+    if (outputPath) fs.writeFileSync(outputPath, result.stdout, 'utf8');
     const rawLines = result.stdout.split('\n').filter((line: string) => line.trim().length > 0);
 
     const errors: string[] = [];
@@ -205,6 +208,8 @@ function extractProcess(line: string): string | null {
 
 export const SIMCTL_STREAM_LOGS_DOCS = `
 # simctl-stream-logs
+
+outputPath optionally saves the complete captured log before response truncation.
 
 Stream real-time console logs from iOS simulator with filtering, severity classification,
 deduplication, and statistics summary.

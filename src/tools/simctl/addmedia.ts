@@ -1,10 +1,12 @@
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
-import { executeCommand } from '../../utils/command.js';
+import * as fs from 'fs';
+import { executeCommand, executeCommandWithArgs } from '../../utils/command.js';
 import { simulatorCache } from '../../state/simulator-cache.js';
 
 interface SimctlAddmediaToolArgs {
   udid: string;
   mediaPath: string;
+  mediaPaths?: string[];
 }
 
 /**
@@ -20,7 +22,37 @@ interface SimctlAddmediaToolArgs {
  * **Full documentation:** See simctl/addmedia.md for detailed parameters and examples
  */
 export async function simctlAddmediaTool(args: any) {
-  const { udid, mediaPath } = args as SimctlAddmediaToolArgs;
+  const { udid, mediaPath, mediaPaths } = args as SimctlAddmediaToolArgs;
+  if (mediaPaths !== undefined) {
+    if (!udid?.trim() || !Array.isArray(mediaPaths) || !mediaPaths.length)
+      throw new McpError(ErrorCode.InvalidRequest, 'udid and nonempty mediaPaths are required');
+    // Validate the entire batch before adding any file.
+    for (const file of mediaPaths) {
+      if (typeof file !== 'string' || !fs.existsSync(file) || !fs.statSync(file).isFile())
+        throw new McpError(ErrorCode.InvalidRequest, `Media file does not exist: ${file}`);
+    }
+    const simulator = await simulatorCache.findSimulatorByUdid(udid);
+    if (!simulator) throw new McpError(ErrorCode.InvalidRequest, 'Simulator not found');
+    const result = await executeCommandWithArgs(
+      'xcrun',
+      ['simctl', 'addmedia', udid, ...mediaPaths],
+      { timeout: 30000 }
+    );
+    return {
+      content: [
+        {
+          type: 'text' as const,
+          text: JSON.stringify({
+            success: result.code === 0,
+            udid,
+            mediaPaths,
+            error: result.stderr || undefined,
+          }),
+        },
+      ],
+      isError: result.code !== 0,
+    };
+  }
 
   try {
     // Validate inputs
@@ -167,7 +199,8 @@ apps to access via PHPhotoLibrary or UIImagePickerController APIs.
 ## Parameters
 
 - **udid** (string, required): Simulator UDID (from simctl-list)
-- **mediaPath** (string, required): Path to image or video file
+- **mediaPaths** (string array, optional): Add multiple existing files in one invocation; all paths checked before mutation
+- **mediaPath** (string, required unless mediaPaths provided): Path to image or video file
 
 ## Supported Formats
 
@@ -244,4 +277,3 @@ await simctlAddmediaTool({
 - **Large files**: Be aware that adding large video files may take time
 - **Batch addition**: Add multiple files to simulate realistic photo library
 `;
-

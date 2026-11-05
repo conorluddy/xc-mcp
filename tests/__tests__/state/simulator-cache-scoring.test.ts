@@ -100,7 +100,7 @@ describe('SimulatorCache - Scoring & Suggestions', () => {
       // iPhone 16 Pro is a common model and should rank high
       const iphone16Pro = suggestions.find(s => s.simulator.name === 'iPhone 16 Pro');
       expect(iphone16Pro).toBeDefined();
-      expect(iphone16Pro!.reasons.some(r => r.includes('Common model'))).toBe(true);
+      expect(iphone16Pro!.reasons.some(r => r.includes('Mainline iPhone'))).toBe(true);
     });
 
     it('should prefer faster boot times', async () => {
@@ -249,7 +249,7 @@ describe('SimulatorCache - Scoring & Suggestions', () => {
       // iPhone 16 Pro should rank high (popular model)
       const iphone16Pro = suggestions.find(s => s.simulator.name === 'iPhone 16 Pro');
       expect(iphone16Pro).toBeDefined();
-      expect(iphone16Pro!.reasons.some(r => r.includes('Common model'))).toBe(true);
+      expect(iphone16Pro!.reasons.some(r => r.includes('Mainline iPhone'))).toBe(true);
     });
 
     it('should weight boot performance (10%)', async () => {
@@ -331,4 +331,22 @@ describe('SimulatorCache - Scoring & Suggestions', () => {
       expect(afterIPhone15).toBeLessThanOrEqual(beforeIPhone15);
     });
   });
+});
+it('ranks a newer mainline generation above the previous Pro and reads OS from runtime', async () => {
+  const devices = [
+    { udid: 'old-pro', name: 'iPhone 17 Pro', deviceTypeIdentifier: 'iPhone-17-Pro' },
+    { udid: 'new-base', name: 'iPhone 18', deviceTypeIdentifier: 'iPhone-18' },
+  ] as SimulatorInfo[];
+  const available = jest.spyOn(simulatorCache, 'getAvailableSimulators').mockResolvedValue(devices);
+  const list = jest
+    .spyOn(simulatorCache, 'getSimulatorList')
+    .mockResolvedValue({ devices: { 'iOS 27.0': devices } } as any);
+  try {
+    const results = await simulatorCache.getSuggestedSimulators(undefined, undefined, 2);
+    expect(results[0].simulator.udid).toBe('new-base');
+    expect(results[0].reasons).toContain('iOS 27.0');
+  } finally {
+    available.mockRestore();
+    list.mockRestore();
+  }
 });

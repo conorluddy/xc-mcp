@@ -1,3 +1,4 @@
+import { gunzipSync } from 'zlib';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -30,7 +31,7 @@ describe('HangBuster tools', () => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xcmcp-hang-'));
     process.env.XC_MCP_HANG_DIR = tmpDir;
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    mockSpawn.mockReturnValue({ pid: 999999, unref: jest.fn() } as any);
+    mockSpawn.mockReturnValue({ pid: 999999, unref: jest.fn(), once: jest.fn() } as any);
   });
 
   afterEach(() => {
@@ -90,5 +91,39 @@ describe('HangBuster tools', () => {
 
   it('hang-stop on an unknown session throws', async () => {
     await expect(hangStopTool({ sessionId: 'hang-nope' })).rejects.toThrow();
+  });
+  it('raw capture writes a readable gzip artifact without clustering', async () => {
+    const start = parse(await hangStartTool({ udid: 'test-udid', rawCapture: true }));
+    const raw = '{"eventMessage":"unfiltered record"}\n';
+    fs.writeFileSync(path.join(getSessionDir(start.sessionId), 'raw.log'), raw);
+    const stop = parse(await hangStopTool({ sessionId: start.sessionId }));
+    expect(stop.mode).toBe('raw');
+    expect(gunzipSync(fs.readFileSync(stop.rawPath)).toString()).toBe(raw);
+    expect(fs.existsSync(path.join(getSessionDir(start.sessionId), 'summary.json'))).toBe(false);
+    expect(parse(await hangGetDetailsTool({ sessionId: start.sessionId })).rawPath).toBe(
+      stop.rawPath
+    );
+  });
+  it('bounds stream restarts and marks repeated failures crashed', async () => {
+    jest.useFakeTimers();
+    try {
+      const { EventEmitter } = await import('events');
+      const { readMeta } = await import('../../../src/tools/diagnostics/hang/sessions.js');
+      const children: InstanceType<typeof EventEmitter>[] = [];
+      mockSpawn.mockImplementation(() => {
+        const child = Object.assign(new EventEmitter(), { pid: 999999, unref: jest.fn() });
+        children.push(child);
+        return child as any;
+      });
+      const start = parse(await hangStartTool({ udid: 'test-udid' }));
+      for (let i = 0; i < 4; i++) {
+        children[i].emit('close', 1);
+        jest.advanceTimersByTime(250);
+      }
+      expect(children).toHaveLength(4);
+      expect(readMeta(start.sessionId)?.status).toBe('crashed');
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });

@@ -18,6 +18,7 @@ interface StepRecord {
   accessibilityFile: string;
   elementCount: number;
   assertion?: string;
+  assertionPassed?: boolean;
   metadata?: Record<string, unknown>;
 }
 
@@ -80,7 +81,9 @@ function buildMarkdown(session: SessionMeta, testName: string): string {
     lines.push('');
 
     if (step.assertion) {
-      lines.push(`**Assertion:** ${step.assertion}`);
+      lines.push(
+        `**Assertion:** ${step.assertion}${step.assertionPassed === undefined ? '' : step.assertionPassed ? ' ✓' : ' ✗'}`
+      );
       lines.push('');
     }
 

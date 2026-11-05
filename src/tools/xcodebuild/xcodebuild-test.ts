@@ -21,6 +21,7 @@ interface TestToolArgs {
   onlyTesting?: string[];
   skipTesting?: string[];
   testWithoutBuilding?: boolean;
+  parallelTesting?: boolean;
 }
 
 interface TestConfig {
@@ -34,6 +35,7 @@ interface TestConfig {
   onlyTesting?: string[];
   skipTesting?: string[];
   testWithoutBuilding: boolean;
+  parallelTesting?: boolean;
   appliedCachedDestination: boolean;
   appliedFallbackConfiguration: boolean;
   hadCachedPreferences: boolean;
@@ -194,6 +196,7 @@ async function assembleTestConfiguration(args: any): Promise<TestConfig> {
     appliedCachedDestination,
     appliedFallbackConfiguration,
     hadCachedPreferences: preferredConfig !== null,
+    parallelTesting: args.parallelTesting,
   };
 }
 
@@ -266,6 +269,9 @@ async function executeTestCommand(config: TestConfig): Promise<CommandResult> {
 function buildTestCommand(action: string, config: TestConfig): string {
   // Start with base xcodebuild command
   let command = buildXcodebuildCommand(action, config.projectPath, config as any);
+
+  if (config.parallelTesting !== undefined)
+    command += ` -parallel-testing-enabled ${config.parallelTesting ? 'YES' : 'NO'}`;
 
   // Add test plan if specified
   if (config.testPlan) {
@@ -422,7 +428,7 @@ async function recordTestExecution(
   // We use errorCount for test failures so failed configurations aren't reused
   projectCache.recordBuildResult(config.projectPath, config as any, {
     timestamp: new Date(),
-    success: metrics.failedTests === 0,
+    success: result.code === 0 && metrics.totalTests > 0 && metrics.failedTests === 0,
     duration: result.duration,
     // Map test failures to errorCount so failed test configs aren't cached as preferences
     errorCount: metrics.failedTests,
@@ -476,7 +482,7 @@ async function recordTestExecution(
       sdk: config.sdk,
       testPlan: config.testPlan,
       duration: result.duration,
-      success: metrics.failedTests === 0,
+      success: result.code === 0 && metrics.totalTests > 0 && metrics.failedTests === 0,
       totalTests: metrics.totalTests,
       passedTests: metrics.passedTests,
       failedTests: metrics.failedTests,
@@ -511,10 +517,11 @@ function formatTestResponse(
   metrics: TestMetrics,
   cacheId: string
 ) {
-  const testsPassed = metrics.failedTests === 0;
+  const testsPassed = result.code === 0 && metrics.totalTests > 0 && metrics.failedTests === 0;
 
   const responseData = {
     testId: cacheId,
+    status: metrics.totalTests === 0 ? 'NOT RUN' : testsPassed ? 'PASSED' : 'FAILED',
     success: testsPassed,
     summary: {
       totalTests: metrics.totalTests,
@@ -616,6 +623,10 @@ Executes unit and UI tests for Xcode projects with advanced learning that rememb
 - Detailed test metrics: structured pass/fail/skip counts instead of raw output
 - Progressive disclosure: concise summaries with full logs available via testId
 - Test filtering: run specific tests or skip problematic ones with -only-testing/-skip-testing
+
+## Execution status
+
+parallelTesting: false disables parallel testing; true enables it; omitted preserves xcodebuild defaults. Zero executed tests return status NOT RUN and success false. A nonzero runner exit always fails.
 
 ## Parameters
 

@@ -1,3 +1,9 @@
+import {
+  idbSemanticActionTool,
+  IDB_SEMANTIC_ACTION_DOCS,
+  IDB_SEMANTIC_ACTION_DOCS_MINI,
+} from '../tools/idb/semantic-action.js';
+import { idbLibraryTool, IDB_LIBRARY_DOCS, IDB_LIBRARY_DOCS_MINI } from '../tools/idb/library.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getDescription } from './types.js';
@@ -72,6 +78,49 @@ import { idbLaunchTool, IDB_LAUNCH_DOCS } from '../tools/idb/launch.js';
 import { idbTerminateTool, IDB_TERMINATE_DOCS } from '../tools/idb/terminate.js';
 
 export function registerIdbTools(server: McpServer): void {
+  server.registerTool(
+    'idb-semantic-action',
+    {
+      title: 'Act on Accessibility Element',
+      description: getDescription(IDB_SEMANTIC_ACTION_DOCS, IDB_SEMANTIC_ACTION_DOCS_MINI),
+      inputSchema: {
+        operation: z.enum(['press', 'set-value']),
+        query: z.string().min(1),
+        exact: z.boolean().optional(),
+        value: z.string().optional(),
+        expect: z.string().optional(),
+        udid: z.string().optional(),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
+    },
+    async args => idbSemanticActionTool(args)
+  );
+  server.registerTool(
+    'idb-library',
+    {
+      title: 'Manage Notifications and Photos',
+      description: getDescription(IDB_LIBRARY_DOCS, IDB_LIBRARY_DOCS_MINI),
+      inputSchema: {
+        operation: z.enum(['notification-list', 'notification-clear', 'photos-clear']),
+        udid: z.string().optional(),
+        bundleId: z.string().optional(),
+        confirm: z.boolean().optional(),
+        limit: z.number().int().positive().max(1000).optional(),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async args => idbLibraryTool(args)
+  );
   // idb-targets
   server.registerTool(
     'idb-targets',
@@ -133,24 +182,10 @@ export function registerIdbTools(server: McpServer): void {
       description: getDescription(IDB_UI_INPUT_DOCS, IDB_UI_INPUT_DOCS_MINI),
       inputSchema: {
         udid: z.string().optional(),
-        operation: z.enum(['text', 'key', 'key-sequence']),
+        operation: z.enum(['text', 'key', 'key-sequence', 'clear']),
         text: z.string().optional(),
-        key: z
-          .enum([
-            'home',
-            'lock',
-            'siri',
-            'delete',
-            'return',
-            'space',
-            'escape',
-            'tab',
-            'up',
-            'down',
-            'left',
-            'right',
-          ])
-          .optional(),
+        key: z.string().optional(),
+        modifiers: z.array(z.enum(['shift', 'control', 'option', 'command'])).optional(),
         keySequence: z.array(z.string()).optional(),
         actionName: z.string().optional(),
         fieldContext: z.string().optional(),
@@ -175,7 +210,26 @@ export function registerIdbTools(server: McpServer): void {
       description: getDescription(IDB_UI_GESTURE_DOCS, IDB_UI_GESTURE_DOCS_MINI),
       inputSchema: {
         udid: z.string().optional(),
-        operation: z.enum(['swipe', 'button']),
+        operation: z.enum([
+          'swipe',
+          'button',
+          'pinch',
+          'long-press',
+          'double-tap',
+          'drag',
+          'rotate',
+          'shake',
+          'scroll',
+          'refresh',
+        ]),
+        source: z.string().min(1).optional(),
+        destination: z.string().min(1).optional(),
+        amount: z.number().int().min(1).max(100).optional(),
+        scale: z.number().positive().optional(),
+        count: z.number().int().min(2).optional(),
+        orientation: z
+          .enum(['portrait', 'portrait-upside-down', 'landscape-left', 'landscape-right'])
+          .optional(),
         direction: z.enum(['up', 'down', 'left', 'right']).optional(),
         startX: z.number().optional(),
         startY: z.number().optional(),
@@ -183,7 +237,7 @@ export function registerIdbTools(server: McpServer): void {
         endY: z.number().optional(),
         duration: z
           .number()
-          .default(200)
+          .optional()
           .describe('Swipe duration in milliseconds (e.g., 200 for 200ms, default: 200ms)'),
         buttonType: z
           .enum(['HOME', 'LOCK', 'SIDE_BUTTON', 'APPLE_PAY', 'SIRI', 'SCREENSHOT', 'APP_SWITCH'])
@@ -210,13 +264,19 @@ export function registerIdbTools(server: McpServer): void {
       inputSchema: {
         udid: z.string().optional(),
         operation: z.enum(['all', 'point']),
+        deep: z
+          .boolean()
+          .optional()
+          .describe(
+            'Opt in to axbridge; enables device accessibility automation mode, which idb does not restore.'
+          ),
         x: z.number().optional(),
         y: z.number().optional(),
         screenContext: z.string().optional(),
         purposeDescription: z.string().optional(),
       },
       annotations: {
-        readOnlyHint: true,
+        readOnlyHint: false,
         destructiveHint: false,
         idempotentHint: true,
         openWorldHint: false,
@@ -233,7 +293,11 @@ export function registerIdbTools(server: McpServer): void {
       description: getDescription(IDB_UI_FIND_ELEMENT_DOCS, IDB_UI_FIND_ELEMENT_DOCS_MINI),
       inputSchema: {
         udid: z.string().optional(),
-        query: z.string(),
+        query: z.string().optional(),
+        exact: z.boolean().optional(),
+        elementType: z.string().optional(),
+        identifier: z.string().optional(),
+        index: z.number().int().nonnegative().optional(),
       },
       annotations: {
         readOnlyHint: true,
@@ -504,6 +568,7 @@ export function registerIdbTools(server: McpServer): void {
       title: 'Uninstall App (IDB)',
       description: getDescription(IDB_UNINSTALL_DOCS, IDB_UNINSTALL_DOCS),
       inputSchema: {
+        confirm: z.boolean().optional().describe('Explicitly confirm permanent data deletion.'),
         udid: z.string().optional(),
         bundleId: z.string(),
       },

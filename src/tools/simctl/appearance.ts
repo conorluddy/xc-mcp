@@ -31,6 +31,7 @@ const DEFAULT_REGION = 'US';
 interface AppearanceArgs {
   udid?: string;
   theme?: 'light' | 'dark';
+  contrast?: 'high' | 'normal';
   textSize?: string;
   locale?: string;
   region?: string;
@@ -170,11 +171,12 @@ async function resetAppearance(udid: string): Promise<OperationResult> {
 // === TOOL IMPLEMENTATION ===
 
 export async function simctlAppearanceTool(args: any) {
-  const { udid, theme, textSize, locale, region, bundleId, reset } = args as AppearanceArgs;
+  const { udid, theme, contrast, textSize, locale, region, bundleId, reset } =
+    args as AppearanceArgs;
 
   try {
     // Validate: require at least one action
-    if (!theme && !textSize && !locale && !reset) {
+    if (!contrast && !theme && !textSize && !locale && !reset) {
       throw new McpError(
         ErrorCode.InvalidRequest,
         'At least one of theme, textSize, locale, or reset is required.'
@@ -182,7 +184,7 @@ export async function simctlAppearanceTool(args: any) {
     }
 
     // Validate: reset incompatible with other flags
-    if (reset && (theme || textSize || locale)) {
+    if (reset && (contrast || theme || textSize || locale)) {
       throw new McpError(
         ErrorCode.InvalidRequest,
         'reset cannot be combined with theme, textSize, or locale.'
@@ -227,6 +229,26 @@ export async function simctlAppearanceTool(args: any) {
       }
     }
 
+    if (contrast || reset) {
+      const token = contrast === 'high' && !reset ? 'enabled' : 'disabled';
+      const result = await executeCommand(
+        `xcrun simctl ui "${resolvedUdid}" increase_contrast ${token}`,
+        { timeout: 15000 }
+      );
+      const read =
+        result.code === 0
+          ? await executeCommand(`xcrun simctl ui "${resolvedUdid}" increase_contrast`, {
+              timeout: 15000,
+            })
+          : result;
+      const success = result.code === 0 && read.code === 0 && read.stdout.trim() === token;
+      operationResults.contrast = {
+        success,
+        message: success
+          ? `Contrast set: ${token}`
+          : read.stderr || 'Contrast read-back did not match',
+      };
+    }
     const overallSuccess = Object.values(operationResults).every(r => r.success);
 
     // Build guidance
@@ -281,6 +303,10 @@ Control iOS simulator appearance: theme (light/dark), dynamic type size, locale,
 
 Wraps \`xcrun simctl ui\` and \`xcrun simctl spawn defaults write\` to let you switch
 appearance settings on a running simulator without leaving your terminal or MCP session.
+
+## Contrast
+
+contrast: high or normal sets increase_contrast and verifies it by reading the setting back. reset also restores normal contrast.
 
 ## Parameters
 

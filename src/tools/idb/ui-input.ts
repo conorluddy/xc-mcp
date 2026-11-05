@@ -8,25 +8,14 @@ import { isValidUdid } from '../../utils/shell-escape.js';
 
 interface IdbUiInputArgs {
   udid?: string;
-  operation: 'text' | 'key' | 'key-sequence';
+  operation: 'text' | 'key' | 'key-sequence' | 'clear';
+  modifiers?: ('shift' | 'control' | 'option' | 'command')[];
 
   // For 'text' operation
   text?: string;
 
   // For 'key' operation
-  key?:
-    | 'home'
-    | 'lock'
-    | 'siri'
-    | 'delete'
-    | 'return'
-    | 'space'
-    | 'escape'
-    | 'tab'
-    | 'up'
-    | 'down'
-    | 'left'
-    | 'right';
+  key?: string;
 
   // For 'key-sequence' operation
   keySequence?: string[]; // Array of key names
@@ -107,7 +96,7 @@ export async function idbUiInputTool(args: IdbUiInputArgs) {
     // STAGE 1: Validation & Preparation
     // ============================================================================
 
-    if (!operation || !['text', 'key', 'key-sequence'].includes(operation)) {
+    if (!operation || !['text', 'key', 'key-sequence', 'clear'].includes(operation)) {
       throw new McpError(
         ErrorCode.InvalidRequest,
         'operation must be "text", "key", or "key-sequence"'
@@ -141,6 +130,7 @@ export async function idbUiInputTool(args: IdbUiInputArgs) {
     // ============================================================================
 
     const result = await executeInputCommand(resolvedUdid, {
+      modifiers: args.modifiers,
       operation,
       text,
       key,
@@ -230,6 +220,7 @@ async function executeInputCommand(
   udid: string,
   params: {
     operation: string;
+    modifiers?: string[];
     text?: string;
     key?: string;
     keySequence?: string[];
@@ -242,56 +233,64 @@ async function executeInputCommand(
     throw new McpError(ErrorCode.InvalidRequest, `Invalid UDID format: ${udid}`);
   }
 
-  let args: string[];
-
-  switch (operation) {
-    case 'text': {
-      // Format: idb ui text --udid <UDID> <text-to-type>
-      // No escaping needed - spawn passes arguments safely
-      if (!text) {
-        throw new McpError(
-          ErrorCode.InvalidRequest,
-          'text parameter is required for text operation'
-        );
-      }
-      args = ['ui', 'text', '--udid', udid, text];
-      break;
-    }
-
-    case 'key': {
-      // Format: idb ui key --udid <UDID> <key-name>
-      if (!key) {
-        throw new McpError(ErrorCode.InvalidRequest, 'key parameter is required for key operation');
-      }
-      args = ['ui', 'key', '--udid', udid, key];
-      break;
-    }
-
-    case 'key-sequence': {
-      // Format: idb ui key-sequence --udid <UDID> <key1> <key2> ...
-      if (!keySequence || keySequence.length === 0) {
-        throw new McpError(
-          ErrorCode.InvalidRequest,
-          'keySequence parameter is required for key-sequence operation'
-        );
-      }
-      args = ['ui', 'key-sequence', '--udid', udid, ...keySequence];
-      break;
-    }
-
-    default:
-      throw new McpError(ErrorCode.InvalidRequest, `Unknown operation: ${operation}`);
-  }
-
-  console.error(`[idb-ui-input] Executing: idb ${args.join(' ')}`);
-
-  const result = await executeCommandWithArgs('idb', args, { timeout: 10000 });
-
-  return {
-    success: result.code === 0,
-    output: result.stdout,
-    error: result.stderr ? formatToolError(result.stderr) : undefined,
+  const codes: Record<string, number> = {
+    return: 40,
+    enter: 40,
+    escape: 41,
+    delete: 42,
+    backspace: 42,
+    tab: 43,
+    space: 44,
+    right: 79,
+    left: 80,
+    down: 81,
+    up: 82,
   };
+  const modifiers = params.modifiers || [];
+  if (modifiers.some(m => !['shift', 'control', 'option', 'command'].includes(m))) {
+    throw new McpError(ErrorCode.InvalidRequest, 'Unknown keyboard modifier');
+  }
+  const keyArgs = (name: string): string[] => {
+    const lower = name.toLowerCase();
+    const buttons: Record<string, string> = {
+      home: 'HOME',
+      lock: 'LOCK',
+      power: 'LOCK',
+      side: 'SIDE_BUTTON',
+      siri: 'SIRI',
+      'apple-pay': 'APPLE_PAY',
+      'volume-up': 'VOLUME_UP',
+      'volume-down': 'VOLUME_DOWN',
+    };
+    if (buttons[lower]) return ['ui', 'button', '--udid', udid, buttons[lower]];
+    const code =
+      codes[lower] ??
+      (/^[a-z]$/.test(lower)
+        ? lower.charCodeAt(0) - 93
+        : /^[1-9]$/.test(lower)
+          ? Number(lower) + 29
+          : lower === '0'
+            ? 39
+            : undefined);
+    if (code === undefined) throw new McpError(ErrorCode.InvalidRequest, `Unknown key: ${name}`);
+    return ['ui', 'key', '--udid', udid, String(code), ...modifiers.map(m => `--${m}`)];
+  };
+  const commands =
+    operation === 'text'
+      ? [['ui', 'text', '--udid', udid, text!]]
+      : operation === 'clear'
+        ? [
+            ['ui', 'key', '--udid', udid, '4', '--command'],
+            ['ui', 'key', '--udid', udid, '42'],
+          ]
+        : (operation === 'key' ? [key!] : keySequence!).map(keyArgs);
+  let output = '';
+  for (const command of commands) {
+    const result = await executeCommandWithArgs('idb', command, { timeout: 10000 });
+    if (result.code !== 0) return { success: false, output, error: formatToolError(result.stderr) };
+    output += result.stdout;
+  }
+  return { success: true, output };
 }
 
 // ============================================================================
@@ -315,11 +314,13 @@ function formatGuidance(
     context;
 
   if (success) {
-    let inputDescription = '';
+    let inputDescription: string;
     if (operation === 'text') {
       inputDescription = `text "${displayText}"`;
     } else if (operation === 'key') {
       inputDescription = `key "${key}"`;
+    } else if (operation === 'clear') {
+      inputDescription = 'select all and delete';
     } else {
       inputDescription = `key sequence: ${keySequence?.join(' → ')}`;
     }
@@ -369,6 +370,8 @@ function formatGuidance(
 export const IDB_UI_INPUT_DOCS = `
 # idb-ui-input
 
+Hardware key aliases: home, lock/power, side, siri, apple-pay, volume-up/down (volume requires idb 1.6.3+).
+
 ⌨️ **Input text and keyboard commands** - automated text entry and special key presses for form automation
 
 ## What it does
@@ -381,6 +384,12 @@ Sends text input and keyboard commands to focused elements on iOS targets. Types
 - Execute keyboard shortcuts and navigation (tab, return, arrows) for multi-field workflows
 - Safely handle sensitive data with automatic redaction in tool responses and logs
 - Track input operations with semantic metadata (actionName, fieldContext, expectedOutcome)
+
+## Additional input operations
+
+- operation: clear selects all (Command+A) and deletes.
+- modifiers: shift, control, option, command apply to key/key-sequence events.
+- key and keySequence accept letters, digits and named keys; sequences send individual HID events.
 
 ## Parameters
 

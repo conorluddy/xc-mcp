@@ -1,3 +1,4 @@
+import { simulatorBatch } from './batch.js';
 import { validateDeviceId } from '../../utils/validation.js';
 import { executeCommand, buildSimctlCommand } from '../../utils/command.js';
 // Removed unused import
@@ -52,6 +53,8 @@ interface SimctlBootToolArgs {
  * @throws McpError for invalid device ID or boot failure
  */
 export async function simctlBootTool(args: any) {
+  if (args.all === true || args.deviceType || args.runtime || args.deviceId === 'all')
+    return simulatorBatch('boot', args);
   const { deviceId, waitForBoot = true, openGui = true } = args as SimctlBootToolArgs;
 
   try {
@@ -197,6 +200,10 @@ export const SIMCTL_BOOT_DOCS = `
 • ⏱️ **Wait management** - Intelligent waiting for complete boot vs guessing
 
 Automatically tracks boot times and device performance metrics for optimization. Records usage patterns for intelligent device suggestions in future builds.
+
+## Batch selection
+
+Use all:true or deviceType/runtime filters instead of deviceId. Batch operations target available simulators; erase/delete require confirm:true. Results report each attempted device independently.
 
 ## Parameters
 

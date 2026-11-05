@@ -1,8 +1,10 @@
 # CLAUDE.md
 
-XC-MCP is an MCP server exposing `xcodebuild`, `simctl` and `idb` as 77 tools, built to keep Xcode's
+XC-MCP is an MCP server exposing `xcodebuild`, `simctl` and `idb` as 80 tools, built to keep Xcode's
 enormous output inside a model's context. Published to npm as `xc-mcp`. For what it does and why,
 read [README.md](./README.md) — including the version history, which explains most design choices.
+
+Read [AGENTS.md](./AGENTS.md) for the shared contributor and local-install verification rules.
 
 ## Commands
 
@@ -123,9 +125,9 @@ excludes. Jest maps `@modelcontextprotocol/sdk/types.js` to `tests/mocks/mcp-typ
 
 ### CI
 
-The `claude-review` check fails on every PR, including ones that merge cleanly — it can't obtain an
-OIDC token. It says nothing about the code. The signal is `Test & Build`, `test`, and
-`Xcode Compatibility Check`.
+The required signal is `Test & Build`, `test`, and `Xcode Compatibility Check`. The automatic
+`claude-review` workflow was removed; `claude.yml` (@claude mentions) needs a valid
+`CLAUDE_CODE_OAUTH_TOKEN` secret — regenerate with `claude setup-token` when it expires.
 
 ## Conventions
 
@@ -135,3 +137,18 @@ OIDC token. It says nothing about the code. The signal is `Test & Build`, `test`
 - Destructive operations must set `destructiveHint: true` and should require an unambiguous
   selector rather than guessing (see `idb-crash-delete`).
 - Prettier: 100-column lines, single quotes. Prefix unused variables with `_`.
+
+## v5 simulator contracts
+
+- Destructive erase/delete/uninstall calls require `confirm: true`; fresh-install propagates its explicit `eraseSimulator: true` consent. Photo clearing also requires confirmation.
+- Single `deviceId` and batch selectors are mutually exclusive. Never broaden a requested device into a fleet operation.
+- Semantic actions must reject ambiguous targets. Field verification must read the same uniquely identified field, not another field with the expected value. Secure values remain unverified.
+- Deep accessibility reads enable automation mode. Keep them explicit, document the side effect, and avoid using deep web frames as tap coordinates.
+- Gesture coordinates are points; public durations are milliseconds and idb durations are seconds. Scroll direction describes content movement; swipe direction describes finger movement.
+- Hang retry supervision lasts only while the server is running. Storage pruning preserves active sessions, so the cap is best-effort.
+- `app-state-capture` writes artifacts and reports partial failures. Keep log content in local artifacts and avoid logging it to stdout.
+
+For smoke tests, exercise the installed executable through an MCP client, including initialization,
+tool discovery, documentation, and a safe real tool call. An imported source module alone does not
+verify packaging, executable permissions, or stdio transport. Record precisely which live operations
+were verified; passing mocks does not establish every simulator effect.

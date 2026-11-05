@@ -1,6 +1,6 @@
 # XC-MCP Tool Reference
 
-**77 tools**, generated from `src/registry/*.ts` for XC-MCP v4.2.0.
+**80 tools**, generated from `src/registry/*.ts` for XC-MCP v5.0.0.
 
 This file is an index: tool name, what it does, and its MCP annotations. **Parameter schemas live in the
 server itself** — call `rtfm({ toolName: "xcodebuild-build" })` (or `rtfm({ categoryName: "build" })`)
@@ -72,17 +72,19 @@ Device lifecycle, app management, I/O and device state via `simctl`.
 | `simctl-suggest` | Suggest Best Simulator | ✓ |  |  |
 | `simctl-container` | Inspect App Sandbox Container | ✓ |  |  |
 
-## UI Automation & Accessibility (19)
+## UI Automation & Accessibility (21)
 
 Accessibility-first UI automation via `idb`. Requires idb-companion 1.5.1+ — run `idb-doctor` if writes appear to do nothing.
 
 | Tool | Title | Read-only | Destructive | Structured |
 |---|---|---|---|---|
+| `idb-library` | Manage Notifications and Photos |  | ✓ |  |
+| `idb-semantic-action` | Act on Accessibility Element |  |  |  |
 | `idb-targets` | Manage IDB Targets |  |  |  |
 | `idb-ui-tap` | Tap UI Element |  |  |  |
 | `idb-ui-input` | Send Text/Key Input |  |  |  |
 | `idb-ui-gesture` | Perform Gesture / Button Press |  |  |  |
-| `idb-ui-describe` | Describe Accessibility Tree | ✓ |  |  |
+| `idb-ui-describe` | Describe Accessibility Tree |  |  |  |
 | `idb-ui-find-element` | Find UI Element | ✓ |  |  |
 | `accessibility-quality-check` | Accessibility Quality Check | ✓ |  | ✓ |
 | `accessibility-audit` | Accessibility (WCAG) Audit | ✓ |  | ✓ |
@@ -135,6 +137,7 @@ High-level compositions of several primitive tools, plus test-run recording.
 
 | Tool | Title | Read-only | Destructive | Structured |
 |---|---|---|---|---|
+| `app-state-capture` | Capture App State |  |  |  |
 | `workflow-tap-element` | Tap Element (Workflow) |  |  |  |
 | `workflow-fresh-install` | Fresh Install (Workflow) |  | ✓ |  |
 | `workflow-build-and-run` | Build & Run (Workflow) |  |  |  |
