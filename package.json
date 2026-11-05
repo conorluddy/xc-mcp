@@ -44,7 +44,11 @@
     "dist/**/*",
     "README.md",
     "CLAUDE.md",
-    "package.json"
+    "package.json",
+    "AGENTS.md",
+    "docs/simulator-skill-parity.md",
+    "TOOL_SIGNATURES.md",
+    "CHANGELOG.md"
   ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

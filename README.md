@@ -7,10 +7,9 @@
 
 **An MCP server that lets AI agents build, run and drive iOS apps — without drowning in Xcode's output.**
 
-XC-MCP wraps `xcodebuild`, `simctl` and `idb` as 79 tools. Its job is not just to expose those
+XC-MCP wraps `xcodebuild`, `simctl` and `idb` as 80 tools. Its job is not just to expose those
 commands but to make their output fit in a model's context: summaries first, full detail on demand,
 and the accessibility tree instead of screenshots wherever the app allows it.
-
 
 ---
 
@@ -86,7 +85,7 @@ brew install facebook/fb/idb-companion facebook/fb/idb-cli
 > `facebook/fb` tap.
 
 **Run `idb-doctor` whenever UI automation misbehaves.** It checks the CLI, the companion version,
-the Xcode framework layout, and stale companion registrations.
+the Xcode framework layout, stale companion registrations, CLI/companion version mismatches, and the axbridge guest needed by deep reads.
 
 ### Xcode 27
 
@@ -150,6 +149,16 @@ idb-ui-tap({ x: 201, y: 572 })
 element can sit below the fold. Every match carries `visible` and, when off-screen, an
 `offscreenReason` naming the gesture that brings it into view.
 
+### Simulator automation in v5
+
+- `idb-semantic-action` presses a uniquely identified control or replaces a field value with read-back verification. Use `expect` to guard a toggle's current value. Secure field values cannot be verified.
+- `idb-ui-find-element` supports exact, type, identifier and index selection. `workflow-tap-element` uses accessibility presses for single matching controls.
+- `idb-ui-describe({ operation: "all", deep: true })` opts into axbridge for web content and alerts. This enables device accessibility automation mode, which idb does not restore. Deep web frames are unsuitable for coordinate taps.
+- `idb-ui-gesture` adds scroll (content direction), refresh, label-based drag, pinch, long press, multi-tap, rotation and shake. Newer accessibility actions and gestures require idb CLI and companion 1.7+.
+- `app-state-capture({ outputDir: "/tmp/app-captures" })` creates a bundle of screenshot, accessibility tree, recent logs, device metadata and summary files. Individual artifact failures are reported.
+
+See [the parity audit](docs/simulator-skill-parity.md) for capability mappings and verification limits.
+
 ### Tools that declare their risk
 
 Every tool carries MCP annotations — `readOnlyHint`, `destructiveHint`, `idempotentHint` — so a
@@ -161,7 +170,7 @@ validated `structuredContent`.
 
 ## Tools
 
-**79 tools.** [TOOL_SIGNATURES.md](./TOOL_SIGNATURES.md) indexes every tool with its annotations;
+**80 tools.** [TOOL_SIGNATURES.md](./TOOL_SIGNATURES.md) indexes every tool with its annotations;
 parameters come from the server itself via `rtfm({ toolName: "..." })`.
 
 | Area | Tools |
@@ -169,12 +178,12 @@ parameters come from the server itself via `rtfm({ toolName: "..." })`.
 | **Build & test** | `xcodebuild-build`, `-test`, `-clean`, `-list`, `-version`, `-showsdks`, `-get-details`, `-inspect-scheme`, `-validate-capabilities` |
 | **Simulators** | `simctl-list`, `-get-details`, `-suggest`, `-health-check`, `-boot`, `-shutdown`, `-create`, `-delete`, `-erase`, `-clone`, `-rename` |
 | **Apps** | `simctl-install`, `-uninstall`, `-launch`, `-terminate`, `-openurl`, `-get-app-container`, `-container` |
-| **UI automation** | `idb-ui-describe`, `-find-element`, `-tap`, `-input`, `-gesture`, `idb-targets`, `idb-list-apps`, `idb-install`, `-uninstall`, `-launch`, `-terminate` |
+| **UI automation** | `idb-ui-describe`, `-find-element`, `idb-semantic-action`, `-tap`, `-input`, `-gesture`, `idb-targets`, `idb-list-apps`, `idb-install`, `-uninstall`, `-launch`, `-terminate` |
 | **Accessibility** | `accessibility-quality-check`, `accessibility-audit` |
 | **Diagnostics** | `idb-doctor`, `idb-crash-list`, `-show`, `-delete`, `hang-start`, `-stop`, `-get-details`, `-list` |
-| **Test setup** | `simctl-privacy`, `-push`, `-pbcopy`, `-addmedia`, `-status-bar`, `-stream-logs`, `-appearance`, `-location`, `idb-simulate-memory-warning`, `idb-clear-keychain`, `idb-xctest-list` |
+| **Test setup** | `simctl-privacy`, `-push`, `-pbcopy`, `-addmedia`, `-status-bar`, `-stream-logs`, `-appearance`, `-location`, `idb-library`, `idb-simulate-memory-warning`, `idb-clear-keychain`, `idb-xctest-list` |
 | **Capture & analysis** | `screenshot`, `simctl-io`, `visual-diff`, `localization-audit`, `xcode-model-inspect` |
-| **Workflows** | `workflow-build-and-run`, `workflow-fresh-install`, `workflow-tap-element`, `test-record-step`, `test-record-report` |
+| **Workflows** | `workflow-build-and-run`, `workflow-fresh-install`, `workflow-tap-element`, `test-record-step`, `test-record-report`, `app-state-capture` |
 | **Cache & docs** | `cache-get-stats`, `-get-config`, `-set-config`, `-clear`, `persistence-enable`, `-disable`, `-status`, `rtfm` |
 
 ---
@@ -184,7 +193,7 @@ parameters come from the server itself via `rtfm({ toolName: "..." })`.
 | Flag | Effect |
 |---|---|
 | `--mini`, `-m` | One-line tool descriptions; `rtfm` supplies the detail |
-| `--build-only`, `-b` | Registers 18 build-focused tools instead of 79 |
+| `--build-only`, `-b` | Registers 18 build-focused tools instead of 80 |
 
 Flags combine: `["-y", "xc-mcp", "--mini", "--build-only"]` — the same `args` array works in Claude Desktop and Codex's `config.toml`. Both matter mainly for clients that
 load every tool description upfront; see the history below.
@@ -273,6 +282,15 @@ tests.
 The same pass added crash reporting, element visibility and test-isolation tools, and removed the
 inert `defer_loading` flag.
 
+### v5.0 · Simulator skill capabilities
+
+Adds semantic accessibility actions, diagnostic bundles, batch simulator filters, media import,
+container export, and hang-capture controls. The breaking change is explicit consent:
+`simctl-erase`, `simctl-delete`, `simctl-uninstall` and `idb-uninstall` require `confirm: true`.
+`workflow-fresh-install` retains its `eraseSimulator: true` opt-in. Use either a single `deviceId`
+or batch selectors (`all`, `deviceType`, `runtime`); combining an explicit ID with filters fails.
+Photo-library clearing also requires confirmation.
+
 ### The trade-off, version by version
 
 | Version | Tools | What set the context cost |
@@ -284,6 +302,7 @@ inert `defer_loading` flag.
 | v4.0 | 70 | Client-side deferral; routers dissolved for per-tool annotations |
 | v4.1 | 71 | Unchanged model; Xcode 27 support |
 | v4.2 | 77 | Unchanged model, verified against real idb output |
+| v5.0 | 80 | Semantic actions, diagnostic bundles and simulator skill capabilities |
 
 Two lessons carried forward. **Context cost is the client's call** — a server should describe its
 tools honestly and let the client decide how to spend context on them. And **a structured response
@@ -318,10 +337,25 @@ npm test          # jest
 npm run lint      # eslint
 ```
 
+### Install the current checkout locally
+
+Build and package the checkout, then install the exact tarball into the active Node.js prefix:
+
+```bash
+npm run build
+npm pack --pack-destination /tmp
+npm install --global /tmp/xc-mcp-5.0.0.tgz
+```
+
+Use `xc-mcp` as the MCP client's command (with `--mini` if desired). `npx -y xc-mcp` may resolve
+an npm release rather than this local build. After switching Node.js versions, check `command -v xc-mcp`
+because global installations belong to that Node.js prefix. The CLI speaks MCP over stdio;
+verify it with an MCP client using initialize, tools/list and tools/call.
+
 Point any MCP client at a local build with `node /path/to/xc-mcp/dist/index.js`. **A running server
 holds `dist/` in memory**, so restart the client session after rebuilding.
 
-[CLAUDE.md](./CLAUDE.md) covers the architecture, how to add a tool, and the rules learned the hard
+[AGENTS.md](./AGENTS.md) supplies contributor guidance; [CLAUDE.md](./CLAUDE.md) covers the architecture, how to add a tool, and the rules learned the hard
 way.
 
 ## Contributing
@@ -335,7 +369,3 @@ Pull requests need a passing build, tests and lint.
 ## License
 
 MIT, as declared in [`package.json`](./package.json).
-
-### Simulator skill compatibility update
-
-See [the parity inventory](docs/simulator-skill-parity.md) for ported fixes, new capabilities and remaining gaps. New tools are `idb-semantic-action` and `idb-library`. Destructive erase/delete/uninstall calls now require `confirm: true`; fresh-install retains explicit `eraseSimulator: true` consent.
