@@ -1,6 +1,6 @@
+import { simulatorBatch } from './batch.js';
 import { validateDeviceId } from '../../utils/validation.js';
 import { executeCommand, buildSimctlCommand } from '../../utils/command.js';
-import type { ToolResult } from '../../types/xcode.js';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 
 interface SimctlShutdownToolArgs {
@@ -42,6 +42,8 @@ interface SimctlShutdownToolArgs {
  * @throws McpError for invalid device ID or shutdown failure
  */
 export async function simctlShutdownTool(args: any) {
+  if (args.all === true || args.deviceType || args.runtime || args.deviceId === 'all')
+    return simulatorBatch('shutdown', args);
   const { deviceId } = args as SimctlShutdownToolArgs;
 
   try {
@@ -116,6 +118,10 @@ Shutdown iOS simulator devices with intelligent device management.
 ## Overview
 
 Gracefully shuts down one or more iOS simulator devices. Supports shutting down specific devices, all currently booted devices, or all devices at once with smart targeting options. Better error handling with clear feedback when devices cannot be shut down.
+
+## Batch selection
+
+Use all:true or deviceType/runtime filters instead of deviceId. Batch operations target available simulators; erase/delete require confirm:true. Results report each attempted device independently.
 
 ## Parameters
 

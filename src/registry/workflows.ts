@@ -1,3 +1,7 @@
+import {
+  appStateCaptureTool,
+  APP_STATE_CAPTURE_DOCS,
+} from '../tools/workflows/app-state-capture.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
@@ -30,6 +34,25 @@ import {
 } from '../tools/workflows/test-record-report.js';
 
 export function registerWorkflowTools(server: McpServer): void {
+  server.registerTool(
+    'app-state-capture',
+    {
+      title: 'Capture App State',
+      description: APP_STATE_CAPTURE_DOCS,
+      inputSchema: {
+        outputDir: z.string().min(1),
+        udid: z.string().optional(),
+        bundleId: z.string().optional(),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+        openWorldHint: false,
+      },
+    },
+    appStateCaptureTool
+  );
   // workflow-tap-element
   server.registerTool(
     'workflow-tap-element',
@@ -154,6 +177,7 @@ export function registerWorkflowTools(server: McpServer): void {
         udid: z.string().optional(),
         metadata: z.record(z.string(), z.unknown()).optional(),
         assertion: z.string().optional(),
+        assertionPassed: z.boolean().optional(),
       },
       annotations: {
         readOnlyHint: false,

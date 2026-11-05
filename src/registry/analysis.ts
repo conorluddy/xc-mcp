@@ -111,7 +111,8 @@ export function registerAnalysisTools(server: McpServer): void {
         baselinePath: z.string(),
         currentPath: z.string(),
         outputDir: z.string().optional(),
-        threshold: z.number().optional(),
+        threshold: z.number().min(0).max(1).optional(),
+        algorithm: z.enum(['pixelmatch', 'skill']).optional(),
       },
       outputSchema: {
         differentPixels: z.number(),

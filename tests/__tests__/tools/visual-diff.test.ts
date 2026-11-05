@@ -174,3 +174,25 @@ describe('visualDiffTool', () => {
     ).rejects.toBeInstanceOf(McpError);
   });
 });
+it('supports reference luminance cutoff and writes side-by-side output', async () => {
+  const baselinePath = path.join(tmpDir, 'skill-base.png');
+  const currentPath = path.join(tmpDir, 'skill-current.png');
+  fs.writeFileSync(baselinePath, createSolidPng(8, 8, 0, 0, 0));
+  fs.writeFileSync(currentPath, createSolidPng(8, 8, 10, 10, 10));
+  const result = await visualDiffTool({
+    baselinePath,
+    currentPath,
+    outputDir: tmpDir,
+    algorithm: 'skill',
+  });
+  expect(result.structuredContent.differentPixels).toBe(0);
+  fs.writeFileSync(currentPath, createSolidPng(8, 8, 11, 11, 11));
+  const changed = await visualDiffTool({
+    baselinePath,
+    currentPath,
+    outputDir: tmpDir,
+    algorithm: 'skill',
+  });
+  expect(changed.structuredContent.differentPixels).toBe(64);
+  expect(PNG.sync.read(fs.readFileSync(path.join(tmpDir, 'side-by-side.png'))).width).toBe(26);
+});

@@ -1,3 +1,4 @@
+import { flattenNodes } from './semantic-action.js';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
@@ -12,7 +13,11 @@ import {
 
 interface IdbUiFindElementArgs {
   udid?: string;
-  query: string; // Search term for label or identifier
+  query?: string; // Search term for label or identifier
+  exact?: boolean;
+  elementType?: string;
+  identifier?: string;
+  index?: number;
 }
 
 /**
@@ -76,6 +81,10 @@ Queries the accessibility tree and searches for elements matching a label or ide
 - **query** (string): Search term to match against element labels or identifiers
 
 ### Optional
+- **exact** (boolean): Exact matching instead of substring matching
+- **elementType** (string): Filter by accessibility type; can be used without query
+- **identifier** (string): Exact identifier filter; can be used without query
+- **index** (integer): Zero-based selection returned as selectedElement
 - **udid** (string): Target identifier - auto-detects if omitted
 
 ## Returns
@@ -137,20 +146,19 @@ export const IDB_UI_FIND_ELEMENT_DOCS_MINI =
   'Find UI elements by semantic search. Use rtfm({ toolName: "idb-ui-find-element" }) for docs.';
 
 export async function idbUiFindElementTool(args: IdbUiFindElementArgs) {
-  const { udid, query } = args;
+  const { udid, query = '' } = args;
 
   try {
     // ============================================================================
     // STAGE 1: Validation & Preparation
     // ============================================================================
 
-    if (!query || query.trim().length === 0) {
-      throw new McpError(
-        ErrorCode.InvalidRequest,
-        'query parameter is required and cannot be empty'
-      );
+    if (!query.trim() && !args.elementType && !args.identifier) {
+      throw new McpError(ErrorCode.InvalidRequest, 'query, elementType, or identifier is required');
     }
 
+    if (args.index !== undefined && (!Number.isInteger(args.index) || args.index < 0))
+      throw new McpError(ErrorCode.InvalidRequest, 'index must be a nonnegative integer');
     const resolvedUdid = await resolveIdbUdid(udid);
     const target = await validateTargetBooted(resolvedUdid);
     const normalizedQuery = query.toLowerCase().trim();
@@ -178,14 +186,30 @@ export async function idbUiFindElementTool(args: IdbUiFindElementArgs) {
 
     const elements = parseFlexibleJson(result.stdout);
     const viewport = target.screenDimensions ?? extractViewport(elements);
-    const matches = filterElementsByQuery(elements, normalizedQuery)
+    const matches = filterElementsByQuery(flattenNodes(elements), normalizedQuery, args)
       .map(element => ({
         ...element,
         visible: isFrameVisible(element, viewport),
         offscreenReason: describeOffscreenReason(element, viewport) ?? undefined,
       }))
       // Visible matches first: matchedElements[0] should be one the agent can actually tap.
-      .sort((a, b) => Number(b.visible) - Number(a.visible));
+      .sort(
+        (a, b) =>
+          Number(b.visible) - Number(a.visible) ||
+          (query
+            ? Number(![a.label, a.value].some(v => v?.toLowerCase() === normalizedQuery)) -
+                Number(![b.label, b.value].some(v => v?.toLowerCase() === normalizedQuery)) ||
+              Number(
+                !/^(Button|Link|Switch|CheckBox|Tab|TextField|SecureTextField|Slider)$/.test(a.type)
+              ) -
+                Number(
+                  !/^(Button|Link|Switch|CheckBox|Tab|TextField|SecureTextField|Slider)$/.test(
+                    b.type
+                  )
+                )
+            : 0)
+      );
+    const selectedElement = matches[args.index ?? 0];
 
     const visibleMatchCount = matches.filter(element => element.visible).length;
 
@@ -238,6 +262,7 @@ export async function idbUiFindElementTool(args: IdbUiFindElementArgs) {
               targetName: target.name,
               matchCount: matches.length,
               visibleMatchCount,
+              selectedElement,
               matchedElements: matches.map(el => ({
                 type: el.type,
                 label: el.label,
@@ -315,10 +340,12 @@ export async function idbUiFindElementTool(args: IdbUiFindElementArgs) {
 
 function filterElementsByQuery(
   elements: any[],
-  query: string
+  query: string,
+  options: IdbUiFindElementArgs
 ): Array<{
   type: string;
   label?: string;
+  value?: string;
   identifier?: string;
   enabled: boolean;
   x: number;
@@ -331,6 +358,7 @@ function filterElementsByQuery(
   const matches: Array<{
     type: string;
     label?: string;
+    value?: string;
     identifier?: string;
     enabled: boolean;
     x: number;
@@ -346,11 +374,20 @@ function filterElementsByQuery(
     const elementLabel = element.label || element.AXLabel;
     const elementIdentifier = element.identifier || element.AXUniqueId;
 
+    if (element.enabled === false) continue;
+    if (options.elementType && element.type !== options.elementType) continue;
+    if (options.identifier && elementIdentifier !== options.identifier) continue;
+    const value = String(element.value ?? element.AXValue ?? '');
     const label = (elementLabel || '').toLowerCase();
     const identifier = (elementIdentifier || '').toLowerCase();
 
     // Match if query appears in label or identifier
-    if (label.includes(query) || identifier.includes(query)) {
+    if (
+      !query ||
+      (options.exact
+        ? [label, value.toLowerCase(), identifier].includes(query)
+        : [label, value.toLowerCase(), identifier].some(v => v.includes(query)))
+    ) {
       const frame = parseAXFrame(element.frame ?? element.AXFrame);
 
       // Skip elements without frame coordinates
@@ -361,6 +398,7 @@ function filterElementsByQuery(
       matches.push({
         type: element.type || 'Unknown',
         label: elementLabel,
+        value,
         identifier: elementIdentifier,
         enabled: element.enabled !== false, // Default to true if not specified
         x: frame.x,

@@ -219,7 +219,12 @@ export function registerIdbTools(server: McpServer): void {
           'drag',
           'rotate',
           'shake',
+          'scroll',
+          'refresh',
         ]),
+        source: z.string().min(1).optional(),
+        destination: z.string().min(1).optional(),
+        amount: z.number().int().min(1).max(100).optional(),
         scale: z.number().positive().optional(),
         count: z.number().int().min(2).optional(),
         orientation: z
@@ -288,7 +293,11 @@ export function registerIdbTools(server: McpServer): void {
       description: getDescription(IDB_UI_FIND_ELEMENT_DOCS, IDB_UI_FIND_ELEMENT_DOCS_MINI),
       inputSchema: {
         udid: z.string().optional(),
-        query: z.string(),
+        query: z.string().optional(),
+        exact: z.boolean().optional(),
+        elementType: z.string().optional(),
+        identifier: z.string().optional(),
+        index: z.number().int().nonnegative().optional(),
       },
       annotations: {
         readOnlyHint: true,

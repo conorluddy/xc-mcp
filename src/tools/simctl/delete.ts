@@ -1,3 +1,4 @@
+import { simulatorBatch } from './batch.js';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { validateDeviceId } from '../../utils/validation.js';
 import { executeCommand, buildSimctlCommand } from '../../utils/command.js';
@@ -40,6 +41,8 @@ interface SimctlDeleteToolArgs {
  * @throws McpError for invalid device ID, booted device, or deletion failure
  */
 export async function simctlDeleteTool(args: any) {
+  if (args.all === true || args.deviceType || args.runtime || args.deviceId === 'all')
+    return simulatorBatch('delete', args);
   if (args.confirm !== true)
     throw new McpError(
       ErrorCode.InvalidRequest,
@@ -143,6 +146,10 @@ Permanently removes a simulator device and all its data from the system. This ac
 ## Confirmation
 
 confirm: true is required before permanently deleting simulator or app data.
+
+## Batch selection
+
+Use all:true or deviceType/runtime filters instead of deviceId. Batch operations target available simulators; erase/delete require confirm:true. Results report each attempted device independently.
 
 ## Parameters
 

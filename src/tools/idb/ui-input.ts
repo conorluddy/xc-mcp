@@ -252,8 +252,17 @@ async function executeInputCommand(
   }
   const keyArgs = (name: string): string[] => {
     const lower = name.toLowerCase();
-    if (['home', 'lock', 'siri'].includes(lower))
-      return ['ui', 'button', '--udid', udid, lower.toUpperCase()];
+    const buttons: Record<string, string> = {
+      home: 'HOME',
+      lock: 'LOCK',
+      power: 'LOCK',
+      side: 'SIDE_BUTTON',
+      siri: 'SIRI',
+      'apple-pay': 'APPLE_PAY',
+      'volume-up': 'VOLUME_UP',
+      'volume-down': 'VOLUME_DOWN',
+    };
+    if (buttons[lower]) return ['ui', 'button', '--udid', udid, buttons[lower]];
     const code =
       codes[lower] ??
       (/^[a-z]$/.test(lower)
@@ -360,6 +369,8 @@ function formatGuidance(
 
 export const IDB_UI_INPUT_DOCS = `
 # idb-ui-input
+
+Hardware key aliases: home, lock/power, side, siri, apple-pay, volume-up/down (volume requires idb 1.6.3+).
 
 ⌨️ **Input text and keyboard commands** - automated text entry and special key presses for form automation
 

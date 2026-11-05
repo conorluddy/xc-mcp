@@ -1,3 +1,4 @@
+import { simulatorBatch } from './batch.js';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { validateDeviceId } from '../../utils/validation.js';
 import { executeCommand, buildSimctlCommand } from '../../utils/command.js';
@@ -45,6 +46,8 @@ interface SimctlEraseToolArgs {
  * @throws McpError for invalid device ID or erase failure
  */
 export async function simctlEraseTool(args: any) {
+  if (args.all === true || args.deviceType || args.runtime || args.deviceId === 'all')
+    return simulatorBatch('erase', args);
   if (args.confirm !== true)
     throw new McpError(
       ErrorCode.InvalidRequest,
@@ -153,6 +156,10 @@ Resets a simulator to clean factory state without deleting the device itself. Al
 ## Confirmation
 
 confirm: true is required before permanently deleting simulator or app data.
+
+## Batch selection
+
+Use all:true or deviceType/runtime filters instead of deviceId. Batch operations target available simulators; erase/delete require confirm:true. Results report each attempted device independently.
 
 ## Parameters
 

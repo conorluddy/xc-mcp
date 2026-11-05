@@ -338,17 +338,12 @@ export class SimulatorCache {
       return [];
     }
 
-    // Common device models ranked by popularity
-    const commonModels = [
-      'iPhone 16 Pro',
-      'iPhone 16',
-      'iPhone 15 Pro',
-      'iPhone 15',
-      'iPhone SE',
-      'iPad Pro',
-      'iPad',
-      'iPad mini',
-    ];
+    const list = await this.getSimulatorList();
+    const runtimeByUdid = new Map(
+      Object.entries(list.devices).flatMap(([runtime, devices]) =>
+        devices.map(device => [device.udid, runtime] as const)
+      )
+    );
 
     // Get recently used devices
     const recentlyUsed = Array.from(this.lastUsed.entries())
@@ -376,23 +371,18 @@ export class SimulatorCache {
         reasons.push(`Recently used`);
       }
 
-      // iOS version (30%) - prefer latest
-      const versionMatch = device.deviceTypeIdentifier.match(/(\d+)/);
+      // Runtime metadata, never the digits in a device model identifier.
+      const versionMatch = runtimeByUdid.get(device.udid)?.match(/iOS[- ](\d+)[-.](\d+)/i);
       if (versionMatch) {
-        const version = parseInt(versionMatch[1], 10);
-        const versionBonus = Math.min(30, (version / 18) * 30); // 30 points for iOS 18+
-        score += versionBonus;
-        reasons.push(`iOS ${version}`);
+        const major = Number(versionMatch[1]);
+        const minor = Number(versionMatch[2]);
+        score += major * 0.01 + minor * 0.0001;
+        reasons.push(`iOS ${major}.${minor}`);
       }
-
-      // Common models (20%)
-      const modelIndex = commonModels.findIndex(model => device.name.includes(model));
-      if (modelIndex !== -1) {
-        const modelBonus = Math.max(0, 20 - modelIndex * 2);
-        score += modelBonus;
-        reasons.push(`Common model: #${modelIndex + 1}`);
-      } else {
-        reasons.push(`Custom device`);
+      const mainline = device.name.match(/^iPhone (\d+)( Pro)?$/);
+      if (mainline) {
+        score += 20 + Number(mainline[1]) + (mainline[2] ? 0.5 : 0);
+        reasons.push('Mainline iPhone');
       }
 
       // Boot performance (10%) - faster is better

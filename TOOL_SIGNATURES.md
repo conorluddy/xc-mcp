@@ -1,6 +1,6 @@
 # XC-MCP Tool Reference
 
-**79 tools**, generated from `src/registry/*.ts` for XC-MCP v5.0.0.
+**80 tools**, generated from `src/registry/*.ts` for XC-MCP v5.0.0.
 
 This file is an index: tool name, what it does, and its MCP annotations. **Parameter schemas live in the
 server itself** — call `rtfm({ toolName: "xcodebuild-build" })` (or `rtfm({ categoryName: "build" })`)
@@ -137,6 +137,7 @@ High-level compositions of several primitive tools, plus test-run recording.
 
 | Tool | Title | Read-only | Destructive | Structured |
 |---|---|---|---|---|
+| `app-state-capture` | Capture App State |  |  |  |
 | `workflow-tap-element` | Tap Element (Workflow) |  |  |  |
 | `workflow-fresh-install` | Fresh Install (Workflow) |  | ✓ |  |
 | `workflow-build-and-run` | Build & Run (Workflow) |  |  |  |

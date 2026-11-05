@@ -1,3 +1,4 @@
+import { APP_STATE_CAPTURE_DOCS } from './workflows/app-state-capture.js';
 import { IDB_SEMANTIC_ACTION_DOCS } from './idb/semantic-action.js';
 import { IDB_LIBRARY_DOCS } from './idb/library.js';
 /**
@@ -527,6 +528,7 @@ export const TOOL_CATEGORIES: Record<string, string[]> = {
     'screenshot-save',
   ],
   workflow: [
+    'app-state-capture',
     'workflow-tap-element',
     'workflow-fresh-install',
     'workflow-build-and-run',
@@ -683,6 +685,7 @@ export const TOOL_DOCS: Record<string, string> = {
   rtfm: RTFM_DOCS,
 
   // Workflow tools (v3.0.0)
+  'app-state-capture': APP_STATE_CAPTURE_DOCS,
   'workflow-tap-element': WORKFLOW_TAP_ELEMENT_DOCS,
   'workflow-fresh-install': WORKFLOW_FRESH_INSTALL_DOCS,
   'workflow-build-and-run': BUILD_AND_RUN_DOCS,

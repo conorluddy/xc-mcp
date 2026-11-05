@@ -37,7 +37,7 @@ describe('idb-ui-find-element', () => {
         idbUiFindElementTool({
           query: '',
         })
-      ).rejects.toThrow('query parameter is required and cannot be empty');
+      ).rejects.toThrow('query, elementType, or identifier is required');
     });
 
     it('should reject undefined query', async () => {
@@ -45,7 +45,7 @@ describe('idb-ui-find-element', () => {
         idbUiFindElementTool({
           query: undefined as any,
         })
-      ).rejects.toThrow('query parameter is required and cannot be empty');
+      ).rejects.toThrow('query, elementType, or identifier is required');
     });
 
     it('should trim and accept valid query', async () => {
@@ -708,5 +708,46 @@ describe('idb-ui-find-element', () => {
 
       expect(mockIDBTargetCache.recordSuccess).toHaveBeenCalledWith('test-udid-123');
     });
+  });
+});
+
+describe('navigator parity', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockIDBTargetCache.getLastUsedTarget = jest.fn().mockResolvedValue({ udid: 'test-udid-123' });
+    mockIDBTargetCache.getTarget = jest.fn().mockResolvedValue({ name: 'Test', state: 'Booted' });
+  });
+  const node = (type: string, label: string, extra = {}) => ({
+    type,
+    AXLabel: label,
+    frame: { x: 10, y: 10, width: 30, height: 30 },
+    ...extra,
+  });
+  it('ranks an exact control ahead of its matching container and partial labels', async () => {
+    mockExecuteCommand.mockResolvedValueOnce({
+      code: 0,
+      stderr: '',
+      stdout: JSON.stringify([
+        node('Group', 'Login', { children: [node('Button', 'Login')] }),
+        node('Button', 'Login later'),
+      ]),
+    });
+    const result = await idbUiFindElementTool({ query: 'login' });
+    const data = JSON.parse(result.content[0].text);
+    expect(data.selectedElement.type).toBe('Button');
+    expect(data.matchCount).toBe(3);
+  });
+  it('supports type-only selection in tree order and excludes disabled controls', async () => {
+    mockExecuteCommand.mockResolvedValueOnce({
+      code: 0,
+      stderr: '',
+      stdout: JSON.stringify([
+        node('Button', 'Disabled', { enabled: false }),
+        node('Button', 'First'),
+        node('Button', 'Second'),
+      ]),
+    });
+    const result = await idbUiFindElementTool({ elementType: 'Button', index: 1 });
+    expect(JSON.parse(result.content[0].text).selectedElement.label).toBe('Second');
   });
 });

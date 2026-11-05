@@ -6,7 +6,7 @@ import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
  * Orchestrates multiple tools to find and tap a UI element by name/label:
  * 1. accessibility-quality-check → Assess UI richness
  * 2. idb-ui-find-element → Find element by semantic search
- * 3. idb-ui-tap → Tap at element coordinates
+ * 3. idb-semantic-action / idb-ui-tap → Press a unique control or tap coordinates
  * 4. (optional) idb-ui-input → Type text after tap
  * 5. (optional) screenshot → Verify result
  *
@@ -60,6 +60,7 @@ export async function workflowTapElementTool(args: TapElementArgs) {
     const { accessibilityQualityCheckTool } = await import('../idb/accessibility-quality-check.js');
     const { idbUiFindElementTool } = await import('../idb/ui-find-element.js');
     const { idbUiTapTool } = await import('../idb/ui-tap.js');
+    const { idbSemanticActionTool } = await import('../idb/semantic-action.js');
     const { idbUiInputTool } = await import('../idb/ui-input.js');
     const { simctlScreenshotInlineTool } = await import('../simctl/screenshot-inline.js');
 
@@ -110,6 +111,8 @@ export async function workflowTapElementTool(args: TapElementArgs) {
 
     let elementCoords: { x: number; y: number } | null = null;
     let foundElement: any = null;
+    let targetUdid = udid;
+    let semanticQuery: string | undefined;
 
     try {
       const findResult = await idbUiFindElementTool({
@@ -122,6 +125,15 @@ export async function workflowTapElementTool(args: TapElementArgs) {
 
       if (findData.matchCount > 0 && findData.matchedElements?.length > 0) {
         foundElement = findData.matchedElements[0];
+        targetUdid = findData.udid || udid;
+        // The action tool re-reads the tree and checks marker uniqueness, including
+        // untyped nodes. Never retry a rejected semantic action with an unguarded tap.
+        if (
+          findData.matchCount === 1 &&
+          /^(button|link|switch|checkbox|tab)$/i.test(foundElement.type || '')
+        ) {
+          semanticQuery = foundElement.identifier || foundElement.label;
+        }
         elementCoords = {
           x: foundElement.centerX,
           y: foundElement.centerY,
@@ -191,13 +203,20 @@ export async function workflowTapElementTool(args: TapElementArgs) {
     );
 
     try {
-      const tapResult = await idbUiTapTool({
-        udid,
-        x: elementCoords!.x,
-        y: elementCoords!.y,
-        actionName: `Tap ${foundElement.label || foundElement.identifier || elementQuery}`,
-        screenContext,
-      });
+      const tapResult = semanticQuery
+        ? await idbSemanticActionTool({
+            udid: targetUdid,
+            query: semanticQuery,
+            exact: true,
+            operation: 'press',
+          })
+        : await idbUiTapTool({
+            udid: targetUdid,
+            x: elementCoords!.x,
+            y: elementCoords!.y,
+            actionName: `Tap ${foundElement.label || foundElement.identifier || elementQuery}`,
+            screenContext,
+          });
 
       const tapText = tapResult.content?.[0]?.text || JSON.stringify(tapResult);
       const tapData = typeof tapText === 'string' ? JSON.parse(tapText) : tapText;
@@ -208,6 +227,8 @@ export async function workflowTapElementTool(args: TapElementArgs) {
         result: {
           tappedAt: tapData.tappedAt,
           duration: tapData.duration,
+          method: tapData.method || 'coordinates',
+          warning: tapData.warning,
         },
       });
 
@@ -398,7 +419,7 @@ High-level semantic UI interaction - find and tap elements by name without coord
 Orchestrates accessibility-first UI automation in a single call:
 1. **Check Accessibility** - Assess UI richness for automation approach
 2. **Find Element** - Semantic search by label/identifier
-3. **Tap Element** - Execute tap at discovered coordinates
+3. **Tap Element** - Press a uniquely matched control through accessibility; otherwise tap discovered coordinates
 4. **Input Text** (optional) - Type into tapped field
 5. **Verify Result** (optional) - Screenshot for confirmation
 
@@ -474,7 +495,8 @@ Taps Submit button and captures verification screenshot.
 ## Related Tools
 
 - **idb-ui-find-element**: Direct element search (used internally)
-- **idb-ui-tap**: Direct tap (used internally)
+- **idb-semantic-action**: Accessibility press with uniqueness checks (used internally)
+- **idb-ui-tap**: Coordinate tap (used internally)
 - **accessibility-quality-check**: Direct quality check (used internally)
 - **workflow-fresh-install**: Clean app installation workflow
 
@@ -483,6 +505,8 @@ Taps Submit button and captures verification screenshot.
 - Falls back gracefully if accessibility is minimal
 - Non-fatal errors (input, screenshot) don't fail the workflow
 - Element matching uses partial, case-insensitive search
+- A single Button/Link/Switch/CheckBox/Tab match uses an accessibility press with coordinate fallback in the action tool
+- A rejected semantic action fails the workflow; it is never retried with an unguarded coordinate tap
 - Small delay between tap and input for keyboard appearance
 `;
 

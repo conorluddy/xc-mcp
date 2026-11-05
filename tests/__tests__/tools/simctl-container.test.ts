@@ -100,7 +100,7 @@ describe('simctlContainerTool', () => {
     });
 
     it('rejects unknown mode', async () => {
-      await expect(simctlContainerTool({ bundleId: BUNDLE_ID, mode: 'export' })).rejects.toThrow(
+      await expect(simctlContainerTool({ bundleId: BUNDLE_ID, mode: 'invalid' })).rejects.toThrow(
         McpError
       );
     });

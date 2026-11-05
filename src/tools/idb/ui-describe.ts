@@ -1,3 +1,4 @@
+import { labelledLeafCoverage } from '../../utils/ax-coverage.js';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { executeCommand } from '../../utils/command.js';
 import { resolveIdbUdid, validateTargetBooted } from '../../utils/idb-device-detection.js';
@@ -281,6 +282,11 @@ async function executeDescribeAllOperation(
       visibleTappableElements: summary.visibleTappableCount,
       textFields: summary.textFieldCount,
       viewport,
+      labelledLeafCoverage: labelledLeafCoverage(elements, viewport),
+      coverageHint:
+        labelledLeafCoverage(elements, viewport) < 0.1
+          ? 'Labelled elements cover under 10% of the screen; consider an explicit deep read (enables accessibility automation mode).'
+          : undefined,
       dataQuality: isRichData ? 'rich' : isMinimalData ? 'minimal' : 'moderate',
     },
     // Progressive disclosure: provide cache ID for full tree

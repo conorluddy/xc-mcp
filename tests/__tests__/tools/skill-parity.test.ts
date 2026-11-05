@@ -140,3 +140,23 @@ it('fails when a field value does not stick', async () => {
   expect(response.isError).toBe(true);
   expect(response.content[0].text).toContain('did not stick');
 });
+it.each([
+  ['power', 'LOCK'],
+  ['side', 'SIDE_BUTTON'],
+  ['apple-pay', 'APPLE_PAY'],
+  ['volume-up', 'VOLUME_UP'],
+  ['volume-down', 'VOLUME_DOWN'],
+])('maps hardware alias %s', async (key, button) => {
+  await idbUiInputTool({ operation: 'key', key });
+  expect(run.mock.calls[0][1]).toEqual(expect.arrayContaining(['button', button]));
+});
+it('passes drag labels as separate arguments without shell interpretation', async () => {
+  await idbUiGestureTool({ operation: 'drag', source: 'Row 1', destination: 'Row 4' });
+  expect(run.mock.calls[0][1]).toEqual(expect.arrayContaining(['drag-and-drop', 'Row 1', 'Row 4']));
+});
+it('rejects invalid scroll counts before sending any events', async () => {
+  await expect(
+    idbUiGestureTool({ operation: 'scroll', direction: 'down', amount: -1 })
+  ).rejects.toThrow('amount');
+  expect(run).not.toHaveBeenCalled();
+});

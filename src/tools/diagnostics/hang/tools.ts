@@ -1,3 +1,4 @@
+import { gzipSync } from 'zlib';
 import * as fs from 'fs';
 import { spawn } from 'child_process';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
@@ -21,11 +22,14 @@ import {
   writeSummary,
   readSummary,
   pruneExpired,
+  pruneToAggregateCap,
 } from './sessions.js';
 
 // === TYPES ===
 
 interface HangStartArgs {
+  rawCapture?: boolean;
+  noGzip?: boolean;
   udid?: string;
   predicate?: string;
   minHangMs?: number;
@@ -74,24 +78,73 @@ function parseRawLog(
  * whose output is written to the session's raw.log; parsing/clustering happens at hang-stop.
  */
 export async function hangStartTool(args: any) {
-  const { udid, predicate, minHangMs = 250 } = args as HangStartArgs;
+  const {
+    udid,
+    predicate,
+    minHangMs = 250,
+    rawCapture = false,
+    noGzip = false,
+  } = args as HangStartArgs;
   try {
     pruneExpired(24);
+    pruneToAggregateCap(Number(process.env.XC_MCP_HANG_TOTAL_CAP_MB ?? 100) * 1024 * 1024);
 
     const device = udid?.trim() || 'booted';
-    const pred = predicate?.trim() || DEFAULT_HANG_PREDICATE;
+    const pred = predicate?.trim() || (rawCapture ? 'TRUEPREDICATE' : DEFAULT_HANG_PREDICATE);
     const meta = createSession({ udid: device, predicate: pred, minHangMs });
 
-    const out = fs.openSync(meta.rawLogPath, 'a');
-    const child = spawn(
-      'xcrun',
-      ['simctl', 'spawn', device, 'log', 'stream', '--predicate', pred],
-      { detached: true, stdio: ['ignore', out, 'ignore'] }
-    );
-    child.unref();
-    fs.closeSync(out);
-
-    updateStatus(meta.sessionId, 'running', { pid: child.pid });
+    let restarts = 0;
+    const configuredRestarts = Number(process.env.XC_MCP_HANG_MAX_RESTARTS ?? 3);
+    const maxRestarts =
+      Number.isInteger(configuredRestarts) && configuredRestarts >= 0 ? configuredRestarts : 3;
+    const startStream = () => {
+      const out = fs.openSync(meta.rawLogPath, 'a');
+      let child;
+      try {
+        child = spawn(
+          'xcrun',
+          [
+            'simctl',
+            'spawn',
+            device,
+            'log',
+            'stream',
+            ...(rawCapture ? ['--style', 'ndjson'] : []),
+            '--predicate',
+            pred,
+          ],
+          { detached: true, stdio: ['ignore', out, 'ignore'] }
+        );
+      } finally {
+        fs.closeSync(out);
+      }
+      child.unref();
+      updateStatus(meta.sessionId, 'running', { pid: child.pid, rawCapture, noGzip });
+      let handled = false;
+      const ended = () => {
+        if (handled) return;
+        handled = true;
+        if (readMeta(meta.sessionId)?.status !== 'running') return;
+        if (restarts++ >= maxRestarts) {
+          updateStatus(meta.sessionId, 'crashed');
+          return;
+        }
+        // Yield between immediate failures; never leave an unbounded retry loop.
+        const retry = setTimeout(() => {
+          if (readMeta(meta.sessionId)?.status !== 'running') return;
+          try {
+            startStream();
+          } catch {
+            updateStatus(meta.sessionId, 'crashed');
+          }
+        }, 250);
+        retry.unref();
+      };
+      child.once('error', ended);
+      child.once('close', ended);
+      return child;
+    };
+    const child = startStream();
 
     return text({
       success: true,
@@ -126,6 +179,8 @@ export async function hangStopTool(args: any) {
       throw new McpError(ErrorCode.InvalidRequest, `Unknown hang session: ${sessionId}`);
     }
 
+    // Persist before killing so the exit callback cannot restart a stopped capture.
+    if (meta.status === 'running') updateStatus(sessionId, 'stopped');
     // Best-effort stop of the detached stream process
     if (meta.pid) {
       try {
@@ -135,6 +190,19 @@ export async function hangStopTool(args: any) {
       }
     }
 
+    if (meta.rawCapture && meta.rawLogPath.endsWith('.gz'))
+      return text({ success: true, sessionId, mode: 'raw', rawPath: meta.rawLogPath });
+    if (meta.rawCapture) {
+      let rawPath = meta.rawLogPath;
+      const rawBytes = fs.statSync(rawPath).size;
+      if (!meta.noGzip && rawBytes > 0) {
+        fs.writeFileSync(`${rawPath}.gz`, gzipSync(fs.readFileSync(rawPath)));
+        fs.unlinkSync(rawPath);
+        rawPath += '.gz';
+      }
+      updateStatus(sessionId, 'stopped', { rawLogPath: rawPath });
+      return text({ success: true, sessionId, mode: 'raw', rawPath, rawBytes });
+    }
     const raw = readRawLog(sessionId);
     const { events, dropped } = parseRawLog(raw, meta.minHangMs);
     const summary = buildSummary(sessionId, events, dropped, topN);
@@ -177,6 +245,9 @@ export async function hangStopTool(args: any) {
 export async function hangGetDetailsTool(args: any) {
   const { sessionId, cluster } = args as HangDetailsArgs;
   try {
+    const meta = readMeta(sessionId);
+    if (meta?.rawCapture)
+      return text({ success: true, sessionId, mode: 'raw', rawPath: meta.rawLogPath });
     const summary = readSummary(sessionId) as SessionSummary | null;
     if (!summary) {
       throw new McpError(
@@ -235,6 +306,8 @@ hang/stall/watchdog/jetsam events, writing to the session's raw log. Reproduce t
 then call \`hang-stop\` to parse, cluster, and rank the results.
 
 ## Parameters
+- \`rawCapture\` (optional): capture all NDJSON log records, skip clustering, and gzip at stop
+- \`noGzip\` (optional): keep raw capture uncompressed
 - \`udid\` (optional): simulator UDID (default: booted)
 - \`predicate\` (optional): override the os_log predicate
 - \`minHangMs\` (optional, default 250): drop hang events shorter than this at stop time

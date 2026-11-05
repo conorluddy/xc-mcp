@@ -20,6 +20,7 @@ import {
   getSessionsRoot,
   listSessions,
   pruneExpired,
+  pruneToAggregateCap,
   readMeta,
   readRawLog,
   readSummary,
@@ -219,7 +220,11 @@ test('pruneExpired deletes sessions older than the TTL', () => {
 
   // Backdate the createdAt in meta to 25 hours ago.
   const backdated = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString();
-  const staleMeta = { ...readMeta(meta.sessionId)!, createdAt: backdated };
+  const staleMeta = {
+    ...readMeta(meta.sessionId)!,
+    createdAt: backdated,
+    status: 'stopped' as const,
+  };
   writeMeta(staleMeta);
 
   const deleted = pruneExpired(24);
@@ -233,4 +238,14 @@ test('pruneExpired does not delete recent sessions', () => {
   const deleted = pruneExpired(24);
   expect(deleted).toBe(0);
   expect(fs.existsSync(getSessionDir(meta.sessionId))).toBe(true);
+});
+
+test('aggregate cap deletes completed sessions but preserves active capture', () => {
+  const old = createSession({ udid: 'device', predicate: 'x', minHangMs: 250 });
+  updateStatus(old.sessionId, 'stopped', { createdAt: '2020-01-01T00:00:00Z' });
+  const active = createSession({ udid: 'device', predicate: 'x', minHangMs: 250 });
+  expect(pruneToAggregateCap(1)).toBe(1);
+  expect(readMeta(old.sessionId)).toBeNull();
+  expect(readMeta(active.sessionId)?.status).toBe('running');
+  expect(pruneToAggregateCap(0)).toBe(0);
 });

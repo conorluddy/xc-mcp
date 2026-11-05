@@ -10,6 +10,7 @@ interface VisualDiffArgs {
   currentPath: string;
   outputDir?: string;
   threshold?: number;
+  algorithm?: 'pixelmatch' | 'skill';
 }
 
 interface DiffReport {
@@ -41,6 +42,7 @@ export async function visualDiffTool(args: any) {
     currentPath,
     outputDir: outputDirArg,
     threshold = 0.01,
+    algorithm = 'pixelmatch',
   } = args as VisualDiffArgs;
 
   try {
@@ -65,6 +67,8 @@ export async function visualDiffTool(args: any) {
       );
     }
 
+    if (!Number.isFinite(threshold) || threshold < 0 || threshold > 1)
+      throw new McpError(ErrorCode.InvalidRequest, 'threshold must be between 0 and 1');
     // Resolve output directory
     const outputDir = outputDirArg ?? path.dirname(currentPath);
     fs.mkdirSync(outputDir, { recursive: true });
@@ -106,10 +110,30 @@ export async function visualDiffTool(args: any) {
     // Run pixelmatch (dynamic import for ESM/Jest compatibility)
     const pixelmatch = (await import('pixelmatch')).default;
     const diffBuffer = Buffer.alloc(width * height * 4);
-    const differentPixels = pixelmatch(baseline.data, current.data, diffBuffer, width, height, {
+    let differentPixels = pixelmatch(baseline.data, current.data, diffBuffer, width, height, {
       threshold: 0.1,
     });
 
+    if (algorithm === 'skill') {
+      differentPixels = 0;
+      for (let i = 0; i < baseline.data.length; i += 4) {
+        const luminance = Math.round(
+          0.299 * Math.abs(baseline.data[i] - current.data[i]) +
+            0.587 * Math.abs(baseline.data[i + 1] - current.data[i + 1]) +
+            0.114 * Math.abs(baseline.data[i + 2] - current.data[i + 2])
+        );
+        if (luminance > 10) differentPixels++;
+        const highlighted =
+          Math.abs(baseline.data[i] - current.data[i]) +
+            Math.abs(baseline.data[i + 1] - current.data[i + 1]) +
+            Math.abs(baseline.data[i + 2] - current.data[i + 2]) >
+          30;
+        diffBuffer[i] = highlighted ? 255 : current.data[i];
+        diffBuffer[i + 1] = highlighted ? 0 : current.data[i + 1];
+        diffBuffer[i + 2] = highlighted ? 0 : current.data[i + 2];
+        diffBuffer[i + 3] = 255;
+      }
+    }
     const differencePercentage = differentPixels / totalPixels;
     const passed = differencePercentage <= threshold;
 
@@ -117,6 +141,12 @@ export async function visualDiffTool(args: any) {
     const diff = new PNG({ width, height });
     diff.data = diffBuffer;
     fs.writeFileSync(path.join(outputDir, 'diff.png'), PNG.sync.write(diff));
+
+    const sideBySide = new PNG({ width: width * 2 + 10, height });
+    sideBySide.data.fill(128);
+    PNG.bitblt(baseline, sideBySide, 0, 0, width, height, 0, 0);
+    PNG.bitblt(current, sideBySide, 0, 0, width, height, width + 10, 0);
+    fs.writeFileSync(path.join(outputDir, 'side-by-side.png'), PNG.sync.write(sideBySide));
 
     // Write JSON report
     const report: DiffReport = {
@@ -171,6 +201,8 @@ export async function visualDiffTool(args: any) {
 
 export const VISUAL_DIFF_DOCS = `
 # visual-diff
+
+algorithm: skill uses the reference script’s grayscale noise cutoff (>10); pixelmatch is the default. Both write diff.png, side-by-side.png, and the JSON report.
 
 Compare two PNG screenshots pixel-by-pixel using pixelmatch to detect visual regressions.
 Writes a highlighted diff image and a JSON report to the output directory.

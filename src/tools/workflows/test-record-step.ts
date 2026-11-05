@@ -12,6 +12,7 @@ interface TestRecordStepArgs {
   udid?: string;
   metadata?: Record<string, unknown>;
   assertion?: string;
+  assertionPassed?: boolean;
 }
 
 interface StepRecord {
@@ -22,6 +23,7 @@ interface StepRecord {
   accessibilityFile: string;
   elementCount: number;
   assertion?: string;
+  assertionPassed?: boolean;
   metadata?: Record<string, unknown>;
 }
 
@@ -99,7 +101,8 @@ function writeSession(sessionName: string, meta: SessionMeta): void {
  * **Full documentation:** Use rtfm({ toolName: "test-record-step" }) for detailed parameters
  */
 export async function testRecordStepTool(args: any) {
-  const { sessionName, label, udid, metadata, assertion } = args as TestRecordStepArgs;
+  const { sessionName, label, udid, metadata, assertion, assertionPassed } =
+    args as TestRecordStepArgs;
 
   try {
     if (!sessionName || sessionName.trim().length === 0) {
@@ -168,7 +171,7 @@ export async function testRecordStepTool(args: any) {
       screenshot: screenshotRelPath,
       accessibilityFile: accessibilityRelPath,
       elementCount,
-      ...(assertion !== undefined ? { assertion } : {}),
+      ...(assertion !== undefined ? { assertion, assertionPassed } : {}),
       ...(metadata !== undefined ? { metadata } : {}),
     };
 
