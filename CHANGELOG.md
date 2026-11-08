@@ -3,7 +3,22 @@
 All notable changes to XC-MCP are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
-## [5.0.0] — Unreleased
+## [5.1.0] — Unreleased
+
+### Added
+
+- Bundled `simctl-duo` hinge, orientation and state controls with explicit target selection
+  and observed readback; no separately installed fold CLI. Private APIs are experimental,
+  and rapid orientation changes can time out.
+- Explicit display selection in `screenshot` and `simctl-io`, suppressing unverified
+  coordinate metadata for selected displays.
+
+### Changed
+
+- Consolidate npm publication into `publish.yml`; release tags must match the checked-in
+  package and lockfile versions. Publishing a GitHub release triggers publication.
+
+## [5.0.0]
 
 Simulator-skill capability updates, including navigation, diagnostics, and batch device management.
 See [the parity audit](docs/simulator-skill-parity.md) for mappings and live-validation limits.
@@ -15,12 +30,6 @@ See [the parity audit](docs/simulator-skill-parity.md) for mappings and live-val
   `workflow-fresh-install` retains its explicit `eraseSimulator: true` opt-in.
 
 ### Added
-
-- Bundled `simctl-duo` hinge, orientation and state controls with explicit target selection
-  and observed readback; no separately installed fold CLI. Private APIs are experimental,
-  and rapid orientation changes can time out.
-- Explicit display selection in `screenshot` and `simctl-io`, suppressing unverified
-  coordinate metadata for selected displays.
 
 - Semantic accessibility presses and verified field replacement through `idb-semantic-action`.
 - Notification listing/clearing and confirmed photo-library clearing through `idb-library`.

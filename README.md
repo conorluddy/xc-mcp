@@ -343,7 +343,8 @@ Photo-library clearing also requires confirmation.
 | v4.0 | 70 | Client-side deferral; routers dissolved for per-tool annotations |
 | v4.1 | 71 | Unchanged model; Xcode 27 support |
 | v4.2 | 77 | Unchanged model, verified against real idb output |
-| v5.0 | 81 | Semantic actions, diagnostic bundles and simulator skill capabilities |
+| v5.1 | 81 | Duo pose controls and display-aware capture |
+| v5.0 | 80 | Semantic actions, diagnostic bundles and simulator skill capabilities |
 
 Two lessons carried forward. **Context cost is the client's call** — a server should describe its
 tools honestly and let the client decide how to spend context on them. And **a structured response
@@ -385,7 +386,7 @@ Build and package the checkout, then install the exact tarball into the active N
 ```bash
 npm run build
 npm pack --pack-destination /tmp
-npm install --global /tmp/xc-mcp-5.0.0.tgz
+npm install --global /tmp/xc-mcp-5.1.0.tgz
 ```
 
 Use `xc-mcp` as the MCP client's command (with `--mini` if desired). `npx -y xc-mcp` may resolve

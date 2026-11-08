@@ -21,7 +21,7 @@ capability mappings and live-verification limits.
 ## Local package verification
 
 Build before `npm pack --pack-destination /tmp`; install the resulting tarball with
-`npm install --global /tmp/xc-mcp-5.0.0.tgz` when authorized. Check the active Node.js prefix and
+`npm install --global /tmp/xc-mcp-5.1.0.tgz` when authorized. Check the active Node.js prefix and
 `command -v xc-mcp`. Verify the installed command through MCP initialize, tools/list and a safe
 tools/call. Check default, --mini and --build-only registration, and verify packaged documentation.
 Restart connected clients after installing: existing processes retain the previous code in memory.
@@ -44,3 +44,10 @@ keep destructive tests limited to disposable fixtures with explicit authorizatio
 - Preserve research attribution to hinge and duoctl. Replace the private backend when
   official headless equivalents are verified; an XCTest-only API is insufficient.
   Keep the MCP interface stable where practical and migrate fold/rotation separately.
+
+## Publishing
+
+`publish.yml` is the sole npm publisher for xc-mcp and its aliases. Publish a GitHub
+release tagged `v<package.json version>` after merging the release changes. Package
+and lockfile root versions must agree; the workflow rejects mismatches. Manual dispatch
+defaults to dry run. A version bump or merge alone does not publish.
