@@ -29,3 +29,18 @@ Do not change a user's MCP configuration merely to test an installation.
 
 Use an explicitly selected simulator for live checks. Describe which operations were exercised;
 keep destructive tests limited to disposable fixtures with explicit authorization.
+
+## Duo controls
+
+- `simctl-duo` requires an explicit booted Duo UDID. Verify observed state after pose
+  and orientation changes; a successful command exit does not establish an effect.
+- Keep `native/duo.m` packaged. The backend compiles and signs it with the selected
+  Xcode, caches by source/toolchain/architecture, and uses argv-based execution.
+- Explicit display captures omit unverified coordinate metadata. Do not route inner
+  display screenshot coordinates into idb as though touch routing had been verified.
+- For live checks, record Xcode/runtime, hinge readback, active display and rotation.
+  Test paused and rapid sequences separately; record timeouts rather than assuming
+  all orientations work. Restore the selected simulator's starting pose when practical.
+- Preserve research attribution to hinge and duoctl. Replace the private backend when
+  official headless equivalents are verified; an XCTest-only API is insufficient.
+  Keep the MCP interface stable where practical and migrate fold/rotation separately.

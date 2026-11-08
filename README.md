@@ -159,7 +159,48 @@ element can sit below the fold. Every match carries `visible` and, when off-scre
 
 See [the parity audit](docs/simulator-skill-parity.md) for capability mappings and verification limits.
 
-### Tools that declare their risk
+### iPhone Duo
+
+Use `simctl-duo` with an explicit booted Duo UDID and `operation: "state"` to read
+the hinge angle and enumerate displays. Set `operation: "hinge"` with `pose: "closed"`,
+`"partial"`, `"open"`, or an explicit `angle` in degrees. Use `operation: "rotate"`
+with `orientation: "portrait"`, `"landscape"`, `"portrait-upside-down"`, or
+`"landscape-flipped"`. Changes verify readback; failures include actionable guidance.
+
+Pass the returned display ID as a string in `display` to `screenshot` or `simctl-io`.
+Inactive displays can capture black. Explicit display capture omits unverified coordinate
+mapping; idb inner-display touch routing is not supported by this integration.
+
+The small bundled Objective-C helper compiles on first use with the selected Xcode
+and is cached under `~/Library/Caches/xc-mcp/duo`. No community CLI is required.
+Mechanism research credit: [hinge](https://github.com/artemnovichkov/hinge) and
+[duoctl](https://github.com/skarol/duoctl). XC-MCP implements its own focused helper.
+These private interfaces are experimental. Replace the internal backend as supported
+headless APIs become available and verified; folding and rotation may migrate separately.
+An XCTest-only API does not replace this headless workflow.
+
+Example MCP calls (replace `<duo-udid>` with a booted Duo UDID):
+
+```json
+{"name":"simctl-duo","arguments":{"udid":"<duo-udid>","operation":"state"}}
+{"name":"simctl-duo","arguments":{"udid":"<duo-udid>","operation":"hinge","pose":"open"}}
+{"name":"simctl-duo","arguments":{"udid":"<duo-udid>","operation":"hinge","angle":127}}
+{"name":"simctl-duo","arguments":{"udid":"<duo-udid>","operation":"rotate","orientation":"portrait"}}
+{"name":"screenshot","arguments":{"udid":"<duo-udid>","display":"3","size":"full"}}
+```
+
+Use the display ID from your own state result; IDs above are examples. Supply exactly
+one of `pose` or `angle` for hinge operations. `partial` means 90°. The response includes
+`hingeAngle`, `activeScreen`, `displayId`, `rotation`, and the display inventory.
+
+Verified on Xcode 27.1 / iOS 27.1. Rapid rotation can time out even when a paused
+sequence succeeds; cover landscape also timed out in live checks. Read the returned
+`success` and observed state before proceeding. The five-second polling budget excludes
+initial readback and dispatch, so total request time can be longer. See the
+[live verification matrix](docs/simulator-skill-parity.md#duo-integration-verification--2026-11-08).
+Duo controls are available in default and `--mini` modes, and excluded by `--build-only`.
+
+## Tools that declare their risk
 
 Every tool carries MCP annotations — `readOnlyHint`, `destructiveHint`, `idempotentHint` — so a
 client can ask before running `simctl-erase`, `idb-crash-delete` or `idb-clear-keychain`, and run
@@ -176,7 +217,7 @@ parameters come from the server itself via `rtfm({ toolName: "..." })`.
 | Area | Tools |
 |---|---|
 | **Build & test** | `xcodebuild-build`, `-test`, `-clean`, `-list`, `-version`, `-showsdks`, `-get-details`, `-inspect-scheme`, `-validate-capabilities` |
-| **Simulators** | `simctl-list`, `-get-details`, `-suggest`, `-health-check`, `-boot`, `-shutdown`, `-create`, `-delete`, `-erase`, `-clone`, `-rename` |
+| **Simulators** | `simctl-list`, `-get-details`, `-suggest`, `-health-check`, `-boot`, `-shutdown`, `-create`, `-delete`, `-erase`, `-clone`, `-rename`, `-duo` |
 | **Apps** | `simctl-install`, `-uninstall`, `-launch`, `-terminate`, `-openurl`, `-get-app-container`, `-container` |
 | **UI automation** | `idb-ui-describe`, `-find-element`, `idb-semantic-action`, `-tap`, `-input`, `-gesture`, `idb-targets`, `idb-list-apps`, `idb-install`, `-uninstall`, `-launch`, `-terminate` |
 | **Accessibility** | `accessibility-quality-check`, `accessibility-audit` |
@@ -302,7 +343,7 @@ Photo-library clearing also requires confirmation.
 | v4.0 | 70 | Client-side deferral; routers dissolved for per-tool annotations |
 | v4.1 | 71 | Unchanged model; Xcode 27 support |
 | v4.2 | 77 | Unchanged model, verified against real idb output |
-| v5.0 | 80 | Semantic actions, diagnostic bundles and simulator skill capabilities |
+| v5.0 | 81 | Semantic actions, diagnostic bundles and simulator skill capabilities |
 
 Two lessons carried forward. **Context cost is the client's call** — a server should describe its
 tools honestly and let the client decide how to spend context on them. And **a structured response
@@ -316,7 +357,7 @@ Drop the `operation` field and call the matching tool. Operation-specific parame
 
 | Removed router | Replacement tools |
 |---|---|
-| `simctl-device` | `simctl-boot`, `-shutdown`, `-create`, `-delete`, `-erase`, `-clone`, `-rename` |
+| `simctl-device` | `simctl-boot`, `-shutdown`, `-create`, `-delete`, `-erase`, `-clone`, `-rename`, `-duo` |
 | `simctl-app` | `simctl-install`, `-uninstall`, `-launch`, `-terminate` |
 | `idb-app` | `idb-install`, `-uninstall`, `-launch`, `-terminate` |
 | `cache` | `cache-get-stats`, `-get-config`, `-set-config`, `-clear` |
@@ -369,23 +410,3 @@ Pull requests need a passing build, tests and lint.
 ## License
 
 MIT, as declared in [`package.json`](./package.json).
-
-### iPhone Duo
-
-Use `simctl-duo` with an explicit booted Duo UDID and `operation: "state"` to read
-the hinge angle and enumerate displays. Set `operation: "hinge"` with `pose: "closed"`,
-`"partial"`, `"open"`, or an explicit `angle` in degrees. Use `operation: "rotate"`
-with `orientation: "portrait"`, `"landscape"`, `"portrait-upside-down"`, or
-`"landscape-flipped"`. Changes verify readback; failures include actionable guidance.
-
-Pass the returned display ID as a string in `display` to `screenshot` or `simctl-io`.
-Inactive displays can capture black. Explicit display capture omits unverified coordinate
-mapping; idb inner-display touch routing is not supported by this integration.
-
-The small bundled Objective-C helper compiles on first use with the selected Xcode
-and is cached under `~/Library/Caches/xc-mcp/duo`. No community CLI is required.
-Mechanism research credit: [hinge](https://github.com/artemnovichkov/hinge) and
-[duoctl](https://github.com/skarol/duoctl). XC-MCP implements its own focused helper.
-These private interfaces are experimental. Replace the internal backend as supported
-headless APIs become available and verified; folding and rotation may migrate separately.
-An XCTest-only API does not replace this headless workflow.

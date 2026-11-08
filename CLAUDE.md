@@ -30,6 +30,7 @@ src/tools/<area>/*.ts   implementations: xxxTool(), XXX_DOCS, XXX_DOCS_MINI
 src/tools/docs-registry.ts  rtfm's tool → docs and category maps
 src/state/              caches: simulator, project, build settings, idb targets
 src/utils/              command execution, parsing, response cache, idb environment
+native/duo.m           bundled simulator HID helper; compiled on demand by duo-backend.ts
 tests/__tests__/        mirrors src/; tests/fixtures/ holds captured real output
 ```
 
@@ -152,3 +153,26 @@ For smoke tests, exercise the installed executable through an MCP client, includ
 tool discovery, documentation, and a safe real tool call. An imported source module alone does not
 verify packaging, executable permissions, or stdio transport. Record precisely which live operations
 were verified; passing mocks does not establish every simulator effect.
+
+## Duo backend contract
+
+`src/tools/simctl/duo.ts` validates an explicit booted Duo target and coordinates
+readback with `src/utils/duo-backend.ts`. The `DuoBackend` interface isolates private
+HID operations from the MCP contract. `native/duo.m` sends hinge/orientation events
+and reads the angle through CoreMotion; no external fold CLI is required.
+
+The helper source must remain in the npm package at `native/duo.m`; compiled modules
+resolve it relative to `dist/utils`. First use needs the selected Xcode toolchain and
+code signing, with artifacts under `~/Library/Caches/xc-mcp/duo`. Failures must be
+reported rather than converted to successful state changes.
+
+Hinge tolerance is two degrees. Endpoint verification also checks cover/inner display;
+intermediate angles do not imply a specific display. The five-second polling budget
+starts after initial readback and action dispatch. Rapid rotations are less reliable
+than paused sequences in current live checks. Explicit `display` captures suppress
+unverified coordinate transforms and accessibility metadata in inline screenshots.
+
+Keep source attribution and official-API migration criteria in sync with README and
+AGENTS. Replace each private capability when a supported headless equivalent is
+verified, retaining the public MCP interface where practical. See the parity audit
+for the actual live matrix and limits, including unverified video display selection.

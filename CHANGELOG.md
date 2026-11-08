@@ -16,6 +16,12 @@ See [the parity audit](docs/simulator-skill-parity.md) for mappings and live-val
 
 ### Added
 
+- Bundled `simctl-duo` hinge, orientation and state controls with explicit target selection
+  and observed readback; no separately installed fold CLI. Private APIs are experimental,
+  and rapid orientation changes can time out.
+- Explicit display selection in `screenshot` and `simctl-io`, suppressing unverified
+  coordinate metadata for selected displays.
+
 - Semantic accessibility presses and verified field replacement through `idb-semantic-action`.
 - Notification listing/clearing and confirmed photo-library clearing through `idb-library`.
 - Keyboard modifiers and field clearing; pinch, long press, multiple taps, drag, rotation and shake.
