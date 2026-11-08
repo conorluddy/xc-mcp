@@ -48,7 +48,8 @@
     "AGENTS.md",
     "docs/simulator-skill-parity.md",
     "TOOL_SIGNATURES.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "native/duo.m"
   ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

@@ -80,3 +80,31 @@ coverage, not live effect verification. Do not interpret this audit as exhaustiv
 certification. Hang stream retry supervision lasts only while the MCP server is running;
 active sessions are preserved during storage pruning, so the cap is best-effort when captures
 alone exceed it. Raw capture can contain private app log content.
+
+## Duo integration verification — 2026-11-08
+
+Verified with Xcode 27.1 (27A9269), iOS 27.1 and explicitly selected iPhone Duo
+`DD124D1F-540F-453D-BCBB-602F0854D2B6`. The initial bootstatus reported a migration
+failure, but subsequent simulator services and live operations succeeded.
+
+- Bundled helper compiled, signed and read hinge angle through CoreMotion.
+- Open (180°), partial (90°), inner portrait rotation and closed (0°) verified by readback.
+- Installed `xc-mcp` passed MCP initialize, tools/list, rtfm and tools/call.
+- Default and mini registered 81 tools; build-only registered 18 and excluded Duo controls.
+- Installed MCP file captures: inner 2007×2853 and cover 1398×2034, both non-black.
+- Installed MCP inline cover capture returned image and metadata successfully.
+- Build, lint and all 79 Jest suites / 1,560 tests passed; lint retains the existing
+  command.ts non-null assertion warning.
+
+The selected simulator was left closed. Video display selection, other Xcode/runtime
+versions and inner-display touch routing were not live-verified. Private backend source
+is XC-MCP's focused implementation, informed by hinge and duoctl's published mechanism.
+Replace it when official headless equivalents support verified behavior, independently
+for fold and rotation; retain the MCP interface where practical.
+
+A subsequent no-pause ten-case matrix completed in 53.7 seconds: seven cases passed.
+Cover landscape, inner landscape and inner flipped landscape timed out. The two
+inner landscape rotations passed in the earlier paused run. End-to-end hinge cases
+were 3.3–7.0 seconds; these include command startup and readback. Rapid rotation
+reliability remains a known limitation. The five-second polling budget starts after
+initial readback and action dispatch, so total request time can exceed five seconds.

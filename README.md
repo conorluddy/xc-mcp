@@ -7,7 +7,7 @@
 
 **An MCP server that lets AI agents build, run and drive iOS apps — without drowning in Xcode's output.**
 
-XC-MCP wraps `xcodebuild`, `simctl` and `idb` as 80 tools. Its job is not just to expose those
+XC-MCP wraps `xcodebuild`, `simctl` and `idb` as 81 tools. Its job is not just to expose those
 commands but to make their output fit in a model's context: summaries first, full detail on demand,
 and the accessibility tree instead of screenshots wherever the app allows it.
 
@@ -170,7 +170,7 @@ validated `structuredContent`.
 
 ## Tools
 
-**80 tools.** [TOOL_SIGNATURES.md](./TOOL_SIGNATURES.md) indexes every tool with its annotations;
+**81 tools.** [TOOL_SIGNATURES.md](./TOOL_SIGNATURES.md) indexes every tool with its annotations;
 parameters come from the server itself via `rtfm({ toolName: "..." })`.
 
 | Area | Tools |
@@ -193,7 +193,7 @@ parameters come from the server itself via `rtfm({ toolName: "..." })`.
 | Flag | Effect |
 |---|---|
 | `--mini`, `-m` | One-line tool descriptions; `rtfm` supplies the detail |
-| `--build-only`, `-b` | Registers 18 build-focused tools instead of 80 |
+| `--build-only`, `-b` | Registers 18 build-focused tools instead of 81 |
 
 Flags combine: `["-y", "xc-mcp", "--mini", "--build-only"]` — the same `args` array works in Claude Desktop and Codex's `config.toml`. Both matter mainly for clients that
 load every tool description upfront; see the history below.
@@ -369,3 +369,23 @@ Pull requests need a passing build, tests and lint.
 ## License
 
 MIT, as declared in [`package.json`](./package.json).
+
+### iPhone Duo
+
+Use `simctl-duo` with an explicit booted Duo UDID and `operation: "state"` to read
+the hinge angle and enumerate displays. Set `operation: "hinge"` with `pose: "closed"`,
+`"partial"`, `"open"`, or an explicit `angle` in degrees. Use `operation: "rotate"`
+with `orientation: "portrait"`, `"landscape"`, `"portrait-upside-down"`, or
+`"landscape-flipped"`. Changes verify readback; failures include actionable guidance.
+
+Pass the returned display ID as a string in `display` to `screenshot` or `simctl-io`.
+Inactive displays can capture black. Explicit display capture omits unverified coordinate
+mapping; idb inner-display touch routing is not supported by this integration.
+
+The small bundled Objective-C helper compiles on first use with the selected Xcode
+and is cached under `~/Library/Caches/xc-mcp/duo`. No community CLI is required.
+Mechanism research credit: [hinge](https://github.com/artemnovichkov/hinge) and
+[duoctl](https://github.com/skarol/duoctl). XC-MCP implements its own focused helper.
+These private interfaces are experimental. Replace the internal backend as supported
+headless APIs become available and verified; folding and rotation may migrate separately.
+An XCTest-only API does not replace this headless workflow.

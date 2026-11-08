@@ -1,3 +1,4 @@
+import { simctlDuoTool, SIMCTL_DUO_DOCS, SIMCTL_DUO_DOCS_MINI } from '../tools/simctl/duo.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
@@ -97,6 +98,29 @@ export function registerSimctlListTool(server: McpServer): void {
  * Register all simctl tools except simctl-list (which is registered separately)
  */
 export function registerSimctlTools(server: McpServer): void {
+  server.registerTool(
+    'simctl-duo',
+    {
+      title: 'Duo Pose and State',
+      description: getDescription(SIMCTL_DUO_DOCS, SIMCTL_DUO_DOCS_MINI),
+      inputSchema: {
+        udid: z.string().min(1),
+        operation: z.enum(['state', 'hinge', 'rotate']),
+        angle: z.number().min(0).max(180).optional(),
+        pose: z.enum(['closed', 'partial', 'open']).optional(),
+        orientation: z
+          .enum(['portrait', 'landscape', 'portrait-upside-down', 'landscape-flipped'])
+          .optional(),
+      },
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    simctlDuoTool
+  );
   // simctl-get-details
   server.registerTool(
     'simctl-get-details',
@@ -592,6 +616,7 @@ export function registerSimctlTools(server: McpServer): void {
       inputSchema: {
         udid: z.string(),
         operation: z.enum(['screenshot', 'video']),
+        display: z.string().min(1).optional(),
         outputPath: z.string().optional(),
         size: z.enum(['full', 'half', 'quarter', 'thumb']).optional(),
         codec: z.enum(['h264', 'hevc', 'prores']).optional(),
@@ -665,6 +690,7 @@ export function registerSimctlTools(server: McpServer): void {
       ),
       inputSchema: {
         udid: z.string().optional(),
+        display: z.string().min(1).optional(),
         size: z.enum(['full', 'half', 'quarter', 'thumb']).optional(),
         appName: z.string().optional(),
         screenName: z.string().optional(),

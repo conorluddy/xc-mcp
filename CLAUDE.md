@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-XC-MCP is an MCP server exposing `xcodebuild`, `simctl` and `idb` as 80 tools, built to keep Xcode's
+XC-MCP is an MCP server exposing `xcodebuild`, `simctl` and `idb` as 81 tools, built to keep Xcode's
 enormous output inside a model's context. Published to npm as `xc-mcp`. For what it does and why,
 read [README.md](./README.md) — including the version history, which explains most design choices.
 
