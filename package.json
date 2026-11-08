@@ -1,6 +1,6 @@
 {
   "name": "xc-mcp",
-  "version": "5.0.0",
+  "version": "5.1.0",
   "description": "MCP server that wraps Xcode command-line tools for iOS/macOS development workflows",
   "author": "Conor Luddy",
   "license": "MIT",
@@ -48,7 +48,8 @@
     "AGENTS.md",
     "docs/simulator-skill-parity.md",
     "TOOL_SIGNATURES.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "native/duo.m"
   ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

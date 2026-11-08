@@ -1,3 +1,4 @@
+import { SIMCTL_DUO_DOCS } from './simctl/duo.js';
 import { APP_STATE_CAPTURE_DOCS } from './workflows/app-state-capture.js';
 import { IDB_SEMANTIC_ACTION_DOCS } from './idb/semantic-action.js';
 import { IDB_LIBRARY_DOCS } from './idb/library.js';
@@ -506,7 +507,7 @@ export const TOOL_CATEGORIES: Record<string, string[]> = {
     'idb-terminate',
     'idb-uninstall',
   ],
-  io: ['simctl-io', 'simctl-addmedia', 'screenshot'],
+  io: ['simctl-duo', 'simctl-io', 'simctl-addmedia', 'screenshot'],
   testing: [
     'idb-simulate-memory-warning',
     'idb-clear-keychain',
@@ -653,6 +654,7 @@ export const TOOL_DOCS: Record<string, string> = {
   'simctl-openurl': SIMCTL_OPENURL_DOCS,
 
   // Simctl I/O and testing tools
+  'simctl-duo': SIMCTL_DUO_DOCS,
   'simctl-io': SIMCTL_IO_DOCS,
   'simctl-addmedia': SIMCTL_ADDMEDIA_DOCS,
   'simctl-privacy': SIMCTL_PRIVACY_DOCS,

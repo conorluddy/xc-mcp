@@ -1,6 +1,6 @@
 # XC-MCP Tool Reference
 
-**80 tools**, generated from `src/registry/*.ts` for XC-MCP v5.0.0.
+**81 tools**, generated from `src/registry/*.ts` for XC-MCP v5.1.0.
 
 This file is an index: tool name, what it does, and its MCP annotations. **Parameter schemas live in the
 server itself** — call `rtfm({ toolName: "xcodebuild-build" })` (or `rtfm({ categoryName: "build" })`)
@@ -39,7 +39,7 @@ xcodebuild wrappers with progressive disclosure. Large logs are cached; drill do
 | `xcodebuild-inspect-scheme` | Inspect Xcode Scheme | ✓ |  |  |
 | `xcodebuild-validate-capabilities` | Validate App Capabilities | ✓ |  |  |
 
-## Simulator & App Lifecycle (26)
+## Simulator & App Lifecycle (27)
 
 Device lifecycle, app management, I/O and device state via `simctl`.
 
@@ -61,6 +61,7 @@ Device lifecycle, app management, I/O and device state via `simctl`.
 | `simctl-terminate` | Terminate App on Simulator |  |  |  |
 | `simctl-get-app-container` | Get App Container Path | ✓ |  |  |
 | `simctl-openurl` | Open URL on Simulator |  |  |  |
+| `simctl-duo` | Duo Pose and State |  |  |  |
 | `simctl-io` | Simulator Screenshot/Video Capture |  |  |  |
 | `simctl-push` | Send Push Notification |  |  |  |
 | `screenshot` | Inline Simulator Screenshot | ✓ |  |  |

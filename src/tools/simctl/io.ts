@@ -1,5 +1,5 @@
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
-import { executeCommand } from '../../utils/command.js';
+import { executeCommand, executeCommandWithArgs } from '../../utils/command.js';
 import { simulatorCache } from '../../state/simulator-cache.js';
 import { resolveDeviceId } from '../../utils/device-detection.js';
 import {
@@ -16,6 +16,7 @@ import { getScreenDimensions } from '../../utils/element-extraction.js';
 
 interface SimctlIoToolArgs {
   udid?: string;
+  display?: string;
   operation: 'screenshot' | 'video';
   outputPath?: string;
   codec?: string;
@@ -126,7 +127,21 @@ export async function simctlIoTool(args: SimctlIoToolArgs) {
         ? 10000 // 10 seconds for screenshot
         : 5000; // 5 seconds to start video recording
 
-    const result = await executeCommand(command, { timeout });
+    const result = args.display
+      ? await executeCommandWithArgs(
+          'xcrun',
+          [
+            'simctl',
+            'io',
+            resolvedUdid,
+            simctlOperation,
+            ...(args.display ? [`--display=${args.display}`] : []),
+            ...(operation === 'video' && codec ? [`--codec=${codec}`] : []),
+            captureOutputPath,
+          ],
+          { timeout }
+        )
+      : await executeCommand(command, { timeout });
 
     const success = result.code === 0;
 
@@ -181,7 +196,7 @@ export async function simctlIoTool(args: SimctlIoToolArgs) {
           sizeMetadata = getScreenshotSizeMetadata(screenshotSize, originalFileSize, fileSize);
 
           // Calculate coordinate transform if resized
-          if (screenshotSize !== 'full') {
+          if (screenshotSize !== 'full' && !args.display) {
             try {
               // Get device screen dimensions
               const screenDimensions = await getScreenDimensions(resolvedUdid);
@@ -273,6 +288,7 @@ export async function simctlIoTool(args: SimctlIoToolArgs) {
 
     const responseData = {
       success,
+      display: args.display,
       udid: resolvedUdid,
       operation,
       filePath: finalOutputPath,
@@ -340,6 +356,9 @@ codecs. Screenshots are automatically resized to tile-aligned dimensions for tok
 efficiency and support semantic naming for AI agent reasoning.
 
 ## Parameters
+
+- **display** (optional): simctl display identifier from simctl-duo state or simctl io enumerate. Inactive displays may capture black. Explicit display captures omit unverified coordinate transforms.
+
 
 - **udid** (string, optional): Simulator UDID (auto-detects booted device if omitted)
 - **operation** (string, required): "screenshot" or "video"

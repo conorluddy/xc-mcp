@@ -1,5 +1,5 @@
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
-import { executeCommand } from '../../utils/command.js';
+import { executeCommand, executeCommandWithArgs } from '../../utils/command.js';
 import { simulatorCache } from '../../state/simulator-cache.js';
 import {
   extractAccessibilityElements,
@@ -30,6 +30,7 @@ import { resolveDeviceId } from '../../utils/device-detection.js';
 
 interface ScreenshotInlineToolArgs {
   udid?: string;
+  display?: string;
   // Screenshot size optimization (opt-out approach)
   size?: ScreenshotSize;
   // LLM optimization: semantic naming for screenshots
@@ -105,9 +106,20 @@ export async function simctlScreenshotInlineTool(args: ScreenshotInlineToolArgs)
     const captureCommand = `xcrun simctl io "${resolvedUdid}" screenshot "${tempPng}"`;
     console.error(`[simctl-screenshot-inline] Capturing: ${captureCommand}`);
 
-    const captureResult = await executeCommand(captureCommand, {
-      timeout: 15000,
-    });
+    const captureResult = await executeCommandWithArgs(
+      'xcrun',
+      [
+        'simctl',
+        'io',
+        resolvedUdid,
+        'screenshot',
+        ...(args.display ? [`--display=${args.display}`] : []),
+        tempPng,
+      ],
+      {
+        timeout: 15000,
+      }
+    );
 
     if (captureResult.code !== 0) {
       throw new McpError(
@@ -215,10 +227,11 @@ export async function simctlScreenshotInlineTool(args: ScreenshotInlineToolArgs)
     let allElements: AccessibilityElement[] = []; // Store all elements for fingerprinting
     try {
       // Get screen dimensions
-      screenDimensions = await getScreenDimensions(resolvedUdid);
+      if (!args.display) screenDimensions = await getScreenDimensions(resolvedUdid);
 
       // Try to extract elements - this requires the app to be running with accessibility enabled
       // Use a reasonable timeout and graceful failure
+      if (args.display) throw new Error('Display coordinate mapping is unverified');
       const extractPromise = extractAccessibilityElements(
         resolvedUdid,
         appName ? `com.example.${appName.toLowerCase()}` : 'com.example.app'
@@ -273,6 +286,7 @@ export async function simctlScreenshotInlineTool(args: ScreenshotInlineToolArgs)
     const responseData = {
       success: true,
       udid: resolvedUdid,
+      display: args.display,
       simulatorInfo: {
         name: simulator.name,
         state: simulator.state,
@@ -485,6 +499,9 @@ MCP response. Automatically optimizes images for token efficiency with tile-alig
 and WebP/JPEG compression. Includes interactive element detection and coordinate transforms.
 
 ## Parameters
+
+- **display** (optional): simctl display identifier from simctl-duo state or simctl io enumerate. Inactive displays may capture black. Explicit display captures omit unverified accessibility and coordinate metadata.
+
 
 - **udid** (string, optional): Simulator UDID (auto-detects booted device if omitted)
 - **size** (string, optional): Screenshot size - half, full, quarter, thumb (default: half)
