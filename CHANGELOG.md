@@ -3,15 +3,7 @@
 All notable changes to XC-MCP are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/).
 
-## [5.1.0] — Unreleased
-
-### Added
-
-- Bundled `simctl-duo` hinge, orientation and state controls with explicit target selection
-  and observed readback; no separately installed fold CLI. Private APIs are experimental,
-  and rapid orientation changes can time out.
-- Explicit display selection in `screenshot` and `simctl-io`, suppressing unverified
-  coordinate metadata for selected displays.
+## [5.2.0]
 
 ### Fixed
 
@@ -30,6 +22,16 @@ All notable changes to XC-MCP are documented here. This project adheres to
 ### Added
 
 - `simctl-suggest` accepts `minimumOSVersion` and suggests only iOS simulators at or above it.
+
+## [5.1.0]
+
+### Added
+
+- Bundled `simctl-duo` hinge, orientation and state controls with explicit target selection
+  and observed readback; no separately installed fold CLI. Private APIs are experimental,
+  and rapid orientation changes can time out.
+- Explicit display selection in `screenshot` and `simctl-io`, suppressing unverified
+  coordinate metadata for selected displays.
 
 ### Changed
 
