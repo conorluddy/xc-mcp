@@ -6,6 +6,7 @@ interface SimctlSuggestToolArgs {
   deviceType?: string;
   maxSuggestions?: number;
   autoBootTopSuggestion?: boolean;
+  minimumOSVersion?: string;
 }
 
 /**
@@ -32,6 +33,7 @@ export async function simctlSuggestTool(args: any) {
     deviceType,
     maxSuggestions = 4,
     autoBootTopSuggestion = false,
+    minimumOSVersion,
   } = args as SimctlSuggestToolArgs;
 
   try {
@@ -39,7 +41,8 @@ export async function simctlSuggestTool(args: any) {
     const suggestions = await simulatorCache.getSuggestedSimulators(
       projectPath,
       deviceType,
-      maxSuggestions
+      maxSuggestions,
+      minimumOSVersion
     );
 
     if (suggestions.length === 0) {
@@ -54,6 +57,7 @@ export async function simctlSuggestTool(args: any) {
                 criteria: {
                   projectPath: projectPath || 'not specified',
                   deviceType: deviceType || 'any',
+                  minimumOSVersion: minimumOSVersion || 'any',
                 },
                 guidance: [
                   'Create a new simulator using: simctl-create',
@@ -187,6 +191,7 @@ None - all parameters are optional
 - **deviceType** (string): Filter suggestions by device type
 - **maxSuggestions** (number, default: 4): Maximum number of suggestions to return
 - **autoBootTopSuggestion** (boolean, default: false): Automatically boot top suggestion
+- **minimumOSVersion** (string): Only suggest iOS simulators at or above this version (e.g. "27.0"). Use the scheme's deployment target: a simulator below it cannot run the app
 
 ## Returns
 

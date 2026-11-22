@@ -96,6 +96,33 @@ describe('BuildSettingsCache', () => {
       expect(mockExecuteCommand).toHaveBeenCalledTimes(2); // Once for each
     });
 
+    it('should pass the destination to xcodebuild and cache it separately', async () => {
+      const destination = 'platform=iOS Simulator,id=ABC-123';
+
+      // Without a destination an iOS scheme reports its device build directory.
+      await cache.getBuildSettings('/path/to/MyApp.xcodeproj', 'MyApp', 'Debug');
+      await cache.getBuildSettings('/path/to/MyApp.xcodeproj', 'MyApp', 'Debug', destination);
+      await cache.getBuildSettings('/path/to/MyApp.xcodeproj', 'MyApp', 'Debug', destination);
+
+      expect(mockExecuteCommand).toHaveBeenCalledTimes(2);
+      expect(mockBuildXcodebuildCommand).toHaveBeenLastCalledWith(
+        '-showBuildSettings',
+        '/path/to/MyApp.xcodeproj',
+        expect.objectContaining({ destination })
+      );
+    });
+
+    it('should report the deployment target, or undefined when it cannot be read', async () => {
+      expect(await cache.getDeploymentTargetVersion('/path/to/MyApp.xcodeproj', 'MyApp')).toBe(
+        '15.0'
+      );
+
+      mockExecuteCommand.mockResolvedValueOnce({ code: 65, stdout: '', stderr: 'no such scheme' });
+      expect(
+        await cache.getDeploymentTargetVersion('/path/to/MyApp.xcodeproj', 'Missing')
+      ).toBeUndefined();
+    });
+
     it('should handle xcodebuild failure', async () => {
       mockExecuteCommand.mockResolvedValueOnce({
         code: 1,

@@ -46,13 +46,18 @@ export class BuildSettingsCache {
 
   /**
    * Get all build settings for a given project, scheme, and configuration
+   *
+   * Pass `destination` when a path matters: without one xcodebuild resolves the scheme's base SDK,
+   * so an iOS app reports `Debug-iphoneos` as its build directory even though a simulator build
+   * lands in `Debug-iphonesimulator`.
    */
   async getBuildSettings(
     projectPath: string,
     scheme: string,
-    configuration: string = 'Debug'
+    configuration: string = 'Debug',
+    destination?: string
   ): Promise<BuildSettings> {
-    const cacheKey = `${projectPath}:${scheme}:${configuration}`;
+    const cacheKey = `${projectPath}:${scheme}:${configuration}:${destination ?? ''}`;
 
     // Check cache validity
     const cached = this.cache.get(cacheKey);
@@ -61,7 +66,7 @@ export class BuildSettingsCache {
     }
 
     // Execute xcodebuild -showBuildSettings
-    const settings = await this.fetchBuildSettings(projectPath, scheme, configuration);
+    const settings = await this.fetchBuildSettings(projectPath, scheme, configuration, destination);
 
     // Store in cache
     this.cache.set(cacheKey, {
@@ -99,6 +104,25 @@ export class BuildSettingsCache {
     const settings = await this.getBuildSettings(projectPath, scheme);
     const match = settings.DEPLOYMENT_TARGET.match(/(\d+)/);
     return match ? parseInt(match[1]) : 14; // Default to iOS 14 if parsing fails
+  }
+
+  /**
+   * Get the deployment target as a dotted version ("27.0"), or undefined when it cannot be read.
+   *
+   * Never throws: callers use it to narrow a simulator choice, and an unreadable project should
+   * fall back to an unfiltered choice rather than fail the build.
+   */
+  async getDeploymentTargetVersion(
+    projectPath: string,
+    scheme: string,
+    configuration: string = 'Debug'
+  ): Promise<string | undefined> {
+    try {
+      const settings = await this.getBuildSettings(projectPath, scheme, configuration);
+      return settings.DEPLOYMENT_TARGET || undefined;
+    } catch {
+      return undefined;
+    }
   }
 
   /**
@@ -211,12 +235,14 @@ export class BuildSettingsCache {
   private async fetchBuildSettings(
     projectPath: string,
     scheme: string,
-    configuration: string
+    configuration: string,
+    destination?: string
   ): Promise<BuildSettings> {
     // Build command using existing utility
     const command = buildXcodebuildCommand('-showBuildSettings', projectPath, {
       scheme,
       configuration,
+      destination,
       json: true,
     });
 

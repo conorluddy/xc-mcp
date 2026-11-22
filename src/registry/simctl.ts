@@ -898,6 +898,7 @@ export function registerSimctlTools(server: McpServer): void {
         deviceType: z.string().optional(),
         maxSuggestions: z.number().optional(),
         autoBootTopSuggestion: z.boolean().optional(),
+        minimumOSVersion: z.string().optional(),
       },
       annotations: {
         readOnlyHint: true,

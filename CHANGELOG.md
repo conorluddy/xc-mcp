@@ -13,6 +13,24 @@ All notable changes to XC-MCP are documented here. This project adheres to
 - Explicit display selection in `screenshot` and `simctl-io`, suppressing unverified
   coordinate metadata for selected displays.
 
+### Fixed
+
+- `workflow-build-and-run` and `workflow-fresh-install` now work for an iOS app whose base SDK
+  is `iphoneos`. Four faults, each enough to fail the workflow:
+  - the simulator was chosen after the build, and without regard to the scheme's deployment
+    target, so a build could target a simulator too old to run the app;
+  - the suggestion was read from a field `simctl-suggest` never returns, so auto-selection
+    always failed;
+  - `simctl-boot` was called with `udid` instead of `deviceId`;
+  - the `.app` was looked up without a destination, which reports the device build directory
+    (`Debug-iphoneos`) and not the simulator one.
+- `xcodebuild-build` no longer defaults to a simulator below the scheme's deployment target,
+  and its `autoInstall` installs to the simulator it built for.
+
+### Added
+
+- `simctl-suggest` accepts `minimumOSVersion` and suggests only iOS simulators at or above it.
+
 ### Changed
 
 - Consolidate npm publication into `publish.yml`; release tags must match the checked-in

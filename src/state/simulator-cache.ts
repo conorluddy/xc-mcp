@@ -1,4 +1,5 @@
 import { SimulatorList, SimulatorRuntime, SimulatorDeviceType } from '../types/xcode.js';
+import { isIOSRuntimeAtLeast } from '../utils/runtime-version.js';
 import { executeCommand, buildSimctlCommand } from '../utils/command.js';
 import { persistenceManager } from '../utils/persistence.js';
 
@@ -171,6 +172,16 @@ export class SimulatorCache {
     return available[0] || null;
   }
 
+  /** True when the simulator exists, is available and runs iOS `minimumIOSVersion` or later. */
+  async isIOSSimulatorAtLeast(udid: string, minimumIOSVersion: string): Promise<boolean> {
+    const list = await this.getSimulatorList();
+    return Object.entries(list.devices).some(
+      ([runtime, devices]) =>
+        isIOSRuntimeAtLeast(runtime, minimumIOSVersion) &&
+        devices.some(device => device.udid === udid && device.isAvailable)
+    );
+  }
+
   async findSimulatorByUdid(udid: string): Promise<SimulatorInfo | null> {
     const list = await this.getSimulatorList();
 
@@ -324,7 +335,8 @@ export class SimulatorCache {
   async getSuggestedSimulators(
     projectPath?: string,
     deviceType?: string,
-    maxSuggestions = 4
+    maxSuggestions = 4,
+    minimumIOSVersion?: string
   ): Promise<
     Array<{
       simulator: SimulatorInfo;
@@ -332,18 +344,23 @@ export class SimulatorCache {
       reasons: string[];
     }>
   > {
-    const available = await this.getAvailableSimulators(deviceType);
-
-    if (available.length === 0) {
-      return [];
-    }
-
     const list = await this.getSimulatorList();
     const runtimeByUdid = new Map(
       Object.entries(list.devices).flatMap(([runtime, devices]) =>
         devices.map(device => [device.udid, runtime] as const)
       )
     );
+
+    // A simulator below the deployment target cannot run the app, however well it scores.
+    const available = (await this.getAvailableSimulators(deviceType)).filter(
+      device =>
+        !minimumIOSVersion ||
+        isIOSRuntimeAtLeast(runtimeByUdid.get(device.udid) ?? '', minimumIOSVersion)
+    );
+
+    if (available.length === 0) {
+      return [];
+    }
 
     // Get recently used devices
     const recentlyUsed = Array.from(this.lastUsed.entries())

@@ -33,14 +33,8 @@ jest.mock('../../../src/tools/simctl/suggest.js', () => ({
       {
         type: 'text',
         text: JSON.stringify({
-          suggestions: [
-            {
-              simulator: {
-                udid: 'device-iphone16pro',
-                name: 'iPhone 16 Pro',
-              },
-            },
-          ],
+          success: true,
+          suggestions: [{ rank: 1, udid: 'device-iphone16pro', name: 'iPhone 16 Pro' }],
         }),
       },
     ],
@@ -86,6 +80,12 @@ jest.mock('../../../src/tools/simctl/io.js', () => ({
   }),
 }));
 
+jest.mock('../../../src/state/build-settings-cache.js', () => ({
+  buildSettingsCache: {
+    getDeploymentTargetVersion: jest.fn().mockResolvedValue('27.0'),
+  },
+}));
+
 jest.mock('../../../src/utils/build-artifacts.js', () => ({
   findBuildArtifacts: jest.fn().mockResolvedValue({
     appPath: '/path/to/MyApp.app',
@@ -123,7 +123,7 @@ describe('buildAndRunTool', () => {
       const response = JSON.parse(result.content[0].text);
       const steps = response.workflow.steps.map((s: any) => s.name);
 
-      expect(steps).toEqual(['build', 'suggest', 'boot', 'install', 'launch']);
+      expect(steps).toEqual(['suggest', 'build', 'boot', 'install', 'launch']);
     });
 
     it('should mark all steps as successful', async () => {
@@ -183,8 +183,8 @@ describe('buildAndRunTool', () => {
       expect(response.guidance.length).toBeGreaterThan(0);
 
       // Should suggest next interactions
-      expect(response.guidance.some((g: string) => g.includes('simctl-tap'))).toBe(true);
-      expect(response.guidance.some((g: string) => g.includes('simctl-type'))).toBe(true);
+      expect(response.guidance.some((g: string) => g.includes('idb-ui-tap'))).toBe(true);
+      expect(response.guidance.some((g: string) => g.includes('idb-ui-input'))).toBe(true);
     });
 
     it('should use specified configuration', async () => {
@@ -234,12 +234,63 @@ describe('buildAndRunTool', () => {
       // Should boot the specified simulator
       expect(simctlBootTool).toHaveBeenCalledWith(
         expect.objectContaining({
-          udid: 'custom-udid-123',
+          deviceId: 'custom-udid-123',
         })
       );
 
       const response = JSON.parse(result.content[0].text);
       expect(response.workflow.steps.find((s: any) => s.name === 'suggest')).toBeDefined();
+    });
+
+    it('should build for, boot and install to the one selected simulator', async () => {
+      const { xcodebuildBuildTool } = await import('../../../src/tools/xcodebuild/build.js');
+      const { simctlBootTool } = await import('../../../src/tools/simctl/boot.js');
+      const { simctlInstallTool } = await import('../../../src/tools/simctl/install.js');
+      const { findBuildArtifacts } = await import('../../../src/utils/build-artifacts.js');
+      const destination = 'platform=iOS Simulator,id=device-iphone16pro';
+
+      await buildAndRunTool({ projectPath: validProjectPath, scheme: validScheme });
+
+      expect(xcodebuildBuildTool).toHaveBeenCalledWith(expect.objectContaining({ destination }));
+      expect(simctlBootTool).toHaveBeenCalledWith(
+        expect.objectContaining({ deviceId: 'device-iphone16pro' })
+      );
+      // Without the destination the lookup reports the device build directory (Debug-iphoneos).
+      expect(findBuildArtifacts).toHaveBeenCalledWith(
+        validProjectPath,
+        validScheme,
+        'Debug',
+        destination
+      );
+      expect(simctlInstallTool).toHaveBeenCalledWith(
+        expect.objectContaining({ udid: 'device-iphone16pro' })
+      );
+    });
+
+    it("should only accept a simulator at or above the scheme's deployment target", async () => {
+      const { simctlSuggestTool } = await import('../../../src/tools/simctl/suggest.js');
+
+      await buildAndRunTool({ projectPath: validProjectPath, scheme: validScheme });
+
+      expect(simctlSuggestTool).toHaveBeenCalledWith(
+        expect.objectContaining({ minimumOSVersion: '27.0' })
+      );
+    });
+
+    it('should name the deployment target when no simulator can run the scheme', async () => {
+      const { simctlSuggestTool } = await import('../../../src/tools/simctl/suggest.js');
+      const { xcodebuildBuildTool } = await import('../../../src/tools/xcodebuild/build.js');
+      (simctlSuggestTool as jest.Mock).mockResolvedValueOnce({
+        content: [{ type: 'text', text: JSON.stringify({ success: false }) }],
+        isError: true,
+      });
+
+      const result = await buildAndRunTool({ projectPath: validProjectPath, scheme: validScheme });
+
+      const response = JSON.parse(result.content[0].text);
+      expect(response.success).toBe(false);
+      expect(response.error).toContain('iOS 27.0 or later');
+      expect(xcodebuildBuildTool).not.toHaveBeenCalled();
     });
 
     it('should pass launch arguments to app', async () => {
@@ -383,7 +434,7 @@ describe('buildAndRunTool', () => {
 
       // Workflow should continue despite boot error
       const response = JSON.parse(result.content[0].text);
-      expect(response.workflow.steps.length).toBeGreaterThan(2); // Should have more than just build + suggest
+      expect(response.workflow.steps.length).toBeGreaterThan(2); // Should have more than just suggest + build
     });
 
     it('should handle simulator suggestion failures', async () => {
@@ -473,7 +524,7 @@ describe('buildAndRunTool', () => {
       });
 
       const response = JSON.parse(result.content[0].text);
-      expect(response.workflow.steps.length).toBeGreaterThanOrEqual(3); // build, suggest, boot completed
+      expect(response.workflow.steps.length).toBeGreaterThanOrEqual(3); // suggest, build, boot completed
       expect(response.guidance.some((g: string) => g.includes('Steps completed'))).toBe(true);
     });
   });
