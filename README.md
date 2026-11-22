@@ -386,7 +386,7 @@ Build and package the checkout, then install the exact tarball into the active N
 ```bash
 npm run build
 npm pack --pack-destination /tmp
-npm install --global /tmp/xc-mcp-5.1.0.tgz
+npm install --global /tmp/xc-mcp-5.2.0.tgz
 ```
 
 Use `xc-mcp` as the MCP client's command (with `--mini` if desired). `npx -y xc-mcp` may resolve
