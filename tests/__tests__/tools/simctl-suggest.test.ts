@@ -104,12 +104,8 @@ describe('simctlSuggestTool', () => {
       const result = await simctlSuggestTool({});
       const response = JSON.parse(result.content[0].text);
 
-      expect(response.suggestions[0].score).toBeGreaterThanOrEqual(
-        response.suggestions[1].score
-      );
-      expect(response.suggestions[1].score).toBeGreaterThanOrEqual(
-        response.suggestions[2].score
-      );
+      expect(response.suggestions[0].score).toBeGreaterThanOrEqual(response.suggestions[1].score);
+      expect(response.suggestions[1].score).toBeGreaterThanOrEqual(response.suggestions[2].score);
     });
 
     it('should include boot history in response', async () => {
@@ -129,7 +125,8 @@ describe('simctlSuggestTool', () => {
       expect(mockSimulatorCache.getSuggestedSimulators).toHaveBeenCalledWith(
         projectPath,
         undefined,
-        4
+        4,
+        undefined
       );
     });
 
@@ -139,7 +136,8 @@ describe('simctlSuggestTool', () => {
       expect(mockSimulatorCache.getSuggestedSimulators).toHaveBeenCalledWith(
         undefined,
         'iPhone',
-        4
+        4,
+        undefined
       );
     });
 
@@ -149,7 +147,19 @@ describe('simctlSuggestTool', () => {
       expect(mockSimulatorCache.getSuggestedSimulators).toHaveBeenCalledWith(
         undefined,
         undefined,
-        2
+        2,
+        undefined
+      );
+    });
+
+    it('should pass the minimum OS version through', async () => {
+      await simctlSuggestTool({ minimumOSVersion: '27.0' });
+
+      expect(mockSimulatorCache.getSuggestedSimulators).toHaveBeenCalledWith(
+        undefined,
+        undefined,
+        4,
+        '27.0'
       );
     });
 
@@ -190,10 +200,7 @@ describe('simctlSuggestTool', () => {
     it('should record boot event when auto-booting', async () => {
       await simctlSuggestTool({ autoBootTopSuggestion: true });
 
-      expect(mockSimulatorCache.recordBootEvent).toHaveBeenCalledWith(
-        'device-iphone16pro',
-        true
-      );
+      expect(mockSimulatorCache.recordBootEvent).toHaveBeenCalledWith('device-iphone16pro', true);
     });
 
     it('should record simulator usage when auto-booting', async () => {
@@ -242,15 +249,11 @@ describe('simctlSuggestTool', () => {
 
       expect(response.guidance).toBeDefined();
       expect(Array.isArray(response.guidance)).toBe(true);
-      expect(response.guidance.some((g: string) => g.includes('simctl-create'))).toBe(
-        true
-      );
+      expect(response.guidance.some((g: string) => g.includes('simctl-create'))).toBe(true);
     });
 
     it('should handle cache errors', async () => {
-      mockSimulatorCache.getSuggestedSimulators.mockRejectedValueOnce(
-        new Error('Cache error')
-      );
+      mockSimulatorCache.getSuggestedSimulators.mockRejectedValueOnce(new Error('Cache error'));
 
       await expect(simctlSuggestTool({})).rejects.toThrow();
     });
@@ -262,9 +265,7 @@ describe('simctlSuggestTool', () => {
       const response = JSON.parse(result.content[0].text);
 
       expect(response.guidance).toBeDefined();
-      const firstGuidance = response.guidance.find((g: string) =>
-        g.includes('Top suggestion')
-      );
+      const firstGuidance = response.guidance.find((g: string) => g.includes('Top suggestion'));
       expect(firstGuidance).toBeDefined();
     });
 
@@ -272,9 +273,7 @@ describe('simctlSuggestTool', () => {
       const result = await simctlSuggestTool({});
       const response = JSON.parse(result.content[0].text);
 
-      const bootCommand = response.guidance.find((g: string) =>
-        g.includes('simctl-boot')
-      );
+      const bootCommand = response.guidance.find((g: string) => g.includes('simctl-boot'));
       expect(bootCommand).toBeDefined();
     });
   });
@@ -310,9 +309,7 @@ describe('simctlSuggestTool', () => {
 
   describe('edge cases', () => {
     it('should handle single suggestion', async () => {
-      mockSimulatorCache.getSuggestedSimulators.mockResolvedValueOnce([
-        mockSuggestions[0],
-      ]);
+      mockSimulatorCache.getSuggestedSimulators.mockResolvedValueOnce([mockSuggestions[0]]);
 
       const result = await simctlSuggestTool({});
       const response = JSON.parse(result.content[0].text);
@@ -327,7 +324,8 @@ describe('simctlSuggestTool', () => {
       expect(mockSimulatorCache.getSuggestedSimulators).toHaveBeenCalledWith(
         undefined,
         undefined,
-        1
+        1,
+        undefined
       );
     });
 
@@ -353,9 +351,7 @@ describe('simctlSuggestTool', () => {
         },
       };
 
-      mockSimulatorCache.getSuggestedSimulators.mockResolvedValueOnce([
-        longNameSuggestion,
-      ]);
+      mockSimulatorCache.getSuggestedSimulators.mockResolvedValueOnce([longNameSuggestion]);
 
       const result = await simctlSuggestTool({});
 

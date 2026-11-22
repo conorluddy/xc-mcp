@@ -75,7 +75,6 @@ export async function workflowFreshInstallTool(args: FreshInstallArgs) {
     const { simctlShutdownTool } = await import('../simctl/shutdown.js');
     const { simctlEraseTool } = await import('../simctl/erase.js');
     const { simctlBootTool } = await import('../simctl/boot.js');
-    const { simctlSuggestTool } = await import('../simctl/suggest.js');
     const { xcodebuildBuildTool } = await import('../xcodebuild/build.js');
     const { simctlInstallTool } = await import('../simctl/install.js');
     const { simctlLaunchTool } = await import('../simctl/launch.js');
@@ -85,29 +84,18 @@ export async function workflowFreshInstallTool(args: FreshInstallArgs) {
 
     if (!targetUdid) {
       try {
-        const suggestResult = await simctlSuggestTool({
-          projectPath,
-          maxSuggestions: 1,
-          autoBootTopSuggestion: false,
+        const { selectSimulatorForScheme } = await import('./select-simulator.js');
+        const selected = await selectSimulatorForScheme(projectPath, scheme, configuration);
+        targetUdid = selected.udid;
+        targetName = selected.name;
+
+        workflow.steps.push({
+          name: 'select-simulator',
+          success: true,
+          result: { udid: targetUdid, name: targetName, source: 'auto-suggested' },
         });
 
-        const suggestText = suggestResult.content?.[0]?.text || JSON.stringify(suggestResult);
-        const suggestData = typeof suggestText === 'string' ? JSON.parse(suggestText) : suggestText;
-
-        if (suggestData.suggestions && suggestData.suggestions.length > 0) {
-          targetUdid = suggestData.suggestions[0].simulator.udid;
-          targetName = suggestData.suggestions[0].simulator.name;
-
-          workflow.steps.push({
-            name: 'select-simulator',
-            success: true,
-            result: { udid: targetUdid, name: targetName, source: 'auto-suggested' },
-          });
-
-          console.error(`[workflow-fresh-install] ✅ Selected: ${targetName}`);
-        } else {
-          throw new Error('No suitable simulator found');
-        }
+        console.error(`[workflow-fresh-install] ✅ Selected: ${targetName}`);
       } catch (suggestError) {
         workflow.errors.push(`Simulator selection failed: ${suggestError}`);
         throw suggestError;
@@ -238,7 +226,12 @@ export async function workflowFreshInstallTool(args: FreshInstallArgs) {
 
       // Get app path from build artifacts
       const { findBuildArtifacts } = await import('../../utils/build-artifacts.js');
-      const artifacts = await findBuildArtifacts(projectPath, scheme, configuration);
+      const artifacts = await findBuildArtifacts(
+        projectPath,
+        scheme,
+        configuration,
+        `platform=iOS Simulator,id=${targetUdid}`
+      );
 
       if (!artifacts.appPath) {
         throw new Error('Could not find .app bundle after build');

@@ -350,3 +350,49 @@ it('ranks a newer mainline generation above the previous Pro and reads OS from r
     list.mockRestore();
   }
 });
+
+describe('deployment target filtering', () => {
+  const olderButFavoured = { udid: 'ios-26', name: 'iPhone 17 Pro', isAvailable: true };
+  const newer = { udid: 'ios-27', name: 'iPhone 17', isAvailable: true };
+  const devicesByRuntime = {
+    'com.apple.CoreSimulator.SimRuntime.iOS-26-5': [olderButFavoured],
+    'com.apple.CoreSimulator.SimRuntime.iOS-27-0': [newer],
+  };
+  let available: jest.SpyInstance;
+  let list: jest.SpyInstance;
+
+  beforeEach(() => {
+    available = jest
+      .spyOn(simulatorCache, 'getAvailableSimulators')
+      .mockResolvedValue([olderButFavoured, newer] as SimulatorInfo[]);
+    list = jest
+      .spyOn(simulatorCache, 'getSimulatorList')
+      .mockResolvedValue({ devices: devicesByRuntime } as any);
+  });
+
+  afterEach(() => {
+    available.mockRestore();
+    list.mockRestore();
+  });
+
+  it('suggests a simulator below the deployment target only when no minimum is given', async () => {
+    const results = await simulatorCache.getSuggestedSimulators(undefined, undefined, 2);
+    expect(results.map(result => result.simulator.udid)).toContain('ios-26');
+  });
+
+  it('never suggests a simulator below the deployment target', async () => {
+    const results = await simulatorCache.getSuggestedSimulators(undefined, undefined, 2, '27.0');
+    expect(results.map(result => result.simulator.udid)).toEqual(['ios-27']);
+  });
+
+  it('suggests nothing when no simulator reaches the deployment target', async () => {
+    const results = await simulatorCache.getSuggestedSimulators(undefined, undefined, 2, '28.0');
+    expect(results).toEqual([]);
+  });
+
+  it('reports whether a given simulator can run a deployment target', async () => {
+    expect(await simulatorCache.isIOSSimulatorAtLeast('ios-26', '27.0')).toBe(false);
+    expect(await simulatorCache.isIOSSimulatorAtLeast('ios-27', '27.0')).toBe(true);
+    expect(await simulatorCache.isIOSSimulatorAtLeast('missing', '27.0')).toBe(false);
+  });
+});

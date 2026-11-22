@@ -8,6 +8,7 @@ import {
 } from '../../utils/response-cache.js';
 import { projectCache, type BuildConfig } from '../../state/project-cache.js';
 import { simulatorCache } from '../../state/simulator-cache.js';
+import { buildSettingsCache } from '../../state/build-settings-cache.js';
 import { createConfigManager } from '../../utils/config.js';
 
 interface BuildToolArgs {
@@ -97,7 +98,7 @@ export async function xcodebuildBuildTool(args: any) {
     const smartDestination =
       destination ||
       (simulatorUdid ? `platform=iOS Simulator,id=${simulatorUdid}` : undefined) ||
-      (await getSmartDestination(preferredConfig, projectPath));
+      (await getSmartDestination(preferredConfig, projectPath, scheme, configuration));
 
     // Build final configuration
     const finalConfig: BuildConfig = {
@@ -190,7 +191,7 @@ export async function xcodebuildBuildTool(args: any) {
           projectPath,
           scheme,
           configuration: finalConfig.configuration,
-          simulatorUdid,
+          simulatorUdid: simulatorUdid ?? simulatorUdidFrom(finalConfig.destination),
           bootSimulator,
         });
       } catch (installError) {
@@ -286,20 +287,44 @@ export async function xcodebuildBuildTool(args: any) {
   }
 }
 
+function simulatorUdidFrom(destination?: string): string | undefined {
+  return destination?.includes('Simulator') ? destination.match(/id=([A-F0-9-]+)/)?.[1] : undefined;
+}
+
 async function getSmartDestination(
   preferredConfig: BuildConfig | null,
-  projectPath: string
+  projectPath: string,
+  scheme: string,
+  configuration: string
 ): Promise<string | undefined> {
-  // If preferred config has a destination, use it
+  // A simulator below the scheme's deployment target cannot be a destination: xcodebuild answers
+  // "Unable to find a destination matching the provided destination specifier".
+  const minimumOSVersion = await buildSettingsCache.getDeploymentTargetVersion(
+    projectPath,
+    scheme,
+    configuration
+  );
+  const canRunScheme = async (udid: string): Promise<boolean> =>
+    !minimumOSVersion || simulatorCache.isIOSSimulatorAtLeast(udid, minimumOSVersion);
+
+  // If preferred config has a destination, use it, unless the deployment target has since moved
+  // past that simulator.
   if (preferredConfig?.destination) {
-    return preferredConfig.destination;
+    const preferredUdid = simulatorUdidFrom(preferredConfig.destination);
+    if (!preferredUdid || (await canRunScheme(preferredUdid))) {
+      return preferredConfig.destination;
+    }
   }
 
   // Try to get a smart simulator destination with project-specific preference.
   // Only iOS simulators qualify: this destination is hardcoded to "iOS Simulator", so a watchOS or
   // tvOS device here produces "Unable to find a device matching the provided destination specifier".
   try {
-    const iosSimulators = await simulatorCache.getAvailableSimulators(undefined, 'iOS');
+    const availableIOSSimulators = await simulatorCache.getAvailableSimulators(undefined, 'iOS');
+    const iosSimulators = [];
+    for (const simulator of availableIOSSimulators) {
+      if (await canRunScheme(simulator.udid)) iosSimulators.push(simulator);
+    }
 
     const preferredSim = await simulatorCache.getPreferredSimulator(projectPath);
     if (preferredSim && iosSimulators.some(sim => sim.udid === preferredSim.udid)) {
@@ -333,17 +358,9 @@ async function performAutoInstall(args: AutoInstallArgs): Promise<any> {
   const { simctlBootTool } = await import('../simctl/boot.js');
   const { simctlInstallTool } = await import('../simctl/install.js');
 
-  // Step 1: Find build artifacts
-  console.error('[auto-install] Finding build artifacts...');
-  const artifacts = await findBuildArtifacts(projectPath, scheme, configuration);
-
-  if (!artifacts.appPath) {
-    throw new Error(`Could not find .app bundle for scheme "${scheme}"`);
-  }
-
-  // Step 2: Determine simulator to install to
+  // Step 1: Determine simulator to install to. Normally the one the build just targeted.
   let targetUdid = simulatorUdid;
-  let targetName = '';
+  let targetName: string;
 
   if (!targetUdid) {
     // Try to suggest best simulator
@@ -361,11 +378,25 @@ async function performAutoInstall(args: AutoInstallArgs): Promise<any> {
     targetName = sim?.name || targetUdid;
   }
 
+  // Step 2: Find build artifacts. The destination matters: without it the lookup reports the
+  // device build directory, not the simulator one.
+  console.error('[auto-install] Finding build artifacts...');
+  const artifacts = await findBuildArtifacts(
+    projectPath,
+    scheme,
+    configuration,
+    `platform=iOS Simulator,id=${targetUdid}`
+  );
+
+  if (!artifacts.appPath) {
+    throw new Error(`Could not find .app bundle for scheme "${scheme}"`);
+  }
+
   // Step 3: Boot simulator if needed
   if (bootSimulator) {
     console.error(`[auto-install] Booting simulator: ${targetName}`);
     try {
-      await simctlBootTool({ udid: targetUdid });
+      await simctlBootTool({ deviceId: targetUdid });
     } catch (bootError) {
       // Don't fail completely if boot fails, simulator might already be booted
       console.warn('[auto-install] Boot failed (may already be booted):', bootError);

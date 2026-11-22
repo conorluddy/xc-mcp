@@ -7,9 +7,9 @@ Build and run an Xcode project on a simulator in a single orchestrated workflow.
 
 ## Overview
 
-Combines build, simulator selection, installation, and launch into one call:
-1. **Build** - Compile the Xcode project with xcodebuild
-2. **Select Simulator** - Auto-detect or use specified device
+Combines simulator selection, build, installation, and launch into one call:
+1. **Select Simulator** - Use the specified device, or pick one at or above the scheme's deployment target
+2. **Build** - Compile the Xcode project with xcodebuild for that device
 3. **Boot** - Start the simulator
 4. **Install** - Install the built .app bundle
 5. **Launch** - Launch the app
@@ -71,19 +71,53 @@ export async function buildAndRunTool(args: any) {
     // Dynamic imports to avoid circular dependencies
     const { xcodebuildBuildTool } = await import('../xcodebuild/build.js');
     const { simctlBootTool } = await import('../simctl/boot.js');
-    const { simctlSuggestTool } = await import('../simctl/suggest.js');
     const { simctlInstallTool } = await import('../simctl/install.js');
     const { simctlLaunchTool } = await import('../simctl/launch.js');
     const { simctlIoTool } = await import('../simctl/io.js');
+    const { selectSimulatorForScheme } = await import('./select-simulator.js');
 
-    // ===== STEP 1: Build =====
-    console.error('[build-and-run] Step 1/5: Building project...');
+    // ===== STEP 1: Select Simulator =====
+    // Before the build, so the build, install and launch all target the same device.
+    console.error('[build-and-run] Step 1/5: Selecting simulator...');
+    let targetUdid: string = simulatorUdid;
+    let targetName = '';
+
+    if (!targetUdid) {
+      try {
+        const selected = await selectSimulatorForScheme(projectPath, scheme, configuration);
+        targetUdid = selected.udid;
+        targetName = selected.name;
+
+        workflow.steps.push({
+          name: 'suggest',
+          success: true,
+          result: selected,
+        });
+
+        console.error(`[build-and-run] ✅ Selected simulator: ${targetName}`);
+      } catch (suggestError) {
+        workflow.errors.push(`Simulator selection failed: ${suggestError}`);
+        throw suggestError;
+      }
+    } else {
+      targetName = `${simulatorUdid} (specified)`;
+      workflow.steps.push({
+        name: 'suggest',
+        success: true,
+        result: { simulatorUdid, specified: true },
+      });
+    }
+
+    const destination = `platform=iOS Simulator,id=${targetUdid}`;
+
+    // ===== STEP 2: Build =====
+    console.error('[build-and-run] Step 2/5: Building project...');
     try {
       const buildResult = await xcodebuildBuildTool({
         projectPath,
         scheme,
         configuration,
-        simulatorUdid, // Build for the same device the workflow installs to
+        destination,
         autoInstall: false, // We'll handle install manually in workflow
       });
 
@@ -111,54 +145,11 @@ export async function buildAndRunTool(args: any) {
       throw buildError;
     }
 
-    // ===== STEP 2: Suggest Simulator =====
-    console.error('[build-and-run] Step 2/5: Selecting simulator...');
-    let targetUdid = simulatorUdid;
-    let targetName = '';
-
-    if (!targetUdid) {
-      try {
-        const suggestResult = await simctlSuggestTool({
-          projectPath,
-          maxSuggestions: 1,
-          autoBootTopSuggestion: false,
-        });
-
-        const suggestText = suggestResult.content?.[0]?.text || JSON.stringify(suggestResult);
-        const suggestData = typeof suggestText === 'string' ? JSON.parse(suggestText) : suggestText;
-
-        if (suggestData.suggestions && suggestData.suggestions.length > 0) {
-          targetUdid = suggestData.suggestions[0].simulator.udid;
-          targetName = suggestData.suggestions[0].simulator.name;
-
-          workflow.steps.push({
-            name: 'suggest',
-            success: true,
-            result: suggestData,
-          });
-
-          console.error(`[build-and-run] ✅ Selected simulator: ${targetName}`);
-        } else {
-          throw new Error('No suitable simulator found');
-        }
-      } catch (suggestError) {
-        workflow.errors.push(`Simulator selection failed: ${suggestError}`);
-        throw suggestError;
-      }
-    } else {
-      targetName = `${simulatorUdid} (specified)`;
-      workflow.steps.push({
-        name: 'suggest',
-        success: true,
-        result: { simulatorUdid, specified: true },
-      });
-    }
-
     // ===== STEP 3: Boot Simulator =====
     console.error(`[build-and-run] Step 3/5: Booting ${targetName}...`);
     try {
       const bootResult = await simctlBootTool({
-        udid: targetUdid,
+        deviceId: targetUdid,
         waitForBoot: true,
       });
 
@@ -185,10 +176,13 @@ export async function buildAndRunTool(args: any) {
     try {
       // Find build artifacts
       const { findBuildArtifacts } = await import('../../utils/build-artifacts.js');
-      const artifacts = await findBuildArtifacts(projectPath, scheme, configuration);
+      // The destination matters: without it the lookup reports the device build directory.
+      const artifacts = await findBuildArtifacts(projectPath, scheme, configuration, destination);
 
       if (!artifacts.appPath) {
-        throw new Error('Could not find .app bundle after build');
+        throw new Error(
+          `Could not find .app bundle after build (looked in ${artifacts.buildDirectory || 'unknown build directory'})`
+        );
       }
 
       const installResult = await simctlInstallTool({
@@ -291,10 +285,11 @@ export async function buildAndRunTool(args: any) {
         `App is now running on ${targetName}`,
         `Bundle ID: ${bundleId}`,
         'You can now interact with the app using other tools:',
-        `  - simctl-tap for tapping UI elements`,
-        `  - simctl-type for text input`,
-        `  - simctl-scroll for scrolling`,
-        `  - simctl-io for screenshots/videos`,
+        `  - idb-ui-describe to read the accessibility tree`,
+        `  - idb-ui-tap for tapping UI elements`,
+        `  - idb-ui-input for text input`,
+        `  - idb-ui-gesture for swipes and scrolling`,
+        `  - screenshot for a visual check`,
       ],
     };
 

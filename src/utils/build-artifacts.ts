@@ -25,6 +25,8 @@ export interface BuildArtifacts {
  * @param projectPath - Path to .xcodeproj or .xcworkspace
  * @param scheme - Build scheme name
  * @param configuration - Build configuration (Debug, Release, etc.)
+ * @param destination - The destination the build used. Required to find a simulator build of an
+ *   iOS app: without it the reported directory is the device one (`Debug-iphoneos`).
  * @returns Object containing paths to build artifacts
  *
  * @example
@@ -42,10 +44,16 @@ export interface BuildArtifacts {
 export async function findBuildArtifacts(
   projectPath: string,
   scheme: string,
-  configuration: string = 'Debug'
+  configuration: string = 'Debug',
+  destination?: string
 ): Promise<BuildArtifacts> {
   // Get build settings from cache
-  const settings = await buildSettingsCache.getBuildSettings(projectPath, scheme, configuration);
+  const settings = await buildSettingsCache.getBuildSettings(
+    projectPath,
+    scheme,
+    configuration,
+    destination
+  );
 
   const buildDir = settings.CONFIGURATION_BUILD_DIR;
   const productName = settings.PRODUCT_NAME;
@@ -79,10 +87,11 @@ export async function findBuildArtifacts(
 export async function verifyBuildArtifacts(
   projectPath: string,
   scheme: string,
-  configuration: string = 'Debug'
+  configuration: string = 'Debug',
+  destination?: string
 ): Promise<{ valid: boolean; appPath?: string; error?: string; guidance?: string[] }> {
   try {
-    const artifacts = await findBuildArtifacts(projectPath, scheme, configuration);
+    const artifacts = await findBuildArtifacts(projectPath, scheme, configuration, destination);
 
     if (!artifacts.appPath) {
       return {
